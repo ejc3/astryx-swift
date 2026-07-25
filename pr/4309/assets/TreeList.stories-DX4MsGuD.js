@@ -1,0 +1,312 @@
+import{i as e}from"./preload-helper-CT_b8DTk.js";import{t}from"./jsx-runtime-DqZldVDK.js";import{o as n}from"./useTheme-CKat3NNu.js";import{n as r,t as i}from"./Icon-BfxcVSRR.js";import{n as a,t as o}from"./Badge-x089lqwb.js";import{t as s,x as c}from"./theme-BwMR6G18.js";import{nt as l,tt as u}from"./iframe-q44UzjRo.js";import{Bt as d,Et as f,Xt as p,gt as m,t as h}from"./esm-DA7gAIBC.js";var g,_,v,y,b,x,S,C,w,T,E,D,O,k,A,j,M,N,P,F;e((()=>{u(),i(),o(),s(),h(),g=t(),_=()=>{},v={title:`Core/TreeList`,component:l,tags:[`autodocs`],argTypes:{density:{control:`select`,options:[`compact`,`balanced`,`spacious`],description:`Spacing density for tree list items`},guideStyle:{control:`select`,options:[`segments`,`none`],description:`Rendering style for the hierarchy guide (connector) lines`}}},y=[{id:`src`,label:`src`,isExpanded:!0,children:[{id:`components`,label:`components`,children:[{id:`button`,label:`Button.tsx`,onClick:_},{id:`card`,label:`Card.tsx`,onClick:_},{id:`list`,label:`List.tsx`,onClick:_}]},{id:`app`,label:`App.tsx`,onClick:_},{id:`index`,label:`index.tsx`,onClick:_}]},{id:`public`,label:`public`,children:[{id:`favicon`,label:`favicon.ico`,onClick:_},{id:`index-html`,label:`index.html`,onClick:_}]},{id:`pkg`,label:`package.json`,onClick:_},{id:`readme`,label:`README.md`,onClick:_}],b={args:{items:y}},x={args:{items:[{id:`src`,label:`src`,isExpanded:!0,children:[{id:`components`,label:`components`,isExpanded:!0,children:[{id:`button`,label:`Button.tsx`,onClick:_},{id:`card`,label:`Card.tsx`,onClick:_},{id:`list`,label:`List.tsx`,onClick:_}]},{id:`app`,label:`App.tsx`,onClick:_},{id:`index`,label:`index.tsx`,onClick:_}]},{id:`public`,label:`public`,isExpanded:!0,children:[{id:`favicon`,label:`favicon.ico`,onClick:_},{id:`index-html`,label:`index.html`,onClick:_}]},{id:`pkg`,label:`package.json`,onClick:_},{id:`readme`,label:`README.md`,onClick:_}]}},S={args:{items:[{id:`src`,label:`src`,isExpanded:!0,startContent:(0,g.jsx)(r,{icon:m}),children:[{id:`app`,label:`App.tsx`,onClick:_,startContent:(0,g.jsx)(r,{icon:f})},{id:`index`,label:`index.tsx`,onClick:_,startContent:(0,g.jsx)(r,{icon:f})}]},{id:`pkg`,label:`package.json`,onClick:_,startContent:(0,g.jsx)(r,{icon:f})}]}},C={args:{items:y,header:(0,g.jsx)(`strong`,{children:`Project Files`})}},w={args:{items:[{id:`src`,label:`src`,isExpanded:!0,children:[{id:`components`,label:`components`,isExpanded:!0,children:[{id:`button`,label:`Button.tsx`,onClick:_},{id:`card`,label:`Card.tsx`,onClick:_},{id:`list`,label:`List.tsx`,onClick:_}]},{id:`app`,label:`App.tsx`,onClick:_},{id:`index`,label:`index.tsx`,onClick:_}]},{id:`public`,label:`public`,children:[{id:`favicon`,label:`favicon.ico`,onClick:_},{id:`index-html`,label:`index.html`,onClick:_}]},{id:`pkg`,label:`package.json`,onClick:_},{id:`readme`,label:`README.md`,onClick:_}],density:`compact`}},T={args:{items:y,density:`spacious`}},E={args:{items:[{id:`src`,label:`src`,isExpanded:!0,children:[{id:`components`,label:`components`,isExpanded:!0,children:[{id:`button`,label:`Button.tsx`,onClick:_},{id:`card`,label:`Card.tsx`,onClick:_},{id:`list`,label:`List.tsx`,onClick:_}]},{id:`app`,label:`App.tsx`,onClick:_},{id:`index`,label:`index.tsx`,onClick:_}]},{id:`public`,label:`public`,children:[{id:`favicon`,label:`favicon.ico`,onClick:_},{id:`index-html`,label:`index.html`,onClick:_}]},{id:`pkg`,label:`package.json`,onClick:_},{id:`readme`,label:`README.md`,onClick:_}]}},D={args:{items:[{id:`settings`,label:`Settings`,isExpanded:!0,startContent:(0,g.jsx)(r,{icon:d}),onClick:()=>alert(`Settings`),children:[{id:`general`,label:`General`,onClick:()=>alert(`General settings`)},{id:`advanced`,label:`Advanced`,onClick:()=>alert(`Advanced settings`)}]},{id:`docs`,label:`Documentation`,href:`#`,endContent:(0,g.jsx)(r,{icon:p})}]}},O={args:{items:[{id:`inbox`,label:`Inbox`,isExpanded:!0,endContent:(0,g.jsx)(a,{label:`3`}),children:[{id:`unread`,label:`Unread`,onClick:_,endContent:(0,g.jsx)(a,{label:`3`})},{id:`starred`,label:`Starred`,onClick:_}]},{id:`sent`,label:`Sent`,onClick:_},{id:`drafts`,label:`Drafts`,onClick:_,endContent:(0,g.jsx)(a,{label:`1`})}]}},k={args:{items:[{id:`active`,label:`Active Section`,isExpanded:!0,children:[{id:`item1`,label:`Available Item`,onClick:_},{id:`item2`,label:`Disabled Item`,onClick:_,isDisabled:!0}]},{id:`disabled-parent`,label:`Disabled Parent`,onClick:_,isDisabled:!0}]}},A={args:{items:[{id:`nav`,label:`Navigation`,isExpanded:!0,children:[{id:`home`,label:`Home`,onClick:_},{id:`about`,label:`About`,onClick:_,isSelected:!0},{id:`contact`,label:`Contact`,onClick:_}]}]}},j=[{id:`root`,label:`Project`,isExpanded:!0,children:[{id:`src`,label:`src`,isExpanded:!0,children:[{id:`app`,label:`App.tsx`},{id:`index`,label:`index.tsx`}]},{id:`pkg`,label:`package.json`}]}],M={args:{guideStyle:`none`,items:j}},N=n({name:`tree-list-guide-demo`,components:{"tree-list-guide":{base:{backgroundColor:`var(--color-accent)`}}}}),P={render:()=>(0,g.jsx)(c,{theme:N,mode:`light`,children:(0,g.jsx)(l,{items:j})})},b.parameters={...b.parameters,docs:{...b.parameters?.docs,source:{originalSource:`{
+  args: {
+    items: fileTreeItems
+  }
+}`,...b.parameters?.docs?.source}}},x.parameters={...x.parameters,docs:{...x.parameters?.docs,source:{originalSource:`{
+  args: {
+    items: [{
+      id: 'src',
+      label: 'src',
+      isExpanded: true,
+      children: [{
+        id: 'components',
+        label: 'components',
+        isExpanded: true,
+        children: [{
+          id: 'button',
+          label: 'Button.tsx',
+          onClick: noop
+        }, {
+          id: 'card',
+          label: 'Card.tsx',
+          onClick: noop
+        }, {
+          id: 'list',
+          label: 'List.tsx',
+          onClick: noop
+        }]
+      }, {
+        id: 'app',
+        label: 'App.tsx',
+        onClick: noop
+      }, {
+        id: 'index',
+        label: 'index.tsx',
+        onClick: noop
+      }]
+    }, {
+      id: 'public',
+      label: 'public',
+      isExpanded: true,
+      children: [{
+        id: 'favicon',
+        label: 'favicon.ico',
+        onClick: noop
+      }, {
+        id: 'index-html',
+        label: 'index.html',
+        onClick: noop
+      }]
+    }, {
+      id: 'pkg',
+      label: 'package.json',
+      onClick: noop
+    }, {
+      id: 'readme',
+      label: 'README.md',
+      onClick: noop
+    }]
+  }
+}`,...x.parameters?.docs?.source}}},S.parameters={...S.parameters,docs:{...S.parameters?.docs,source:{originalSource:`{
+  args: {
+    items: [{
+      id: 'src',
+      label: 'src',
+      isExpanded: true,
+      startContent: <Icon icon={FolderIcon} />,
+      children: [{
+        id: 'app',
+        label: 'App.tsx',
+        onClick: noop,
+        startContent: <Icon icon={DocumentIcon} />
+      }, {
+        id: 'index',
+        label: 'index.tsx',
+        onClick: noop,
+        startContent: <Icon icon={DocumentIcon} />
+      }]
+    }, {
+      id: 'pkg',
+      label: 'package.json',
+      onClick: noop,
+      startContent: <Icon icon={DocumentIcon} />
+    }]
+  }
+}`,...S.parameters?.docs?.source}}},C.parameters={...C.parameters,docs:{...C.parameters?.docs,source:{originalSource:`{
+  args: {
+    items: fileTreeItems,
+    header: <strong>Project Files</strong>
+  }
+}`,...C.parameters?.docs?.source}}},w.parameters={...w.parameters,docs:{...w.parameters?.docs,source:{originalSource:`{
+  args: {
+    items: [{
+      id: 'src',
+      label: 'src',
+      isExpanded: true,
+      children: [{
+        id: 'components',
+        label: 'components',
+        isExpanded: true,
+        children: [{
+          id: 'button',
+          label: 'Button.tsx',
+          onClick: noop
+        }, {
+          id: 'card',
+          label: 'Card.tsx',
+          onClick: noop
+        }, {
+          id: 'list',
+          label: 'List.tsx',
+          onClick: noop
+        }]
+      }, {
+        id: 'app',
+        label: 'App.tsx',
+        onClick: noop
+      }, {
+        id: 'index',
+        label: 'index.tsx',
+        onClick: noop
+      }]
+    }, {
+      id: 'public',
+      label: 'public',
+      children: [{
+        id: 'favicon',
+        label: 'favicon.ico',
+        onClick: noop
+      }, {
+        id: 'index-html',
+        label: 'index.html',
+        onClick: noop
+      }]
+    }, {
+      id: 'pkg',
+      label: 'package.json',
+      onClick: noop
+    }, {
+      id: 'readme',
+      label: 'README.md',
+      onClick: noop
+    }],
+    density: 'compact'
+  }
+}`,...w.parameters?.docs?.source}}},T.parameters={...T.parameters,docs:{...T.parameters?.docs,source:{originalSource:`{
+  args: {
+    items: fileTreeItems,
+    density: 'spacious'
+  }
+}`,...T.parameters?.docs?.source}}},E.parameters={...E.parameters,docs:{...E.parameters?.docs,source:{originalSource:`{
+  args: {
+    items: [{
+      id: 'src',
+      label: 'src',
+      isExpanded: true,
+      children: [{
+        id: 'components',
+        label: 'components',
+        isExpanded: true,
+        children: [{
+          id: 'button',
+          label: 'Button.tsx',
+          onClick: noop
+        }, {
+          id: 'card',
+          label: 'Card.tsx',
+          onClick: noop
+        }, {
+          id: 'list',
+          label: 'List.tsx',
+          onClick: noop
+        }]
+      }, {
+        id: 'app',
+        label: 'App.tsx',
+        onClick: noop
+      }, {
+        id: 'index',
+        label: 'index.tsx',
+        onClick: noop
+      }]
+    }, {
+      id: 'public',
+      label: 'public',
+      children: [{
+        id: 'favicon',
+        label: 'favicon.ico',
+        onClick: noop
+      }, {
+        id: 'index-html',
+        label: 'index.html',
+        onClick: noop
+      }]
+    }, {
+      id: 'pkg',
+      label: 'package.json',
+      onClick: noop
+    }, {
+      id: 'readme',
+      label: 'README.md',
+      onClick: noop
+    }]
+  }
+}`,...E.parameters?.docs?.source}}},D.parameters={...D.parameters,docs:{...D.parameters?.docs,source:{originalSource:`{
+  args: {
+    items: [{
+      id: 'settings',
+      label: 'Settings',
+      isExpanded: true,
+      startContent: <Icon icon={Cog6ToothIcon} />,
+      onClick: () => alert('Settings'),
+      children: [{
+        id: 'general',
+        label: 'General',
+        onClick: () => alert('General settings')
+      }, {
+        id: 'advanced',
+        label: 'Advanced',
+        onClick: () => alert('Advanced settings')
+      }]
+    }, {
+      id: 'docs',
+      label: 'Documentation',
+      href: '#',
+      endContent: <Icon icon={ChevronRightIcon} />
+    }]
+  }
+}`,...D.parameters?.docs?.source}}},O.parameters={...O.parameters,docs:{...O.parameters?.docs,source:{originalSource:`{
+  args: {
+    items: [{
+      id: 'inbox',
+      label: 'Inbox',
+      isExpanded: true,
+      endContent: <Badge label="3" />,
+      children: [{
+        id: 'unread',
+        label: 'Unread',
+        onClick: noop,
+        endContent: <Badge label="3" />
+      }, {
+        id: 'starred',
+        label: 'Starred',
+        onClick: noop
+      }]
+    }, {
+      id: 'sent',
+      label: 'Sent',
+      onClick: noop
+    }, {
+      id: 'drafts',
+      label: 'Drafts',
+      onClick: noop,
+      endContent: <Badge label="1" />
+    }]
+  }
+}`,...O.parameters?.docs?.source}}},k.parameters={...k.parameters,docs:{...k.parameters?.docs,source:{originalSource:`{
+  args: {
+    items: [{
+      id: 'active',
+      label: 'Active Section',
+      isExpanded: true,
+      children: [{
+        id: 'item1',
+        label: 'Available Item',
+        onClick: noop
+      }, {
+        id: 'item2',
+        label: 'Disabled Item',
+        onClick: noop,
+        isDisabled: true
+      }]
+    }, {
+      id: 'disabled-parent',
+      label: 'Disabled Parent',
+      onClick: noop,
+      isDisabled: true
+    }]
+  }
+}`,...k.parameters?.docs?.source}}},A.parameters={...A.parameters,docs:{...A.parameters?.docs,source:{originalSource:`{
+  args: {
+    items: [{
+      id: 'nav',
+      label: 'Navigation',
+      isExpanded: true,
+      children: [{
+        id: 'home',
+        label: 'Home',
+        onClick: noop
+      }, {
+        id: 'about',
+        label: 'About',
+        onClick: noop,
+        isSelected: true
+      }, {
+        id: 'contact',
+        label: 'Contact',
+        onClick: noop
+      }]
+    }]
+  }
+}`,...A.parameters?.docs?.source}}},M.parameters={...M.parameters,docs:{...M.parameters?.docs,source:{originalSource:`{
+  args: {
+    guideStyle: 'none',
+    items: guideItems
+  }
+}`,...M.parameters?.docs?.source},description:{story:`Turn the hierarchy guide (connector) lines off with \`guideStyle="none"\` when
+the surrounding layout already conveys nesting, or when a theme supplies its
+own connectors. The default (\`'segments'\`) is unchanged.`,...M.parameters?.docs?.description}}},P.parameters={...P.parameters,docs:{...P.parameters?.docs,source:{originalSource:`{
+  render: () => <Theme theme={guideTheme} mode="light">
+      <TreeList items={guideItems} />
+    </Theme>
+}`,...P.parameters?.docs?.source}}},F=[`Basic`,`FullyExpanded`,`WithIcons`,`WithHeader`,`Compact`,`Spacious`,`TopAligned`,`Interactive`,`WithEndContent`,`DisabledItems`,`SelectedItems`,`NoGuides`,`ThemedGuides`]}))();export{b as Basic,w as Compact,k as DisabledItems,x as FullyExpanded,D as Interactive,M as NoGuides,A as SelectedItems,T as Spacious,P as ThemedGuides,E as TopAligned,O as WithEndContent,C as WithHeader,S as WithIcons,F as __namedExportsOrder,v as default};
