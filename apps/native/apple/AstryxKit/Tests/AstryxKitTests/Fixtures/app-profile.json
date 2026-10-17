@@ -1,0 +1,278 @@
+{
+ "protocol": 1,
+ "appName": "Astryx Native",
+ "nav": [
+  {
+   "id": "overview",
+   "label": "Components",
+   "icon": "grid"
+  },
+  {
+   "id": "dashboard",
+   "label": "Dashboard",
+   "icon": "chart"
+  },
+  {
+   "id": "inbox",
+   "label": "Inbox",
+   "icon": "inbox",
+   "badge": "3"
+  },
+  {
+   "id": "tasks",
+   "label": "Tasks",
+   "icon": "check",
+   "badge": "7"
+  },
+  {
+   "id": "people",
+   "label": "People",
+   "icon": "people"
+  },
+  {
+   "id": "calendar",
+   "label": "Calendar",
+   "icon": "calendar"
+  },
+  {
+   "id": "chat",
+   "label": "Messages",
+   "icon": "chat"
+  },
+  {
+   "id": "checkout",
+   "label": "Checkout",
+   "icon": "cart"
+  },
+  {
+   "id": "profile",
+   "label": "Profile",
+   "icon": "person"
+  },
+  {
+   "id": "settings",
+   "label": "Settings",
+   "icon": "gear"
+  }
+ ],
+ "current": "profile",
+ "screen": {
+  "id": "profile",
+  "title": "Profile",
+  "subtitle": "Design Engineer",
+  "toolbar": [
+   {
+    "kind": "button",
+    "id": "profile.follow",
+    "label": "Follow",
+    "variant": "primary",
+    "icon": "plus"
+   }
+  ],
+  "body": {
+   "kind": "stack",
+   "axis": "vertical",
+   "gap": "lg",
+   "children": [
+    {
+     "kind": "card",
+     "children": [
+      {
+       "kind": "stack",
+       "axis": "horizontal",
+       "gap": "md",
+       "align": "center",
+       "children": [
+        {
+         "kind": "avatar",
+         "name": "Maya Okafor",
+         "initials": "MO",
+         "hue": 224,
+         "size": "lg",
+         "status": "success"
+        },
+        {
+         "kind": "stack",
+         "axis": "vertical",
+         "gap": "xs",
+         "children": [
+          {
+           "kind": "heading",
+           "text": "Maya Okafor",
+           "level": 1
+          },
+          {
+           "kind": "text",
+           "text": "Design Engineer · Platform",
+           "style": "secondary"
+          },
+          {
+           "kind": "text",
+           "text": "Oakland, California",
+           "style": "caption"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "kind": "text",
+       "text": "Design engineer. I make the components and the tools that check them.",
+       "style": "body"
+      },
+      {
+       "kind": "stack",
+       "axis": "horizontal",
+       "gap": "xs",
+       "wrap": true,
+       "align": "start",
+       "children": [
+        {
+         "kind": "token",
+         "text": "SwiftUI",
+         "tone": "neutral"
+        },
+        {
+         "kind": "token",
+         "text": "TypeScript",
+         "tone": "neutral"
+        },
+        {
+         "kind": "token",
+         "text": "Design systems",
+         "tone": "neutral"
+        },
+        {
+         "kind": "token",
+         "text": "Accessibility",
+         "tone": "neutral"
+        },
+        {
+         "kind": "token",
+         "text": "Motion",
+         "tone": "neutral"
+        },
+        {
+         "kind": "token",
+         "text": "Prototyping",
+         "tone": "neutral"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "kind": "grid",
+     "minColumnWidth": 200,
+     "gap": "md",
+     "children": [
+      {
+       "kind": "metric",
+       "label": "Projects",
+       "value": "7"
+      },
+      {
+       "kind": "metric",
+       "label": "Open tasks",
+       "value": "2"
+      },
+      {
+       "kind": "metric",
+       "label": "Followers",
+       "value": "128"
+      },
+      {
+       "kind": "metric",
+       "label": "With the team",
+       "value": "2 years"
+      }
+     ]
+    },
+    {
+     "kind": "tabs",
+     "id": "profile.tab",
+     "value": "activity",
+     "tabs": [
+      {
+       "value": "activity",
+       "label": "Activity"
+      },
+      {
+       "value": "team",
+       "label": "Team",
+       "count": "3"
+      },
+      {
+       "value": "about",
+       "label": "About"
+      }
+     ]
+    },
+    {
+     "kind": "card",
+     "children": [
+      {
+       "kind": "list",
+       "empty": "Nothing yet.",
+       "items": [
+        {
+         "id": "t2",
+         "title": "Ship the onboarding checklist",
+         "subtitle": "In progress",
+         "leading": {
+          "icon": "clock",
+          "tone": "accent"
+         },
+         "trailing": {
+          "text": "Feature",
+          "tone": "accent"
+         },
+         "emphasized": false,
+         "selected": false
+        },
+        {
+         "id": "t5",
+         "title": "Migrate billing to the new API",
+         "subtitle": "Not started",
+         "leading": {
+          "icon": "clock",
+          "tone": "accent"
+         },
+         "trailing": {
+          "text": "Platform",
+          "tone": "warning"
+         },
+         "emphasized": false,
+         "selected": false
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  }
+ },
+ "toast": null,
+ "dialog": null,
+ "theme": {
+  "id": "astryx",
+  "options": [
+   {
+    "value": "astryx",
+    "label": "Astryx"
+   },
+   {
+    "value": "ocean",
+    "label": "Ocean"
+   },
+   {
+    "value": "ember",
+    "label": "Ember"
+   },
+   {
+    "value": "grape",
+    "label": "Grape"
+   }
+  ]
+ }
+}

@@ -1,0 +1,12 @@
+{
+  "name": "astryx-native",
+  "private": true,
+  "workspaces": ["core", "web"],
+  "engines": { "node": ">=22.18.0" },
+  "scripts": {
+    "lint": "npm run lint --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm test --workspaces --if-present",
+    "themes": "npm run themes -w core"
+  }
+}

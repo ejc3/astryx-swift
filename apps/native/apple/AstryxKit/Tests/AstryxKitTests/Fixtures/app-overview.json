@@ -1,0 +1,531 @@
+{
+ "protocol": 1,
+ "appName": "Astryx Native",
+ "nav": [
+  {
+   "id": "overview",
+   "label": "Components",
+   "icon": "grid"
+  },
+  {
+   "id": "dashboard",
+   "label": "Dashboard",
+   "icon": "chart"
+  },
+  {
+   "id": "inbox",
+   "label": "Inbox",
+   "icon": "inbox",
+   "badge": "3"
+  },
+  {
+   "id": "tasks",
+   "label": "Tasks",
+   "icon": "check",
+   "badge": "7"
+  },
+  {
+   "id": "people",
+   "label": "People",
+   "icon": "people"
+  },
+  {
+   "id": "calendar",
+   "label": "Calendar",
+   "icon": "calendar"
+  },
+  {
+   "id": "chat",
+   "label": "Messages",
+   "icon": "chat"
+  },
+  {
+   "id": "checkout",
+   "label": "Checkout",
+   "icon": "cart"
+  },
+  {
+   "id": "profile",
+   "label": "Profile",
+   "icon": "person"
+  },
+  {
+   "id": "settings",
+   "label": "Settings",
+   "icon": "gear"
+  }
+ ],
+ "current": "overview",
+ "screen": {
+  "id": "overview",
+  "title": "Components",
+  "subtitle": "Astryx's components, drawn natively",
+  "toolbar": [
+   {
+    "kind": "button",
+    "id": "overview.reset",
+    "label": "Reset",
+    "variant": "ghost",
+    "icon": "undo"
+   }
+  ],
+  "body": {
+   "kind": "stack",
+   "axis": "vertical",
+   "gap": "lg",
+   "children": [
+    {
+     "kind": "banner",
+     "tone": "info",
+     "title": "One core, three hosts",
+     "text": "Every word, count and check on this page is computed in TypeScript. The web draws it with Astryx; the Mac and iPhone apps draw it with SwiftUI.",
+     "dismissId": "overview.closeBanner"
+    },
+    {
+     "kind": "grid",
+     "minColumnWidth": 300,
+     "gap": "md",
+     "children": [
+      {
+       "kind": "card",
+       "title": "Buttons",
+       "children": [
+        {
+         "kind": "stack",
+         "axis": "horizontal",
+         "gap": "sm",
+         "wrap": true,
+         "align": "start",
+         "children": [
+          {
+           "kind": "button",
+           "id": "overview.count",
+           "label": "Clicked 3 times",
+           "variant": "primary",
+           "icon": "bolt"
+          },
+          {
+           "kind": "button",
+           "id": "overview.toast",
+           "label": "Show a toast",
+           "variant": "secondary",
+           "icon": "bell"
+          },
+          {
+           "kind": "button",
+           "id": "overview.reset",
+           "label": "Reset",
+           "variant": "ghost",
+           "icon": "undo"
+          },
+          {
+           "kind": "button",
+           "id": "overview.none",
+           "label": "Delete",
+           "variant": "destructive",
+           "icon": "trash"
+          }
+         ]
+        },
+        {
+         "kind": "stack",
+         "axis": "horizontal",
+         "gap": "sm",
+         "wrap": true,
+         "align": "start",
+         "children": [
+          {
+           "kind": "iconButton",
+           "id": "overview.count",
+           "icon": "heart",
+           "label": "Like"
+          },
+          {
+           "kind": "iconButton",
+           "id": "overview.count",
+           "icon": "star",
+           "label": "Star",
+           "selected": true
+          },
+          {
+           "kind": "iconButton",
+           "id": "overview.count",
+           "icon": "flag",
+           "label": "Flag"
+          },
+          {
+           "kind": "button",
+           "id": "overview.none",
+           "label": "Disabled",
+           "variant": "secondary",
+           "disabled": true
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "kind": "card",
+       "title": "Badges and tokens",
+       "children": [
+        {
+         "kind": "stack",
+         "axis": "horizontal",
+         "gap": "xs",
+         "wrap": true,
+         "align": "start",
+         "children": [
+          {
+           "kind": "badge",
+           "text": "Neutral",
+           "tone": "neutral"
+          },
+          {
+           "kind": "badge",
+           "text": "Accent",
+           "tone": "accent"
+          },
+          {
+           "kind": "badge",
+           "text": "Success",
+           "tone": "success"
+          },
+          {
+           "kind": "badge",
+           "text": "Warning",
+           "tone": "warning"
+          },
+          {
+           "kind": "badge",
+           "text": "Danger",
+           "tone": "danger"
+          },
+          {
+           "kind": "badge",
+           "text": "Info",
+           "tone": "info"
+          }
+         ]
+        },
+        {
+         "kind": "stack",
+         "axis": "horizontal",
+         "gap": "xs",
+         "wrap": true,
+         "align": "start",
+         "children": [
+          {
+           "kind": "token",
+           "text": "Design",
+           "tone": "accent",
+           "removeId": "overview.untag:Design"
+          },
+          {
+           "kind": "token",
+           "text": "SwiftUI",
+           "tone": "accent",
+           "removeId": "overview.untag:SwiftUI"
+          },
+          {
+           "kind": "token",
+           "text": "Tokens",
+           "tone": "accent",
+           "removeId": "overview.untag:Tokens"
+          }
+         ]
+        },
+        {
+         "kind": "text",
+         "text": "3 tokens. Tap × to remove one.",
+         "style": "caption"
+        }
+       ]
+      },
+      {
+       "kind": "card",
+       "title": "People",
+       "children": [
+        {
+         "kind": "stack",
+         "axis": "horizontal",
+         "gap": "sm",
+         "align": "center",
+         "children": [
+          {
+           "kind": "avatar",
+           "name": "Maya Okafor",
+           "initials": "MO",
+           "hue": 224,
+           "size": "sm",
+           "status": "success"
+          },
+          {
+           "kind": "avatar",
+           "name": "Theo Lindqvist",
+           "initials": "TL",
+           "hue": 280,
+           "size": "md",
+           "status": "success"
+          },
+          {
+           "kind": "avatar",
+           "name": "Priya Raman",
+           "initials": "PR",
+           "hue": 114,
+           "size": "lg",
+           "status": "warning"
+          },
+          {
+           "kind": "avatar",
+           "name": "Jonah Becker",
+           "initials": "JB",
+           "hue": 336,
+           "size": "md",
+           "status": "success"
+          }
+         ]
+        },
+        {
+         "kind": "avatarGroup",
+         "people": [
+          {
+           "initials": "SM",
+           "hue": 145
+          },
+          {
+           "initials": "KW",
+           "hue": 162
+          },
+          {
+           "initials": "AD",
+           "hue": 151
+          },
+          {
+           "initials": "LN",
+           "hue": 275
+          },
+          {
+           "initials": "GC",
+           "hue": 206
+          }
+         ],
+         "more": "+4"
+        },
+        {
+         "kind": "stack",
+         "axis": "horizontal",
+         "gap": "md",
+         "wrap": true,
+         "align": "start",
+         "children": [
+          {
+           "kind": "statusDot",
+           "tone": "success",
+           "label": "Online"
+          },
+          {
+           "kind": "statusDot",
+           "tone": "warning",
+           "label": "Away"
+          },
+          {
+           "kind": "statusDot",
+           "tone": "neutral",
+           "label": "Offline"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "kind": "card",
+       "title": "Controls",
+       "children": [
+        {
+         "kind": "switch",
+         "id": "overview.notify",
+         "label": "Notifications",
+         "description": "You'll hear about mentions.",
+         "on": true
+        },
+        {
+         "kind": "segmented",
+         "id": "overview.size",
+         "label": "Size",
+         "options": [
+          {
+           "value": "sm",
+           "label": "Small"
+          },
+          {
+           "value": "md",
+           "label": "Medium"
+          },
+          {
+           "value": "lg",
+           "label": "Large"
+          }
+         ],
+         "value": "md"
+        },
+        {
+         "kind": "slider",
+         "id": "overview.volume",
+         "label": "Volume",
+         "value": 60,
+         "min": 0,
+         "max": 100,
+         "step": 5,
+         "valueText": "60%"
+        },
+        {
+         "kind": "checkbox",
+         "id": "overview.agree",
+         "label": "I agree to the terms",
+         "checked": false
+        }
+       ]
+      },
+      {
+       "kind": "card",
+       "title": "Choose a plan",
+       "children": [
+        {
+         "kind": "radio",
+         "id": "overview.plan",
+         "label": "Plan",
+         "options": [
+          {
+           "value": "solo",
+           "label": "Solo",
+           "description": "One seat, every component."
+          },
+          {
+           "value": "team",
+           "label": "Team",
+           "description": "Up to 20 seats and shared themes."
+          },
+          {
+           "value": "studio",
+           "label": "Studio",
+           "description": "Unlimited seats, SSO and audit logs."
+          }
+         ],
+         "value": "team"
+        },
+        {
+         "kind": "text",
+         "text": "Team selected.",
+         "style": "caption"
+        }
+       ]
+      },
+      {
+       "kind": "card",
+       "title": "Input with validation",
+       "children": [
+        {
+         "kind": "textInput",
+         "id": "overview.email",
+         "label": "Work email",
+         "value": "",
+         "placeholder": "name@company.com",
+         "icon": "mail",
+         "hint": "We'll check it as you type."
+        },
+        {
+         "kind": "stack",
+         "axis": "horizontal",
+         "gap": "xs",
+         "align": "center",
+         "children": [
+          {
+           "kind": "text",
+           "text": "Search anywhere with",
+           "style": "caption"
+          },
+          {
+           "kind": "kbd",
+           "keys": [
+            "⌘",
+            "K"
+           ]
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "kind": "card",
+       "title": "Progress",
+       "children": [
+        {
+         "kind": "progress",
+         "label": "Storage",
+         "value": 0.72,
+         "valueText": "72 of 100 GB",
+         "tone": "accent"
+        },
+        {
+         "kind": "progress",
+         "label": "Uploads",
+         "value": 1,
+         "valueText": "Complete",
+         "tone": "success"
+        },
+        {
+         "kind": "progress",
+         "label": "Quota",
+         "value": 0.93,
+         "valueText": "93%, nearly full",
+         "tone": "danger"
+        }
+       ]
+      },
+      {
+       "kind": "card",
+       "title": "Empty state",
+       "children": [
+        {
+         "kind": "empty",
+         "icon": "sparkle",
+         "title": "Nothing here yet",
+         "text": "Empty states are nodes too, with a way forward.",
+         "action": {
+          "kind": "button",
+          "id": "navigate:dashboard",
+          "label": "Open the dashboard",
+          "variant": "primary"
+         }
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  }
+ },
+ "toast": null,
+ "dialog": null,
+ "theme": {
+  "id": "astryx",
+  "options": [
+   {
+    "value": "astryx",
+    "label": "Astryx"
+   },
+   {
+    "value": "ocean",
+    "label": "Ocean"
+   },
+   {
+    "value": "ember",
+    "label": "Ember"
+   },
+   {
+    "value": "grape",
+    "label": "Grape"
+   }
+  ]
+ }
+}

@@ -1,0 +1,265 @@
+{
+ "protocol": 1,
+ "appName": "Astryx Native",
+ "nav": [
+  {
+   "id": "overview",
+   "label": "Components",
+   "icon": "grid"
+  },
+  {
+   "id": "dashboard",
+   "label": "Dashboard",
+   "icon": "chart"
+  },
+  {
+   "id": "inbox",
+   "label": "Inbox",
+   "icon": "inbox",
+   "badge": "2"
+  },
+  {
+   "id": "tasks",
+   "label": "Tasks",
+   "icon": "check",
+   "badge": "7"
+  },
+  {
+   "id": "people",
+   "label": "People",
+   "icon": "people"
+  },
+  {
+   "id": "calendar",
+   "label": "Calendar",
+   "icon": "calendar"
+  },
+  {
+   "id": "chat",
+   "label": "Messages",
+   "icon": "chat"
+  },
+  {
+   "id": "checkout",
+   "label": "Checkout",
+   "icon": "cart"
+  },
+  {
+   "id": "profile",
+   "label": "Profile",
+   "icon": "person"
+  },
+  {
+   "id": "settings",
+   "label": "Settings",
+   "icon": "gear"
+  }
+ ],
+ "current": "inbox",
+ "screen": {
+  "id": "inbox",
+  "title": "Inbox",
+  "subtitle": "2 unread messages",
+  "toolbar": [
+   {
+    "kind": "button",
+    "id": "inbox.readAll",
+    "label": "Mark all read",
+    "variant": "secondary",
+    "icon": "check"
+   }
+  ],
+  "body": {
+   "kind": "split",
+   "primary": {
+    "kind": "stack",
+    "axis": "vertical",
+    "gap": "sm",
+    "children": [
+     {
+      "kind": "textInput",
+      "id": "inbox.query",
+      "label": "Search mail",
+      "value": "",
+      "placeholder": "Search by person or subject",
+      "icon": "search"
+     },
+     {
+      "kind": "tabs",
+      "id": "inbox.tab",
+      "value": "all",
+      "tabs": [
+       {
+        "value": "all",
+        "label": "All",
+        "count": "6"
+       },
+       {
+        "value": "unread",
+        "label": "Unread",
+        "count": "2"
+       },
+       {
+        "value": "starred",
+        "label": "Starred",
+        "count": "1"
+       }
+      ]
+     },
+     {
+      "kind": "list",
+      "empty": "No messages.",
+      "items": [
+       {
+        "id": "m2",
+        "title": "Theo Lindqvist",
+        "subtitle": "New icon set is ready for review",
+        "meta": "48m",
+        "leading": {
+         "avatar": {
+          "initials": "TL",
+          "hue": 280
+         }
+        },
+        "trailing": {
+         "text": "Design",
+         "tone": "info"
+        },
+        "emphasized": true,
+        "selected": false,
+        "selectId": "inbox.select:m2"
+       },
+       {
+        "id": "m3",
+        "title": "Kenji Watanabe",
+        "subtitle": "Invoice #4021 paid",
+        "meta": "3h",
+        "leading": {
+         "avatar": {
+          "initials": "KW",
+          "hue": 162
+         }
+        },
+        "trailing": {
+         "text": "Billing",
+         "tone": "success"
+        },
+        "emphasized": false,
+        "selected": false,
+        "selectId": "inbox.select:m3"
+       },
+       {
+        "id": "m4",
+        "title": "Jonah Becker",
+        "subtitle": "Crash on launch in 3.2 beta",
+        "meta": "4h",
+        "leading": {
+         "avatar": {
+          "initials": "JB",
+          "hue": 336
+         }
+        },
+        "trailing": {
+         "text": "Urgent",
+         "tone": "danger"
+        },
+        "emphasized": true,
+        "selected": false,
+        "selectId": "inbox.select:m4"
+       },
+       {
+        "id": "m5",
+        "title": "Sofia Marín",
+        "subtitle": "Draft: launch blog post",
+        "meta": "Yesterday",
+        "leading": {
+         "avatar": {
+          "initials": "SM",
+          "hue": 145
+         }
+        },
+        "emphasized": false,
+        "selected": false,
+        "selectId": "inbox.select:m5"
+       },
+       {
+        "id": "m6",
+        "title": "Grace Chen",
+        "subtitle": "Offsite: pick your sessions",
+        "meta": "Oct 11",
+        "leading": {
+         "avatar": {
+          "initials": "GC",
+          "hue": 206
+         }
+        },
+        "trailing": {
+         "text": "Team",
+         "tone": "warning"
+        },
+        "emphasized": false,
+        "selected": false,
+        "selectId": "inbox.select:m6"
+       },
+       {
+        "id": "m7",
+        "title": "Lukas Novak",
+        "subtitle": "Dashboard numbers look off",
+        "meta": "Oct 10",
+        "leading": {
+         "avatar": {
+          "initials": "LN",
+          "hue": 275
+         }
+        },
+        "emphasized": false,
+        "selected": false,
+        "selectId": "inbox.select:m7"
+       }
+      ]
+     }
+    ]
+   },
+   "detail": {
+    "kind": "empty",
+    "icon": "inbox",
+    "title": "No conversation selected",
+    "text": "2 unread messages waiting."
+   },
+   "showDetailWhenNarrow": false,
+   "backId": "inbox.back",
+   "backLabel": "Inbox"
+  }
+ },
+ "toast": {
+  "id": 1,
+  "tone": "neutral",
+  "text": "Conversation archived.",
+  "action": {
+   "id": "toast.undo",
+   "label": "Undo"
+  }
+ },
+ "dialog": null,
+ "theme": {
+  "id": "astryx",
+  "options": [
+   {
+    "value": "astryx",
+    "label": "Astryx"
+   },
+   {
+    "value": "ocean",
+    "label": "Ocean"
+   },
+   {
+    "value": "ember",
+    "label": "Ember"
+   },
+   {
+    "value": "grape",
+    "label": "Grape"
+   }
+  ]
+ }
+}

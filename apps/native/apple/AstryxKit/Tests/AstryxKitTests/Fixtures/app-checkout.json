@@ -1,0 +1,470 @@
+{
+ "protocol": 1,
+ "appName": "Astryx Native",
+ "nav": [
+  {
+   "id": "overview",
+   "label": "Components",
+   "icon": "grid"
+  },
+  {
+   "id": "dashboard",
+   "label": "Dashboard",
+   "icon": "chart"
+  },
+  {
+   "id": "inbox",
+   "label": "Inbox",
+   "icon": "inbox",
+   "badge": "3"
+  },
+  {
+   "id": "tasks",
+   "label": "Tasks",
+   "icon": "check",
+   "badge": "7"
+  },
+  {
+   "id": "people",
+   "label": "People",
+   "icon": "people"
+  },
+  {
+   "id": "calendar",
+   "label": "Calendar",
+   "icon": "calendar"
+  },
+  {
+   "id": "chat",
+   "label": "Messages",
+   "icon": "chat"
+  },
+  {
+   "id": "checkout",
+   "label": "Checkout",
+   "icon": "cart"
+  },
+  {
+   "id": "profile",
+   "label": "Profile",
+   "icon": "person"
+  },
+  {
+   "id": "settings",
+   "label": "Settings",
+   "icon": "gear"
+  }
+ ],
+ "current": "checkout",
+ "screen": {
+  "id": "checkout",
+  "title": "Checkout",
+  "subtitle": "Step 1 of 4: Cart",
+  "toolbar": [
+   {
+    "kind": "button",
+    "id": "checkout.fill",
+    "label": "Fill with test data",
+    "variant": "ghost",
+    "icon": "sparkle"
+   }
+  ],
+  "body": {
+   "kind": "stack",
+   "axis": "vertical",
+   "gap": "lg",
+   "children": [
+    {
+     "kind": "stepper",
+     "steps": [
+      {
+       "label": "Cart",
+       "state": "current"
+      },
+      {
+       "label": "Shipping",
+       "state": "upcoming"
+      },
+      {
+       "label": "Payment",
+       "state": "upcoming"
+      },
+      {
+       "label": "Review",
+       "state": "upcoming"
+      }
+     ]
+    },
+    {
+     "kind": "grid",
+     "minColumnWidth": 320,
+     "gap": "md",
+     "children": [
+      {
+       "kind": "card",
+       "title": "Cart",
+       "children": [
+        {
+         "kind": "stack",
+         "axis": "horizontal",
+         "gap": "sm",
+         "align": "spread",
+         "children": [
+          {
+           "kind": "stack",
+           "axis": "horizontal",
+           "gap": "sm",
+           "align": "center",
+           "children": [
+            {
+             "kind": "avatar",
+             "name": "Studio Headphones",
+             "initials": "SH",
+             "hue": 210,
+             "size": "md"
+            },
+            {
+             "kind": "stack",
+             "axis": "vertical",
+             "gap": "xs",
+             "children": [
+              {
+               "kind": "text",
+               "text": "Studio Headphones",
+               "style": "emphasis"
+              },
+              {
+               "kind": "text",
+               "text": "Graphite, wireless · $249.00",
+               "style": "caption"
+              }
+             ]
+            }
+           ]
+          },
+          {
+           "kind": "select",
+           "id": "checkout.qty:k1",
+           "label": "Quantity",
+           "value": "1",
+           "options": [
+            {
+             "value": "0",
+             "label": "Remove"
+            },
+            {
+             "value": "1",
+             "label": "1"
+            },
+            {
+             "value": "2",
+             "label": "2"
+            },
+            {
+             "value": "3",
+             "label": "3"
+            },
+            {
+             "value": "4",
+             "label": "4"
+            },
+            {
+             "value": "5",
+             "label": "5"
+            },
+            {
+             "value": "6",
+             "label": "6"
+            },
+            {
+             "value": "7",
+             "label": "7"
+            },
+            {
+             "value": "8",
+             "label": "8"
+            },
+            {
+             "value": "9",
+             "label": "9"
+            }
+           ]
+          }
+         ]
+        },
+        {
+         "kind": "stack",
+         "axis": "horizontal",
+         "gap": "sm",
+         "align": "spread",
+         "children": [
+          {
+           "kind": "stack",
+           "axis": "horizontal",
+           "gap": "sm",
+           "align": "center",
+           "children": [
+            {
+             "kind": "avatar",
+             "name": "Desk Lamp",
+             "initials": "DL",
+             "hue": 40,
+             "size": "md"
+            },
+            {
+             "kind": "stack",
+             "axis": "vertical",
+             "gap": "xs",
+             "children": [
+              {
+               "kind": "text",
+               "text": "Desk Lamp",
+               "style": "emphasis"
+              },
+              {
+               "kind": "text",
+               "text": "Warm white, dimmable · $89.00",
+               "style": "caption"
+              }
+             ]
+            }
+           ]
+          },
+          {
+           "kind": "select",
+           "id": "checkout.qty:k2",
+           "label": "Quantity",
+           "value": "2",
+           "options": [
+            {
+             "value": "0",
+             "label": "Remove"
+            },
+            {
+             "value": "1",
+             "label": "1"
+            },
+            {
+             "value": "2",
+             "label": "2"
+            },
+            {
+             "value": "3",
+             "label": "3"
+            },
+            {
+             "value": "4",
+             "label": "4"
+            },
+            {
+             "value": "5",
+             "label": "5"
+            },
+            {
+             "value": "6",
+             "label": "6"
+            },
+            {
+             "value": "7",
+             "label": "7"
+            },
+            {
+             "value": "8",
+             "label": "8"
+            },
+            {
+             "value": "9",
+             "label": "9"
+            }
+           ]
+          }
+         ]
+        },
+        {
+         "kind": "stack",
+         "axis": "horizontal",
+         "gap": "sm",
+         "align": "spread",
+         "children": [
+          {
+           "kind": "stack",
+           "axis": "horizontal",
+           "gap": "sm",
+           "align": "center",
+           "children": [
+            {
+             "kind": "avatar",
+             "name": "Notebook Set",
+             "initials": "NS",
+             "hue": 140,
+             "size": "md"
+            },
+            {
+             "kind": "stack",
+             "axis": "vertical",
+             "gap": "xs",
+             "children": [
+              {
+               "kind": "text",
+               "text": "Notebook Set",
+               "style": "emphasis"
+              },
+              {
+               "kind": "text",
+               "text": "Dot grid, three pack · $24.00",
+               "style": "caption"
+              }
+             ]
+            }
+           ]
+          },
+          {
+           "kind": "select",
+           "id": "checkout.qty:k3",
+           "label": "Quantity",
+           "value": "1",
+           "options": [
+            {
+             "value": "0",
+             "label": "Remove"
+            },
+            {
+             "value": "1",
+             "label": "1"
+            },
+            {
+             "value": "2",
+             "label": "2"
+            },
+            {
+             "value": "3",
+             "label": "3"
+            },
+            {
+             "value": "4",
+             "label": "4"
+            },
+            {
+             "value": "5",
+             "label": "5"
+            },
+            {
+             "value": "6",
+             "label": "6"
+            },
+            {
+             "value": "7",
+             "label": "7"
+            },
+            {
+             "value": "8",
+             "label": "8"
+            },
+            {
+             "value": "9",
+             "label": "9"
+            }
+           ]
+          }
+         ]
+        },
+        {
+         "kind": "stack",
+         "axis": "horizontal",
+         "gap": "sm",
+         "align": "spread",
+         "children": [
+          {
+           "kind": "text",
+           "text": "",
+           "style": "caption"
+          },
+          {
+           "kind": "button",
+           "id": "checkout.next",
+           "label": "Continue",
+           "variant": "primary",
+           "icon": "chevron-right"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "kind": "card",
+       "title": "Order summary",
+       "children": [
+        {
+         "kind": "metadata",
+         "items": [
+          {
+           "label": "Subtotal (4 items)",
+           "value": "$451.00"
+          },
+          {
+           "label": "Shipping, standard",
+           "value": "Free"
+          },
+          {
+           "label": "Tax (9.25%)",
+           "value": "$41.72"
+          }
+         ]
+        },
+        {
+         "kind": "divider"
+        },
+        {
+         "kind": "stack",
+         "axis": "horizontal",
+         "gap": "sm",
+         "align": "spread",
+         "children": [
+          {
+           "kind": "text",
+           "text": "Total",
+           "style": "emphasis"
+          },
+          {
+           "kind": "text",
+           "text": "$492.72",
+           "style": "emphasis"
+          }
+         ]
+        },
+        {
+         "kind": "badge",
+         "text": "Free returns on orders over $300",
+         "tone": "success"
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  }
+ },
+ "toast": null,
+ "dialog": null,
+ "theme": {
+  "id": "astryx",
+  "options": [
+   {
+    "value": "astryx",
+    "label": "Astryx"
+   },
+   {
+    "value": "ocean",
+    "label": "Ocean"
+   },
+   {
+    "value": "ember",
+    "label": "Ember"
+   },
+   {
+    "value": "grape",
+    "label": "Grape"
+   }
+  ]
+ }
+}

@@ -1,0 +1,491 @@
+{
+ "protocol": 1,
+ "appName": "Astryx Native",
+ "nav": [
+  {
+   "id": "overview",
+   "label": "Components",
+   "icon": "grid"
+  },
+  {
+   "id": "dashboard",
+   "label": "Dashboard",
+   "icon": "chart"
+  },
+  {
+   "id": "inbox",
+   "label": "Inbox",
+   "icon": "inbox",
+   "badge": "3"
+  },
+  {
+   "id": "tasks",
+   "label": "Tasks",
+   "icon": "check",
+   "badge": "7"
+  },
+  {
+   "id": "people",
+   "label": "People",
+   "icon": "people"
+  },
+  {
+   "id": "calendar",
+   "label": "Calendar",
+   "icon": "calendar"
+  },
+  {
+   "id": "chat",
+   "label": "Messages",
+   "icon": "chat"
+  },
+  {
+   "id": "checkout",
+   "label": "Checkout",
+   "icon": "cart"
+  },
+  {
+   "id": "profile",
+   "label": "Profile",
+   "icon": "person"
+  },
+  {
+   "id": "settings",
+   "label": "Settings",
+   "icon": "gear"
+  }
+ ],
+ "current": "dashboard",
+ "screen": {
+  "id": "dashboard",
+  "title": "Dashboard",
+  "subtitle": "Northwind Studio at a glance",
+  "toolbar": [
+   {
+    "kind": "button",
+    "id": "navigate:inbox",
+    "label": "Inbox (3)",
+    "variant": "secondary",
+    "icon": "inbox"
+   }
+  ],
+  "body": {
+   "kind": "stack",
+   "axis": "vertical",
+   "gap": "lg",
+   "children": [
+    {
+     "kind": "grid",
+     "minColumnWidth": 220,
+     "gap": "md",
+     "children": [
+      {
+       "kind": "metric",
+       "label": "Revenue this week",
+       "value": "$31,200",
+       "delta": {
+        "text": "8.3% vs last week",
+        "tone": "success",
+        "up": true
+       },
+       "trend": [
+        0.5833333333333334,
+        0.6217948717948718,
+        0.5705128205128205,
+        0.6730769230769231,
+        0.7243589743589743,
+        0.7019230769230769,
+        0.7724358974358975,
+        0.8269230769230769,
+        0.7980769230769231,
+        0.875,
+        0.9230769230769231,
+        1
+       ]
+      },
+      {
+       "kind": "metric",
+       "label": "Active customers",
+       "value": "1,284",
+       "delta": {
+        "text": "36 new this week",
+        "tone": "success",
+        "up": true
+       },
+       "trend": [
+        0.6,
+        0.62,
+        0.61,
+        0.66,
+        0.7,
+        0.72,
+        0.75,
+        0.78,
+        0.8,
+        0.83,
+        0.86,
+        0.9
+       ]
+      },
+      {
+       "kind": "metric",
+       "label": "Open tasks",
+       "value": "7",
+       "delta": {
+        "text": "2 tasks done",
+        "tone": "neutral",
+        "up": true
+       }
+      },
+      {
+       "kind": "metric",
+       "label": "Unread messages",
+       "value": "3",
+       "delta": {
+        "text": "Oldest from today",
+        "tone": "warning",
+        "up": false
+       }
+      }
+     ]
+    },
+    {
+     "kind": "grid",
+     "minColumnWidth": 360,
+     "gap": "md",
+     "children": [
+      {
+       "kind": "card",
+       "title": "Weekly revenue",
+       "children": [
+        {
+         "kind": "bars",
+         "label": "Revenue, last twelve weeks",
+         "bars": [
+          {
+           "label": "W1",
+           "value": 0.5833333333333334,
+           "valueText": "$18k",
+           "highlight": false
+          },
+          {
+           "label": "W2",
+           "value": 0.6217948717948718,
+           "valueText": "$19k",
+           "highlight": false
+          },
+          {
+           "label": "W3",
+           "value": 0.5705128205128205,
+           "valueText": "$18k",
+           "highlight": false
+          },
+          {
+           "label": "W4",
+           "value": 0.6730769230769231,
+           "valueText": "$21k",
+           "highlight": false
+          },
+          {
+           "label": "W5",
+           "value": 0.7243589743589743,
+           "valueText": "$23k",
+           "highlight": false
+          },
+          {
+           "label": "W6",
+           "value": 0.7019230769230769,
+           "valueText": "$22k",
+           "highlight": false
+          },
+          {
+           "label": "W7",
+           "value": 0.7724358974358975,
+           "valueText": "$24k",
+           "highlight": false
+          },
+          {
+           "label": "W8",
+           "value": 0.8269230769230769,
+           "valueText": "$26k",
+           "highlight": false
+          },
+          {
+           "label": "W9",
+           "value": 0.7980769230769231,
+           "valueText": "$25k",
+           "highlight": false
+          },
+          {
+           "label": "W10",
+           "value": 0.875,
+           "valueText": "$27k",
+           "highlight": false
+          },
+          {
+           "label": "W11",
+           "value": 0.9230769230769231,
+           "valueText": "$29k",
+           "highlight": false
+          },
+          {
+           "label": "W12",
+           "value": 1,
+           "valueText": "$31k",
+           "highlight": true
+          }
+         ]
+        }
+       ],
+       "subtitle": "Up 71% since week 1"
+      },
+      {
+       "kind": "card",
+       "title": "Recent activity",
+       "children": [
+        {
+         "kind": "list",
+         "empty": "No activity yet.",
+         "items": [
+          {
+           "id": "a0",
+           "title": "Jonah fixed the crash on empty cache",
+           "meta": "20m ago",
+           "leading": {
+            "icon": "check",
+            "tone": "success"
+           },
+           "emphasized": false,
+           "selected": false
+          },
+          {
+           "id": "a1",
+           "title": "Theo uploaded 48 new icons",
+           "meta": "1h ago",
+           "leading": {
+            "icon": "plus",
+            "tone": "info"
+           },
+           "emphasized": false,
+           "selected": false
+          },
+          {
+           "id": "a2",
+           "title": "Grace commented on the offsite plan",
+           "meta": "2h ago",
+           "leading": {
+            "icon": "chat",
+            "tone": "neutral"
+           },
+           "emphasized": false,
+           "selected": false
+          },
+          {
+           "id": "a3",
+           "title": "Lukas flagged the weekly active count",
+           "meta": "6h ago",
+           "leading": {
+            "icon": "flag",
+            "tone": "warning"
+           },
+           "emphasized": false,
+           "selected": false
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "kind": "card",
+     "title": "Latest orders",
+     "children": [
+      {
+       "kind": "table",
+       "empty": "No orders.",
+       "columns": [
+        {
+         "id": "id",
+         "label": "Order",
+         "align": "start",
+         "sort": null
+        },
+        {
+         "id": "customer",
+         "label": "Customer",
+         "align": "start",
+         "sort": null
+        },
+        {
+         "id": "status",
+         "label": "Status",
+         "align": "start",
+         "sort": null
+        },
+        {
+         "id": "total",
+         "label": "Total",
+         "align": "end",
+         "sort": null
+        }
+       ],
+       "rows": [
+        {
+         "id": "#4027",
+         "selected": false,
+         "cells": [
+          {
+           "text": "#4027"
+          },
+          {
+           "text": "Contoso",
+           "secondary": "Today"
+          },
+          {
+           "text": "Paid",
+           "badge": {
+            "text": "Paid",
+            "tone": "success"
+           }
+          },
+          {
+           "text": "$12,480.00",
+           "align": "end"
+          }
+         ]
+        },
+        {
+         "id": "#4026",
+         "selected": false,
+         "cells": [
+          {
+           "text": "#4026"
+          },
+          {
+           "text": "Fabrikam",
+           "secondary": "Today"
+          },
+          {
+           "text": "Pending",
+           "badge": {
+            "text": "Pending",
+            "tone": "warning"
+           }
+          },
+          {
+           "text": "$3,820.00",
+           "align": "end"
+          }
+         ]
+        },
+        {
+         "id": "#4025",
+         "selected": false,
+         "cells": [
+          {
+           "text": "#4025"
+          },
+          {
+           "text": "Litware",
+           "secondary": "Yesterday"
+          },
+          {
+           "text": "Paid",
+           "badge": {
+            "text": "Paid",
+            "tone": "success"
+           }
+          },
+          {
+           "text": "$960.00",
+           "align": "end"
+          }
+         ]
+        },
+        {
+         "id": "#4024",
+         "selected": false,
+         "cells": [
+          {
+           "text": "#4024"
+          },
+          {
+           "text": "Tailspin",
+           "secondary": "2 days ago"
+          },
+          {
+           "text": "Refunded",
+           "badge": {
+            "text": "Refunded",
+            "tone": "neutral"
+           }
+          },
+          {
+           "text": "$2,145.00",
+           "align": "end"
+          }
+         ]
+        },
+        {
+         "id": "#4023",
+         "selected": false,
+         "cells": [
+          {
+           "text": "#4023"
+          },
+          {
+           "text": "Woodgrove",
+           "secondary": "3 days ago"
+          },
+          {
+           "text": "Paid",
+           "badge": {
+            "text": "Paid",
+            "tone": "success"
+           }
+          },
+          {
+           "text": "$6,100.00",
+           "align": "end"
+          }
+         ]
+        }
+       ]
+      }
+     ],
+     "action": {
+      "kind": "button",
+      "id": "navigate:people",
+      "label": "View customers",
+      "variant": "ghost",
+      "icon": "chevron-right"
+     }
+    }
+   ]
+  }
+ },
+ "toast": null,
+ "dialog": null,
+ "theme": {
+  "id": "astryx",
+  "options": [
+   {
+    "value": "astryx",
+    "label": "Astryx"
+   },
+   {
+    "value": "ocean",
+    "label": "Ocean"
+   },
+   {
+    "value": "ember",
+    "label": "Ember"
+   },
+   {
+    "value": "grape",
+    "label": "Grape"
+   }
+  ]
+ }
+}

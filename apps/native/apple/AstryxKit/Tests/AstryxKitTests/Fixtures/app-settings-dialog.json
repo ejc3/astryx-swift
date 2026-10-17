@@ -1,0 +1,299 @@
+{
+ "protocol": 1,
+ "appName": "Astryx Native",
+ "nav": [
+  {
+   "id": "overview",
+   "label": "Components",
+   "icon": "grid"
+  },
+  {
+   "id": "dashboard",
+   "label": "Dashboard",
+   "icon": "chart"
+  },
+  {
+   "id": "inbox",
+   "label": "Inbox",
+   "icon": "inbox",
+   "badge": "3"
+  },
+  {
+   "id": "tasks",
+   "label": "Tasks",
+   "icon": "check",
+   "badge": "7"
+  },
+  {
+   "id": "people",
+   "label": "People",
+   "icon": "people"
+  },
+  {
+   "id": "calendar",
+   "label": "Calendar",
+   "icon": "calendar"
+  },
+  {
+   "id": "chat",
+   "label": "Messages",
+   "icon": "chat"
+  },
+  {
+   "id": "checkout",
+   "label": "Checkout",
+   "icon": "cart"
+  },
+  {
+   "id": "profile",
+   "label": "Profile",
+   "icon": "person"
+  },
+  {
+   "id": "settings",
+   "label": "Settings",
+   "icon": "gear"
+  }
+ ],
+ "current": "settings",
+ "screen": {
+  "id": "settings",
+  "title": "Settings",
+  "subtitle": "Your account and how the app looks",
+  "toolbar": [
+   {
+    "kind": "button",
+    "id": "settings.save",
+    "label": "Save",
+    "variant": "primary",
+    "icon": "check"
+   }
+  ],
+  "body": {
+   "kind": "stack",
+   "axis": "vertical",
+   "gap": "lg",
+   "children": [
+    {
+     "kind": "card",
+     "title": "Profile",
+     "children": [
+      {
+       "kind": "grid",
+       "minColumnWidth": 220,
+       "gap": "md",
+       "children": [
+        {
+         "kind": "textInput",
+         "id": "settings.name",
+         "label": "Name",
+         "value": "Maya Okafor",
+         "placeholder": "Your name"
+        },
+        {
+         "kind": "textInput",
+         "id": "settings.email",
+         "label": "Email",
+         "value": "maya@northwind.example",
+         "placeholder": "name@company.com",
+         "icon": "mail"
+        }
+       ]
+      },
+      {
+       "kind": "textInput",
+       "id": "settings.bio",
+       "label": "Bio",
+       "value": "Design engineer. I make the components and the tools that check them.",
+       "placeholder": "A sentence about you",
+       "multiline": true,
+       "hint": "91 characters left"
+      }
+     ]
+    },
+    {
+     "kind": "card",
+     "title": "Notifications",
+     "children": [
+      {
+       "kind": "switch",
+       "id": "settings.emailNotes",
+       "label": "Email",
+       "description": "Mentions, replies and invitations.",
+       "on": true
+      },
+      {
+       "kind": "switch",
+       "id": "settings.pushNotes",
+       "label": "Push notifications",
+       "description": "Off on every device.",
+       "on": false
+      },
+      {
+       "kind": "select",
+       "id": "settings.digest",
+       "label": "Summary email",
+       "value": "weekly",
+       "options": [
+        {
+         "value": "daily",
+         "label": "Every day"
+        },
+        {
+         "value": "weekly",
+         "label": "Every week"
+        },
+        {
+         "value": "never",
+         "label": "Never"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "kind": "card",
+     "title": "Appearance",
+     "children": [
+      {
+       "kind": "radio",
+       "id": "settings.theme",
+       "label": "Theme",
+       "value": "astryx",
+       "options": [
+        {
+         "value": "astryx",
+         "label": "Astryx",
+         "description": "Astryx's own default."
+        },
+        {
+         "value": "ocean",
+         "label": "Ocean",
+         "description": "Astryx, with a ocean accent and its own corners."
+        },
+        {
+         "value": "ember",
+         "label": "Ember",
+         "description": "Astryx, with a ember accent and its own corners."
+        },
+        {
+         "value": "grape",
+         "label": "Grape",
+         "description": "Astryx, with a grape accent and its own corners."
+        }
+       ]
+      },
+      {
+       "kind": "segmented",
+       "id": "settings.density",
+       "label": "Density",
+       "value": "comfortable",
+       "options": [
+        {
+         "value": "compact",
+         "label": "Compact"
+        },
+        {
+         "value": "comfortable",
+         "label": "Comfortable"
+        },
+        {
+         "value": "spacious",
+         "label": "Spacious"
+        }
+       ]
+      },
+      {
+       "kind": "switch",
+       "id": "settings.reduceMotion",
+       "label": "Reduce motion",
+       "description": "Fewer animations everywhere.",
+       "on": false
+      }
+     ]
+    },
+    {
+     "kind": "card",
+     "title": "Danger zone",
+     "children": [
+      {
+       "kind": "stack",
+       "axis": "horizontal",
+       "gap": "sm",
+       "align": "spread",
+       "children": [
+        {
+         "kind": "stack",
+         "axis": "vertical",
+         "gap": "xs",
+         "children": [
+          {
+           "kind": "text",
+           "text": "Delete account",
+           "style": "emphasis"
+          },
+          {
+           "kind": "text",
+           "text": "Removes your profile and everything you made.",
+           "style": "caption"
+          }
+         ]
+        },
+        {
+         "kind": "button",
+         "id": "settings.delete",
+         "label": "Delete account",
+         "variant": "destructive",
+         "icon": "trash"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "kind": "text",
+     "text": "Signed in as maya@northwind.example · Demo account",
+     "style": "caption"
+    }
+   ]
+  }
+ },
+ "toast": null,
+ "dialog": {
+  "title": "Delete your account?",
+  "text": "Your profile, tasks and messages will be removed after 30 days. You can cancel until then.",
+  "confirm": {
+   "kind": "button",
+   "id": "dialog.confirm",
+   "label": "Delete account",
+   "variant": "destructive"
+  },
+  "cancel": {
+   "kind": "button",
+   "id": "dialog.cancel",
+   "label": "Keep it",
+   "variant": "secondary"
+  }
+ },
+ "theme": {
+  "id": "astryx",
+  "options": [
+   {
+    "value": "astryx",
+    "label": "Astryx"
+   },
+   {
+    "value": "ocean",
+    "label": "Ocean"
+   },
+   {
+    "value": "ember",
+    "label": "Ember"
+   },
+   {
+    "value": "grape",
+    "label": "Grape"
+   }
+  ]
+ }
+}

@@ -1,0 +1,330 @@
+{
+ "protocol": 1,
+ "appName": "Astryx Native",
+ "nav": [
+  {
+   "id": "overview",
+   "label": "Components",
+   "icon": "grid"
+  },
+  {
+   "id": "dashboard",
+   "label": "Dashboard",
+   "icon": "chart"
+  },
+  {
+   "id": "inbox",
+   "label": "Inbox",
+   "icon": "inbox",
+   "badge": "3"
+  },
+  {
+   "id": "tasks",
+   "label": "Tasks",
+   "icon": "check",
+   "badge": "7"
+  },
+  {
+   "id": "people",
+   "label": "People",
+   "icon": "people"
+  },
+  {
+   "id": "calendar",
+   "label": "Calendar",
+   "icon": "calendar"
+  },
+  {
+   "id": "chat",
+   "label": "Messages",
+   "icon": "chat"
+  },
+  {
+   "id": "checkout",
+   "label": "Checkout",
+   "icon": "cart"
+  },
+  {
+   "id": "profile",
+   "label": "Profile",
+   "icon": "person"
+  },
+  {
+   "id": "settings",
+   "label": "Settings",
+   "icon": "gear"
+  }
+ ],
+ "current": "tasks",
+ "screen": {
+  "id": "tasks",
+  "title": "Tasks",
+  "subtitle": "7 open tasks, 2 done",
+  "toolbar": [],
+  "body": {
+   "kind": "stack",
+   "axis": "vertical",
+   "gap": "md",
+   "children": [
+    {
+     "kind": "stack",
+     "axis": "horizontal",
+     "gap": "sm",
+     "align": "spread",
+     "children": [
+      {
+       "kind": "segmented",
+       "id": "tasks.filter",
+       "label": "Show",
+       "options": [
+        {
+         "value": "all",
+         "label": "Everyone"
+        },
+        {
+         "value": "mine",
+         "label": "Assigned to me"
+        }
+       ],
+       "value": "all"
+      },
+      {
+       "kind": "progress",
+       "label": "Sprint",
+       "value": 0.2222222222222222,
+       "valueText": "2 of 9",
+       "tone": "success"
+      }
+     ]
+    },
+    {
+     "kind": "board",
+     "columns": [
+      {
+       "id": "todo",
+       "title": "To do",
+       "count": "4",
+       "cards": [
+        {
+         "id": "t1",
+         "title": "Audit color contrast on the settings screen",
+         "tags": [
+          {
+           "text": "Accessibility",
+           "tone": "info"
+          }
+         ],
+         "assignee": {
+          "initials": "TL",
+          "hue": 280
+         },
+         "due": "Due Oct 16",
+         "dueTone": "neutral",
+         "moveForwardId": "tasks.forward:t1",
+         "moveBackLabel": "",
+         "moveForwardLabel": "Move to In progress"
+        },
+        {
+         "id": "t4",
+         "title": "Write release notes for 3.2",
+         "tags": [
+          {
+           "text": "Docs",
+           "tone": "neutral"
+          }
+         ],
+         "assignee": {
+          "initials": "SM",
+          "hue": 145
+         },
+         "due": "Due Oct 18",
+         "dueTone": "neutral",
+         "moveForwardId": "tasks.forward:t4",
+         "moveBackLabel": "",
+         "moveForwardLabel": "Move to In progress"
+        },
+        {
+         "id": "t5",
+         "title": "Migrate billing to the new API",
+         "tags": [
+          {
+           "text": "Platform",
+           "tone": "warning"
+          },
+          {
+           "text": "Backend",
+           "tone": "neutral"
+          }
+         ],
+         "assignee": {
+          "initials": "MO",
+          "hue": 224
+         },
+         "due": "Due Oct 22",
+         "dueTone": "neutral",
+         "moveForwardId": "tasks.forward:t5",
+         "moveBackLabel": "",
+         "moveForwardLabel": "Move to In progress"
+        },
+        {
+         "id": "t8",
+         "title": "Interview two candidates",
+         "tags": [
+          {
+           "text": "Hiring",
+           "tone": "success"
+          }
+         ],
+         "assignee": {
+          "initials": "PR",
+          "hue": 114
+         },
+         "due": "Due Oct 15",
+         "dueTone": "neutral",
+         "moveForwardId": "tasks.forward:t8",
+         "moveBackLabel": "",
+         "moveForwardLabel": "Move to In progress"
+        }
+       ]
+      },
+      {
+       "id": "doing",
+       "title": "In progress",
+       "count": "3",
+       "cards": [
+        {
+         "id": "t2",
+         "title": "Ship the onboarding checklist",
+         "tags": [
+          {
+           "text": "Feature",
+           "tone": "accent"
+          }
+         ],
+         "assignee": {
+          "initials": "MO",
+          "hue": 224
+         },
+         "due": "Due tomorrow",
+         "dueTone": "warning",
+         "moveBackId": "tasks.back:t2",
+         "moveForwardId": "tasks.forward:t2",
+         "moveBackLabel": "Move to To do",
+         "moveForwardLabel": "Move to Done"
+        },
+        {
+         "id": "t3",
+         "title": "Fix the crash on empty cache",
+         "tags": [
+          {
+           "text": "Bug",
+           "tone": "danger"
+          }
+         ],
+         "assignee": {
+          "initials": "JB",
+          "hue": 336
+         },
+         "due": "Due today",
+         "dueTone": "warning",
+         "moveBackId": "tasks.back:t3",
+         "moveForwardId": "tasks.forward:t3",
+         "moveBackLabel": "Move to To do",
+         "moveForwardLabel": "Move to Done"
+        },
+        {
+         "id": "t9",
+         "title": "Prototype the command palette",
+         "tags": [
+          {
+           "text": "Feature",
+           "tone": "accent"
+          }
+         ],
+         "assignee": {
+          "initials": "OH",
+          "hue": 37
+         },
+         "due": "Due Oct 17",
+         "dueTone": "neutral",
+         "moveBackId": "tasks.back:t9",
+         "moveForwardId": "tasks.forward:t9",
+         "moveBackLabel": "Move to To do",
+         "moveForwardLabel": "Move to Done"
+        }
+       ]
+      },
+      {
+       "id": "done",
+       "title": "Done",
+       "count": "2",
+       "cards": [
+        {
+         "id": "t6",
+         "title": "Design the empty states",
+         "tags": [
+          {
+           "text": "Design",
+           "tone": "info"
+          }
+         ],
+         "assignee": {
+          "initials": "FW",
+          "hue": 218
+         },
+         "due": "Done",
+         "dueTone": "neutral",
+         "moveBackId": "tasks.back:t6",
+         "moveBackLabel": "Move to In progress",
+         "moveForwardLabel": ""
+        },
+        {
+         "id": "t7",
+         "title": "Set up the staging environment",
+         "tags": [
+          {
+           "text": "Platform",
+           "tone": "warning"
+          }
+         ],
+         "assignee": {
+          "initials": "KW",
+          "hue": 162
+         },
+         "due": "Done",
+         "dueTone": "neutral",
+         "moveBackId": "tasks.back:t7",
+         "moveBackLabel": "Move to In progress",
+         "moveForwardLabel": ""
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  }
+ },
+ "toast": null,
+ "dialog": null,
+ "theme": {
+  "id": "astryx",
+  "options": [
+   {
+    "value": "astryx",
+    "label": "Astryx"
+   },
+   {
+    "value": "ocean",
+    "label": "Ocean"
+   },
+   {
+    "value": "ember",
+    "label": "Ember"
+   },
+   {
+    "value": "grape",
+    "label": "Grape"
+   }
+  ]
+ }
+}

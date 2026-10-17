@@ -1,0 +1,370 @@
+{
+ "protocol": 1,
+ "appName": "Astryx Native",
+ "nav": [
+  {
+   "id": "overview",
+   "label": "Components",
+   "icon": "grid"
+  },
+  {
+   "id": "dashboard",
+   "label": "Dashboard",
+   "icon": "chart"
+  },
+  {
+   "id": "inbox",
+   "label": "Inbox",
+   "icon": "inbox",
+   "badge": "3"
+  },
+  {
+   "id": "tasks",
+   "label": "Tasks",
+   "icon": "check",
+   "badge": "7"
+  },
+  {
+   "id": "people",
+   "label": "People",
+   "icon": "people"
+  },
+  {
+   "id": "calendar",
+   "label": "Calendar",
+   "icon": "calendar"
+  },
+  {
+   "id": "chat",
+   "label": "Messages",
+   "icon": "chat"
+  },
+  {
+   "id": "checkout",
+   "label": "Checkout",
+   "icon": "cart"
+  },
+  {
+   "id": "profile",
+   "label": "Profile",
+   "icon": "person"
+  },
+  {
+   "id": "settings",
+   "label": "Settings",
+   "icon": "gear"
+  }
+ ],
+ "current": "people",
+ "screen": {
+  "id": "people",
+  "title": "People",
+  "subtitle": "13 people in 6 teams",
+  "toolbar": [
+   {
+    "kind": "button",
+    "id": "people.invite",
+    "label": "Invite",
+    "variant": "primary",
+    "icon": "plus"
+   }
+  ],
+  "body": {
+   "kind": "stack",
+   "axis": "vertical",
+   "gap": "md",
+   "children": [
+    {
+     "kind": "stack",
+     "axis": "horizontal",
+     "gap": "sm",
+     "align": "end",
+     "wrap": true,
+     "children": [
+      {
+       "kind": "textInput",
+       "id": "people.query",
+       "label": "Search",
+       "value": "",
+       "placeholder": "Name, email or team",
+       "icon": "search"
+      },
+      {
+       "kind": "select",
+       "id": "people.role",
+       "label": "Role",
+       "value": "all",
+       "options": [
+        {
+         "value": "all",
+         "label": "All roles"
+        },
+        {
+         "value": "Admin",
+         "label": "Admin"
+        },
+        {
+         "value": "Designer",
+         "label": "Designer"
+        },
+        {
+         "value": "Engineer",
+         "label": "Engineer"
+        },
+        {
+         "value": "Manager",
+         "label": "Manager"
+        },
+        {
+         "value": "Writer",
+         "label": "Writer"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "kind": "card",
+     "children": [
+      {
+       "kind": "table",
+       "empty": "No one has that role yet.",
+       "columns": [
+        {
+         "id": "name",
+         "label": "Name",
+         "align": "start",
+         "sort": "asc",
+         "sortId": "people.sort:name"
+        },
+        {
+         "id": "role",
+         "label": "Role",
+         "align": "start",
+         "sort": "none",
+         "sortId": "people.sort:role"
+        },
+        {
+         "id": "team",
+         "label": "Team",
+         "align": "start",
+         "sort": "none",
+         "sortId": "people.sort:team"
+        },
+        {
+         "id": "joined",
+         "label": "Joined",
+         "align": "end",
+         "sort": "none",
+         "sortId": "people.sort:joined"
+        },
+        {
+         "id": "projects",
+         "label": "Projects",
+         "align": "end",
+         "sort": "none",
+         "sortId": "people.sort:projects"
+        }
+       ],
+       "rows": [
+        {
+         "id": "p7",
+         "selected": false,
+         "selectId": "people.check:p7",
+         "cells": [
+          {
+           "text": "Amara Diallo",
+           "secondary": "amara@northwind.example",
+           "avatar": {
+            "initials": "AD",
+            "hue": 151
+           }
+          },
+          {
+           "text": "Designer",
+           "badge": {
+            "text": "Invited",
+            "tone": "info"
+           }
+          },
+          {
+           "text": "Mobile"
+          },
+          {
+           "text": "2 days",
+           "align": "end"
+          },
+          {
+           "text": "0",
+           "align": "end"
+          }
+         ]
+        },
+        {
+         "id": "p12",
+         "selected": false,
+         "selectId": "people.check:p12",
+         "cells": [
+          {
+           "text": "Felix Wagner",
+           "secondary": "felix@northwind.example",
+           "avatar": {
+            "initials": "FW",
+            "hue": 218
+           }
+          },
+          {
+           "text": "Designer",
+           "badge": {
+            "text": "Away",
+            "tone": "warning"
+           }
+          },
+          {
+           "text": "Platform"
+          },
+          {
+           "text": "11 months",
+           "align": "end"
+          },
+          {
+           "text": "3",
+           "align": "end"
+          }
+         ]
+        },
+        {
+         "id": "p9",
+         "selected": false,
+         "selectId": "people.check:p9",
+         "cells": [
+          {
+           "text": "Grace Chen",
+           "secondary": "grace@northwind.example",
+           "avatar": {
+            "initials": "GC",
+            "hue": 206
+           }
+          },
+          {
+           "text": "Manager",
+           "badge": {
+            "text": "Active",
+            "tone": "success"
+           }
+          },
+          {
+           "text": "Brand"
+          },
+          {
+           "text": "2 years",
+           "align": "end"
+          },
+          {
+           "text": "8",
+           "align": "end"
+          }
+         ]
+        },
+        {
+         "id": "p13",
+         "selected": false,
+         "selectId": "people.check:p13",
+         "cells": [
+          {
+           "text": "Hana Kim",
+           "secondary": "hana@northwind.example",
+           "avatar": {
+            "initials": "HK",
+            "hue": 307
+           }
+          },
+          {
+           "text": "Engineer",
+           "badge": {
+            "text": "Active",
+            "tone": "success"
+           }
+          },
+          {
+           "text": "Mobile"
+          },
+          {
+           "text": "2 months",
+           "align": "end"
+          },
+          {
+           "text": "2",
+           "align": "end"
+          }
+         ]
+        },
+        {
+         "id": "p11",
+         "selected": false,
+         "selectId": "people.check:p11",
+         "cells": [
+          {
+           "text": "Ines Duarte",
+           "secondary": "ines@northwind.example",
+           "avatar": {
+            "initials": "ID",
+            "hue": 144
+           }
+          },
+          {
+           "text": "Writer",
+           "badge": {
+            "text": "Active",
+            "tone": "success"
+           }
+          },
+          {
+           "text": "Content"
+          },
+          {
+           "text": "20 months",
+           "align": "end"
+          },
+          {
+           "text": "6",
+           "align": "end"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "kind": "pagination",
+       "label": "1-5 of 13",
+       "nextId": "people.page:next"
+      }
+     ]
+    }
+   ]
+  }
+ },
+ "toast": null,
+ "dialog": null,
+ "theme": {
+  "id": "astryx",
+  "options": [
+   {
+    "value": "astryx",
+    "label": "Astryx"
+   },
+   {
+    "value": "ocean",
+    "label": "Ocean"
+   },
+   {
+    "value": "ember",
+    "label": "Ember"
+   },
+   {
+    "value": "grape",
+    "label": "Grape"
+   }
+  ]
+ }
+}

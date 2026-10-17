@@ -1,0 +1,478 @@
+{
+ "protocol": 1,
+ "appName": "Astryx Native",
+ "nav": [
+  {
+   "id": "overview",
+   "label": "Components",
+   "icon": "grid"
+  },
+  {
+   "id": "dashboard",
+   "label": "Dashboard",
+   "icon": "chart"
+  },
+  {
+   "id": "inbox",
+   "label": "Inbox",
+   "icon": "inbox",
+   "badge": "3"
+  },
+  {
+   "id": "tasks",
+   "label": "Tasks",
+   "icon": "check",
+   "badge": "7"
+  },
+  {
+   "id": "people",
+   "label": "People",
+   "icon": "people"
+  },
+  {
+   "id": "calendar",
+   "label": "Calendar",
+   "icon": "calendar"
+  },
+  {
+   "id": "chat",
+   "label": "Messages",
+   "icon": "chat"
+  },
+  {
+   "id": "checkout",
+   "label": "Checkout",
+   "icon": "cart"
+  },
+  {
+   "id": "profile",
+   "label": "Profile",
+   "icon": "person"
+  },
+  {
+   "id": "settings",
+   "label": "Settings",
+   "icon": "gear"
+  }
+ ],
+ "current": "calendar",
+ "screen": {
+  "id": "calendar",
+  "title": "Calendar",
+  "subtitle": "7 events in the next seven days",
+  "toolbar": [
+   {
+    "kind": "button",
+    "id": "calendar.today",
+    "label": "Today",
+    "variant": "secondary",
+    "icon": "calendar"
+   }
+  ],
+  "body": {
+   "kind": "grid",
+   "minColumnWidth": 320,
+   "gap": "md",
+   "children": [
+    {
+     "kind": "card",
+     "children": [
+      {
+       "kind": "calendar",
+       "title": "October 2026",
+       "weekdays": [
+        "Su",
+        "Mo",
+        "Tu",
+        "We",
+        "Th",
+        "Fr",
+        "Sa"
+       ],
+       "weeks": [
+        [
+         {
+          "label": "27",
+          "inMonth": false,
+          "today": false,
+          "selected": false,
+          "dots": [],
+          "selectId": "calendar.day:20723"
+         },
+         {
+          "label": "28",
+          "inMonth": false,
+          "today": false,
+          "selected": false,
+          "dots": [],
+          "selectId": "calendar.day:20724"
+         },
+         {
+          "label": "29",
+          "inMonth": false,
+          "today": false,
+          "selected": false,
+          "dots": [],
+          "selectId": "calendar.day:20725"
+         },
+         {
+          "label": "30",
+          "inMonth": false,
+          "today": false,
+          "selected": false,
+          "dots": [],
+          "selectId": "calendar.day:20726"
+         },
+         {
+          "label": "1",
+          "inMonth": true,
+          "today": false,
+          "selected": false,
+          "dots": [],
+          "selectId": "calendar.day:20727"
+         },
+         {
+          "label": "2",
+          "inMonth": true,
+          "today": false,
+          "selected": false,
+          "dots": [],
+          "selectId": "calendar.day:20728"
+         },
+         {
+          "label": "3",
+          "inMonth": true,
+          "today": false,
+          "selected": false,
+          "dots": [],
+          "selectId": "calendar.day:20729"
+         }
+        ],
+        [
+         {
+          "label": "4",
+          "inMonth": true,
+          "today": false,
+          "selected": false,
+          "dots": [],
+          "selectId": "calendar.day:20730"
+         },
+         {
+          "label": "5",
+          "inMonth": true,
+          "today": false,
+          "selected": false,
+          "dots": [],
+          "selectId": "calendar.day:20731"
+         },
+         {
+          "label": "6",
+          "inMonth": true,
+          "today": false,
+          "selected": false,
+          "dots": [],
+          "selectId": "calendar.day:20732"
+         },
+         {
+          "label": "7",
+          "inMonth": true,
+          "today": false,
+          "selected": false,
+          "dots": [],
+          "selectId": "calendar.day:20733"
+         },
+         {
+          "label": "8",
+          "inMonth": true,
+          "today": false,
+          "selected": false,
+          "dots": [],
+          "selectId": "calendar.day:20734"
+         },
+         {
+          "label": "9",
+          "inMonth": true,
+          "today": false,
+          "selected": false,
+          "dots": [],
+          "selectId": "calendar.day:20735"
+         },
+         {
+          "label": "10",
+          "inMonth": true,
+          "today": false,
+          "selected": false,
+          "dots": [
+           "info"
+          ],
+          "selectId": "calendar.day:20736"
+         }
+        ],
+        [
+         {
+          "label": "11",
+          "inMonth": true,
+          "today": false,
+          "selected": false,
+          "dots": [],
+          "selectId": "calendar.day:20737"
+         },
+         {
+          "label": "12",
+          "inMonth": true,
+          "today": false,
+          "selected": false,
+          "dots": [],
+          "selectId": "calendar.day:20738"
+         },
+         {
+          "label": "13",
+          "inMonth": true,
+          "today": true,
+          "selected": true,
+          "dots": [
+           "info",
+           "accent"
+          ],
+          "selectId": "calendar.day:20739"
+         },
+         {
+          "label": "14",
+          "inMonth": true,
+          "today": false,
+          "selected": false,
+          "dots": [
+           "success"
+          ],
+          "selectId": "calendar.day:20740"
+         },
+         {
+          "label": "15",
+          "inMonth": true,
+          "today": false,
+          "selected": false,
+          "dots": [
+           "warning"
+          ],
+          "selectId": "calendar.day:20741"
+         },
+         {
+          "label": "16",
+          "inMonth": true,
+          "today": false,
+          "selected": false,
+          "dots": [
+           "success",
+           "neutral"
+          ],
+          "selectId": "calendar.day:20742"
+         },
+         {
+          "label": "17",
+          "inMonth": true,
+          "today": false,
+          "selected": false,
+          "dots": [],
+          "selectId": "calendar.day:20743"
+         }
+        ],
+        [
+         {
+          "label": "18",
+          "inMonth": true,
+          "today": false,
+          "selected": false,
+          "dots": [],
+          "selectId": "calendar.day:20744"
+         },
+         {
+          "label": "19",
+          "inMonth": true,
+          "today": false,
+          "selected": false,
+          "dots": [
+           "danger"
+          ],
+          "selectId": "calendar.day:20745"
+         },
+         {
+          "label": "20",
+          "inMonth": true,
+          "today": false,
+          "selected": false,
+          "dots": [
+           "warning"
+          ],
+          "selectId": "calendar.day:20746"
+         },
+         {
+          "label": "21",
+          "inMonth": true,
+          "today": false,
+          "selected": false,
+          "dots": [],
+          "selectId": "calendar.day:20747"
+         },
+         {
+          "label": "22",
+          "inMonth": true,
+          "today": false,
+          "selected": false,
+          "dots": [
+           "accent"
+          ],
+          "selectId": "calendar.day:20748"
+         },
+         {
+          "label": "23",
+          "inMonth": true,
+          "today": false,
+          "selected": false,
+          "dots": [],
+          "selectId": "calendar.day:20749"
+         },
+         {
+          "label": "24",
+          "inMonth": true,
+          "today": false,
+          "selected": false,
+          "dots": [],
+          "selectId": "calendar.day:20750"
+         }
+        ],
+        [
+         {
+          "label": "25",
+          "inMonth": true,
+          "today": false,
+          "selected": false,
+          "dots": [],
+          "selectId": "calendar.day:20751"
+         },
+         {
+          "label": "26",
+          "inMonth": true,
+          "today": false,
+          "selected": false,
+          "dots": [],
+          "selectId": "calendar.day:20752"
+         },
+         {
+          "label": "27",
+          "inMonth": true,
+          "today": false,
+          "selected": false,
+          "dots": [],
+          "selectId": "calendar.day:20753"
+         },
+         {
+          "label": "28",
+          "inMonth": true,
+          "today": false,
+          "selected": false,
+          "dots": [],
+          "selectId": "calendar.day:20754"
+         },
+         {
+          "label": "29",
+          "inMonth": true,
+          "today": false,
+          "selected": false,
+          "dots": [
+           "accent"
+          ],
+          "selectId": "calendar.day:20755"
+         },
+         {
+          "label": "30",
+          "inMonth": true,
+          "today": false,
+          "selected": false,
+          "dots": [],
+          "selectId": "calendar.day:20756"
+         },
+         {
+          "label": "31",
+          "inMonth": true,
+          "today": false,
+          "selected": false,
+          "dots": [],
+          "selectId": "calendar.day:20757"
+         }
+        ]
+       ],
+       "previousId": "calendar.month:previous",
+       "nextId": "calendar.month:next",
+       "previousLabel": "Previous month",
+       "nextLabel": "Next month"
+      }
+     ]
+    },
+    {
+     "kind": "card",
+     "title": "Today",
+     "children": [
+      {
+       "kind": "text",
+       "text": "Tuesday, October 13",
+       "style": "secondary"
+      },
+      {
+       "kind": "list",
+       "empty": "A free day. Enjoy it.",
+       "items": [
+        {
+         "id": "e1",
+         "title": "Design critique",
+         "subtitle": "10:00 AM - 10:45 AM · Studio B",
+         "meta": "45 min",
+         "leading": {
+          "icon": "clock",
+          "tone": "info"
+         },
+         "emphasized": false,
+         "selected": false
+        },
+        {
+         "id": "e2",
+         "title": "1:1 with Priya",
+         "subtitle": "2:00 PM - 2:30 PM · Video call",
+         "meta": "30 min",
+         "leading": {
+          "icon": "clock",
+          "tone": "accent"
+         },
+         "emphasized": false,
+         "selected": false
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  }
+ },
+ "toast": null,
+ "dialog": null,
+ "theme": {
+  "id": "astryx",
+  "options": [
+   {
+    "value": "astryx",
+    "label": "Astryx"
+   },
+   {
+    "value": "ocean",
+    "label": "Ocean"
+   },
+   {
+    "value": "ember",
+    "label": "Ember"
+   },
+   {
+    "value": "grape",
+    "label": "Grape"
+   }
+  ]
+ }
+}
