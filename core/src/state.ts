@@ -5,13 +5,22 @@
  */
 import { addDays, civilOf, dayNumber, minuteOf, type Civil, type Now } from "./format.ts";
 import { CHAT, MESSAGES, REPLIES, TASKS, type ChatLine, type Column, type Message, type Task } from "./sample.ts";
-import { SCREENS, type Action, type ScreenId, type Tone } from "./ui.ts";
+import { SCREENS, SURFACES, type Action, type ScreenId, type Surface, type Tone } from "./ui.ts";
 import { THEME_INPUTS } from "./themes.ts";
+import { TEMPLATES, templateById } from "./templates/index.ts";
+
+/** Whether `id` names a screen: a demo, or a registered template's "t.<id>". */
+export function isScreen(id: string): id is ScreenId {
+  return (SCREENS as readonly string[]).includes(id) || (id.startsWith("t.") && templateById(id.slice(2)) !== undefined);
+}
 
 export type SortColumn = "name" | "role" | "team" | "joined" | "projects";
 
 export type State = {
   screen: ScreenId;
+  /** Each refactored template's own state, by template id. */
+  templates: Record<string, unknown>;
+  surface: Surface;
   theme: string;
   today: Civil;
   minute: number;
@@ -36,7 +45,9 @@ export const PER_PAGE = 5;
 export function initialState(now: Now): State {
   const today = civilOf(now);
   return {
-    screen: "overview",
+    screen: "t.dashboard",
+    templates: Object.fromEntries(TEMPLATES.map((t) => [t.id, t.initial(now)])),
+    surface: "native",
     theme: "astryx",
     today,
     minute: minuteOf(now),
@@ -137,14 +148,31 @@ export function reduce(s: State, action: Action, now: Now): State {
   const at: State = minute === s.minute && dayNumber(today) === dayNumber(s.today) ? s : { ...s, today, minute };
   switch (action.type) {
     case "navigate":
-      return SCREENS.includes(action.screen) ? { ...at, screen: action.screen, dialog: null } : at;
+      return isScreen(action.screen) ? { ...at, screen: action.screen, dialog: null } : at;
     case "dismissToast":
-      return { ...at, toast: null };
+      return at.toast === null ? at : { ...at, toast: null };
+    case "tick":
+      return at;
     case "set":
-      return set(at, action.id, action.value);
-    case "press":
-      return press(at, action.id);
+    case "press": {
+      const routed = toTemplate(at, action, now);
+      if (routed) return routed;
+      return action.type === "set" ? set(at, action.id, action.value) : press(at, action.id);
+    }
   }
+}
+
+/** "tpl.<template>.<rest>" goes to that template's reducer with the prefix removed. */
+function toTemplate(s: State, action: Extract<Action, { type: "set" | "press" }>, now: Now): State | null {
+  if (!action.id.startsWith("tpl.")) return null;
+  const rest = action.id.slice(4);
+  const dot = rest.indexOf(".");
+  const t = templateById(dot < 0 ? rest : rest.slice(0, dot));
+  if (!t) return s;
+  const id = dot < 0 ? "" : rest.slice(dot + 1);
+  const before = s.templates[t.id];
+  const after = t.reduce(before, action.type === "set" ? { type: "set", id, value: action.value } : { type: "press", id }, now);
+  return after === before ? s : { ...s, templates: { ...s.templates, [t.id]: after } };
 }
 
 function set(s: State, id: string, value: string | number | boolean): State {
@@ -189,6 +217,10 @@ function set(s: State, id: string, value: string | number | boolean): State {
     case "settings.digest": return { ...s, settings: { ...st, digest: asString(value) } };
     case "settings.density": return { ...s, settings: { ...st, density: asString(value) } };
     case "settings.reduceMotion": return { ...s, settings: { ...st, reduceMotion: asBool(value) } };
+    case "app.surface": {
+      const v = asString(value);
+      return (SURFACES as readonly string[]).includes(v) ? { ...s, surface: v as Surface } : s;
+    }
     case "settings.theme": {
       const t = asString(value);
       return THEME_INPUTS.some((x) => x.id === t) ? { ...s, theme: t } : s;
@@ -202,7 +234,7 @@ function press(s: State, id: string): State {
   const inbox = s.inbox, tasks = s.tasks, c = s.checkout;
   switch (key) {
     case "navigate":
-      return SCREENS.includes(arg as ScreenId) ? { ...s, screen: arg as ScreenId, dialog: null } : s;
+      return isScreen(arg) ? { ...s, screen: arg, dialog: null } : s;
     case "toast.undo": {
       const u = s.toast?.undo;
       if (!u) return { ...s, toast: null };

@@ -27,7 +27,7 @@ export function overview(s: State): Screen {
         o.tags.length === 0 ? text("All tokens removed. Reset brings them back.", "caption") : text(`${plural(o.tags.length, "token")}. Tap × to remove one.`, "caption"),
       ]),
       card("People", [
-        h("sm", ...PEOPLE.slice(0, 4).map((p, i): Node => ({ kind: "avatar", name: p.name, initials: initials(p.name), hue: hueOf(p.name), size: (["sm", "md", "lg", "md"] as const)[i]!, status: p.status === "active" ? "success" : p.status === "away" ? "warning" : undefined }))),
+        h("sm", ...PEOPLE.slice(0, 4).map((p, i): Node => ({ kind: "avatar", name: p.name, initials: initials(p.name), hue: hueOf(p.name), size: (["sm", "md", "lg", "md"] as const)[i]!, ...(p.status === "active" ? { status: "success" as const, statusLabel: "Online" } : p.status === "away" ? { status: "warning" as const, statusLabel: "Away" } : {}) }))),
         { kind: "avatarGroup", people: PEOPLE.slice(4, 9).map((p) => ({ initials: initials(p.name), hue: hueOf(p.name) })), more: `+${PEOPLE.length - 9}` },
         wrap("md", { kind: "statusDot", tone: "success", label: "Online" }, { kind: "statusDot", tone: "warning", label: "Away" }, { kind: "statusDot", tone: "neutral", label: "Offline" }),
       ]),

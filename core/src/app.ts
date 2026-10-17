@@ -7,19 +7,42 @@ import type { Now } from "./format.ts";
 import { calendar, chat, checkout, profile, settings } from "./screens/life.ts";
 import { dashboard, overview } from "./screens/overview.ts";
 import { inbox, people, tasks } from "./screens/work.ts";
-import { initialState, reduce, type State } from "./state.ts";
+import { initialState, isScreen, reduce, type State } from "./state.ts";
+import { TEMPLATES, templateById } from "./templates/index.ts";
 import { THEMES } from "./themes.generated.ts";
 import { THEME_INPUTS, type ResolvedTheme } from "./themes.ts";
-import { PROTOCOL, type Action, type AppSnapshot, type Dialog, type NavItem, type Screen, type ScreenId } from "./ui.ts";
+import { PROTOCOL, type Action, type AppSnapshot, type DemoScreenId, type Dialog, type Icon, type NavItem, type Screen, type TemplateScreenId } from "./ui.ts";
 
-const BUILDERS: Record<ScreenId, (s: State) => Screen> = { overview, dashboard, inbox, tasks, people, calendar, chat, checkout, profile, settings };
+/**
+ * The stock Astryx template closest to each screen (web/stock: Astryx's own templates,
+ * unchanged). Placeholder names until web/stock lists what Astryx ships.
+ */
+export const STOCK_TEMPLATE: Record<DemoScreenId, string> = {
+  overview: "components", dashboard: "dashboard", inbox: "inbox", tasks: "kanban", people: "table",
+  calendar: "calendar", chat: "chat", checkout: "checkout", profile: "profile", settings: "settings",
+};
+
+const BUILDERS: Record<DemoScreenId, (s: State) => Screen> = { overview, dashboard, inbox, tasks, people, calendar, chat, checkout, profile, settings };
+
+/** A template's screen: one node, its view model, drawn by the template's own renderer. */
+function templateScreen(s: State, id: TemplateScreenId, now: Now): Screen {
+  const t = templateById(id.slice(2))!;
+  return { id, title: t.title, subtitle: `Astryx's ${t.astryx} template, on the shared core`, toolbar: [], body: { kind: "template", template: t.id, view: t.view(s.templates[t.id], now) } };
+}
+
+const TEMPLATE_ICONS: Record<string, Icon> = { showcase: "sparkle", dashboard: "chart", inbox: "inbox", kanban: "check", invoice: "card", calendar: "calendar", chat: "chat", checkout: "cart", order: "truck", settings: "gear" };
 
 export type ThemeSnapshot = ResolvedTheme;
 
 export function nav(s: State): NavItem[] {
+  const templates: NavItem[] = TEMPLATES.map((t) => ({ id: `t.${t.id}` as const, label: t.title, icon: TEMPLATE_ICONS[t.id] ?? "grid", section: "Astryx templates" }));
+  return [...templates, ...demoNav(s).map((n) => ({ ...n, section: "More demos" }))];
+}
+
+function demoNav(s: State): Omit<NavItem, "section">[] {
   const unread = s.inbox.messages.filter((m) => !m.read && !m.archived).length;
   const open = s.tasks.tasks.filter((t) => t.column !== "done").length;
-  const items: NavItem[] = [
+  const items: Omit<NavItem, "section">[] = [
     { id: "overview", label: "Components", icon: "grid" },
     { id: "dashboard", label: "Dashboard", icon: "chart" },
     { id: "inbox", label: "Inbox", icon: "inbox", ...(unread > 0 ? { badge: String(unread) } : {}) },
@@ -40,16 +63,21 @@ function dialog(s: State): Dialog | null {
   return null;
 }
 
-export function appSnapshot(s: State): AppSnapshot {
+export function appSnapshot(s: State, now: Now): AppSnapshot {
   return {
     protocol: PROTOCOL,
-    appName: "Astryx Native",
+    appName: "Astryx Swift",
     nav: nav(s),
     current: s.screen,
-    screen: BUILDERS[s.screen](s),
+    screen: s.screen.startsWith("t.") ? templateScreen(s, s.screen as TemplateScreenId, now) : BUILDERS[s.screen as DemoScreenId](s),
     toast: s.toast ? { id: s.toastSeq, tone: s.toast.tone, text: s.toast.text, ...(s.toast.undo ? { action: { id: "toast.undo", label: "Undo" } } : {}) } : null,
     dialog: dialog(s),
-    theme: { id: s.theme, options: THEME_INPUTS.map((t) => ({ value: t.id, label: t.label })) },
+    theme: { id: s.theme, label: "Theme", setId: "settings.theme", options: THEME_INPUTS.map((t) => ({ value: t.id, label: t.label })) },
+    surface: {
+      id: "app.surface", label: "Show", value: s.surface,
+      options: [{ value: "native", label: "Native" }, { value: "web", label: "Web" }, { value: "stock", label: "Stock Astryx" }, { value: "compare", label: "Native and web" }, { value: "all", label: "All three" }],
+      stockTemplate: s.screen.startsWith("t.") ? templateById(s.screen.slice(2))!.astryx : STOCK_TEMPLATE[s.screen as DemoScreenId], stockLabel: "Astryx as it is today: its own template and its own state",
+    },
   };
 }
 
@@ -66,12 +94,13 @@ export type Client = {
 };
 
 /** A client over a clock. `now` is read for each action, never by the core itself. */
-export function createClient(now: () => Now, start?: Partial<Pick<State, "screen" | "theme">>): Client {
-  let state: State = { ...initialState(now()), ...start };
+export function createClient(now: () => Now, start?: Partial<Pick<State, "screen" | "theme" | "surface">>): Client {
+  const first = initialState(now());
+  let state: State = { ...first, ...start, screen: start?.screen && isScreen(start.screen) ? start.screen : first.screen };
   const listeners = new Set<(store: StoreName) => void>();
   return {
     getSnapshot(store) {
-      return store === "theme" ? themeSnapshot(state) : appSnapshot(state);
+      return store === "theme" ? themeSnapshot(state) : appSnapshot(state, now());
     },
     dispatch(action) {
       const before = state;

@@ -1,0 +1,18 @@
+require_relative '../../node_modules/react-native/scripts/react_native_pods'
+
+platform :ios, '26.0'
+prepare_react_native_project!
+
+target 'AstryxSwift' do
+  use_native_modules!
+
+  use_react_native!(
+    :path => '../../node_modules/react-native',
+    # Where package.json is: its codegenConfig names the native module's spec.
+    :app_path => "#{Pod::Config.instance.installation_root}/../.."
+  )
+
+  post_install do |installer|
+    react_native_post_install(installer, '../../node_modules/react-native', :mac_catalyst_enabled => false)
+  end
+end

@@ -1,0 +1,61 @@
+# The Mac app's Xcode project is generated from this file (`xcodegen generate`) and is not
+# committed. CocoaPods then adds React Native to it (`pod install`): react-native-macos,
+# the fork that builds for the Mac.
+name: AstryxSwift
+options:
+  deploymentTarget:
+    macOS: "26.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    CLANG_CXX_LANGUAGE_STANDARD: c++20
+    CODE_SIGN_IDENTITY: "-"
+    CODE_SIGN_STYLE: Manual
+    DEVELOPMENT_TEAM: ""
+    ENABLE_USER_SCRIPT_SANDBOXING: NO
+packages:
+  AstryxKit:
+    path: ../AstryxKit
+targets:
+  AstryxSwift:
+    type: application
+    platform: macOS
+    sources:
+      - path: ../Host
+        group: Host
+      - App
+    dependencies:
+      - package: AstryxKit
+    entitlements:
+      path: AstryxSwift.entitlements
+      properties:
+        # The Mac App Store requires the sandbox; the web view's content process needs
+        # no network for a page served from the app itself.
+        com.apple.security.app-sandbox: true
+    info:
+      path: Info.plist
+      properties:
+        CFBundleName: Astryx Swift
+        CFBundleDisplayName: Astryx Swift
+        LSApplicationCategoryType: public.app-category.developer-tools
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        ITSAppUsesNonExemptEncryption: false
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: io.github.ejc3.astryxswift
+        MARKETING_VERSION: 0.1.0
+        CURRENT_PROJECT_VERSION: 1
+        GENERATE_INFOPLIST_FILE: NO
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        SWIFT_OBJC_BRIDGING_HEADER: ../Host/AXClient-Bridging-Header.h
+    postCompileScripts:
+      - name: Bundle the core and the web page
+        basedOnDependencyAnalysis: false
+        script: |
+          set -e
+          . "$SRCROOT/.xcode.env"
+          if [ -f "$SRCROOT/.xcode.env.local" ]; then . "$SRCROOT/.xcode.env.local"; fi
+          "$NODE_BINARY" "$SRCROOT/../../scripts/bundle.mjs" --platform=macos "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/main.jsbundle"
+          "$SRCROOT/../../scripts/copy-web.sh" "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/web"

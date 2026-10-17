@@ -57,7 +57,7 @@ export type Node =
   | { kind: "select"; id: string; label: string; options: Option[]; value: string }
   | { kind: "slider"; id: string; label: string; value: number; min: number; max: number; step: number; valueText: string }
   | { kind: "progress"; label: string; value: number; valueText: string; tone: Tone }
-  | { kind: "avatar"; name: string; initials: string; hue: number; size: "sm" | "md" | "lg"; status?: Tone }
+  | { kind: "avatar"; name: string; initials: string; hue: number; size: "sm" | "md" | "lg"; status?: Tone; statusLabel?: string }
   | { kind: "avatarGroup"; people: { initials: string; hue: number }[]; more: string | null }
   | { kind: "statusDot"; tone: Tone; label: string }
   | { kind: "divider" }
@@ -67,14 +67,16 @@ export type Node =
   | { kind: "table"; columns: { id: string; label: string; align: "start" | "end"; sort: "asc" | "desc" | "none" | null; sortId?: string }[]; rows: { id: string; cells: Cell[]; selected: boolean; selectId?: string }[]; empty: string }
   | { kind: "list"; items: ListItem[]; empty: string }
   | { kind: "tabs"; id: string; tabs: (Option & { count?: string })[]; value: string }
-  | { kind: "stepper"; steps: { label: string; state: "done" | "current" | "upcoming" }[] }
+  | { kind: "stepper"; steps: { label: string; state: "done" | "current" | "upcoming"; selectId?: string }[] }
   | { kind: "banner"; tone: Tone; title: string; text: string; action?: ButtonNode; dismissId?: string }
   | { kind: "empty"; icon: Icon; title: string; text: string; action?: ButtonNode }
   | { kind: "metadata"; items: { label: string; value: string }[] }
   | { kind: "pagination"; label: string; previousId?: string; nextId?: string }
   | { kind: "calendar"; title: string; weekdays: string[]; weeks: CalendarDay[][]; previousId: string; nextId: string; previousLabel: string; nextLabel: string }
   | { kind: "chat"; messages: ChatMessage[]; composer: { id: string; value: string; placeholder: string; sendId: string; sendLabel: string; canSend: boolean } }
-  | { kind: "board"; columns: BoardColumn[] };
+  | { kind: "board"; columns: BoardColumn[] }
+  /** A refactored stock Astryx template: drawn by its own renderer from `view` (core/src/templates). */
+  | { kind: "template"; template: string; view: unknown };
 
 export type ButtonNode = {
   kind: "button";
@@ -123,10 +125,14 @@ export type Screen = {
   body: Node;
 };
 
+/** The demos built from generic nodes. */
 export const SCREENS = ["overview", "dashboard", "inbox", "tasks", "people", "calendar", "chat", "checkout", "profile", "settings"] as const;
-export type ScreenId = (typeof SCREENS)[number];
+export type DemoScreenId = (typeof SCREENS)[number];
+/** A refactored template's screen: "t.<template id>". */
+export type TemplateScreenId = `t.${string}`;
+export type ScreenId = DemoScreenId | TemplateScreenId;
 
-export type NavItem = { id: ScreenId; label: string; icon: Icon; badge?: string };
+export type NavItem = { id: ScreenId; label: string; icon: Icon; badge?: string; section: string };
 
 export type Toast = { id: number; tone: Tone; text: string; action?: { id: string; label: string } };
 
@@ -142,8 +148,21 @@ export type AppSnapshot = {
   toast: Toast | null;
   dialog: Dialog | null;
   /** Which theme to paint with, and the choices; the tokens themselves are the "theme" store. */
-  theme: { id: string; options: Option[] };
+  theme: { id: string; label: string; setId: string; options: Option[] };
+  /**
+   * Which drawings of the screens a native app shows:
+   * - "native": its own SwiftUI views (AstryxKit), on this core;
+   * - "web": this core's Astryx web page, in a web view, on this same core;
+   * - "stock": Astryx as it is today, its own templates with their own React state, not on
+   *   this core (it shows `stockTemplate` for the current screen, and nothing else is shared);
+   * - "compare": native and web side by side; "all": all three side by side.
+   * A web page ignores it. A host too narrow for a side-by-side choice shows "native".
+   */
+  surface: { id: string; label: string; value: Surface; options: Option[]; stockTemplate: string; stockLabel: string };
 };
+
+export const SURFACES = ["native", "web", "stock", "compare", "all"] as const;
+export type Surface = (typeof SURFACES)[number];
 
 /**
  * What a host sends. `id` is the node's id, exactly as the snapshot gave it.
@@ -153,9 +172,11 @@ export type AppSnapshot = {
  * - A text input, switch, checkbox, radio, segmented control, select, slider, tab list
  *   and a table row's checkbox (`selectId`, with the new checked state): `set`.
  * - A nav item: `navigate`.
+ * - `tick`: the host's clock moved (once a minute), so times like "12m" stay true.
  */
 export type Action =
   | { type: "navigate"; screen: ScreenId }
   | { type: "press"; id: string }
   | { type: "set"; id: string; value: string | number | boolean }
-  | { type: "dismissToast" };
+  | { type: "dismissToast" }
+  | { type: "tick" };

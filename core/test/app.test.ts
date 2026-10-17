@@ -210,3 +210,26 @@ test("an action that changes nothing tells nobody", () => {
   for (const a of nothing) c.dispatch(a);
   assert.equal(told, 0);
 });
+
+test("the surface (native, web, both) is state in the core, so every drawing of it agrees", () => {
+  const c = createClient(clock);
+  assert.equal(app(c).surface.value, "native");
+  c.dispatch({ type: "set", id: "app.surface", value: "compare" });
+  assert.equal(app(c).surface.value, "compare");
+  c.dispatch({ type: "set", id: "app.surface", value: "sideways" });
+  assert.equal(app(c).surface.value, "compare");
+  assert.deepEqual(app(c).surface.options.map((o) => o.value), ["native", "web", "stock", "compare", "all"]);
+  go(c, "inbox");
+  assert.equal(app(c).surface.stockTemplate, "inbox");
+});
+
+test("a done checkout step can be pressed to go back to it", () => {
+  const c = createClient(clock);
+  go(c, "checkout");
+  c.dispatch({ type: "press", id: "checkout.next" });
+  const stepper = nodes(app(c).screen.body).find((n) => n.kind === "stepper") as Extract<Node, { kind: "stepper" }>;
+  assert.equal(stepper.steps[0]!.selectId, "checkout.goto:0");
+  assert.equal(stepper.steps[1]!.selectId, undefined);
+  c.dispatch({ type: "press", id: "checkout.goto:0" });
+  assert.equal(app(c).screen.subtitle, "Step 1 of 4: Cart");
+});

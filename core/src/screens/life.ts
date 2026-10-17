@@ -117,7 +117,7 @@ export function checkout(s: State): Screen {
     id: "checkout", title: "Checkout", subtitle: `Step ${c.step + 1} of ${STEPS.length}: ${STEPS[c.step]}`,
     toolbar: [button("checkout.fill", "Fill with test data", "ghost", "sparkle")],
     body: v("lg",
-      { kind: "stepper", steps: STEPS.map((label, i) => ({ label, state: i < c.step ? "done" : i === c.step ? "current" : "upcoming" })) },
+      { kind: "stepper", steps: STEPS.map((label, i) => ({ label, state: i < c.step ? "done" : i === c.step ? "current" : "upcoming", ...(i < c.step ? { selectId: `checkout.goto:${i}` } : {}) })) },
       grid(320,
         card(STEPS[c.step], [...form, spread(c.step > 0 ? button("checkout.back", "Back", "secondary", "chevron-left") : text("", "caption"), c.step < 3 ? button("checkout.next", c.step === 2 ? "Review order" : "Continue", "primary", "chevron-right") : button("checkout.place", `Pay ${money(total)}`, "primary", "lock"))]),
         summary,
@@ -135,7 +135,7 @@ export function profile(s: State): Screen {
     toolbar: [button("profile.follow", s.profile.following ? "Following" : "Follow", s.profile.following ? "secondary" : "primary", s.profile.following ? "check" : "plus")],
     body: v("lg",
       card(undefined, [
-        h("md", { kind: "avatar", name: me.name, initials: initials(me.name), hue: hueOf(me.name), size: "lg", status: "success" }, v("xs", heading(me.name, 1), text(`${ME.title} · ${ME.team}`, "secondary"), text(ME.location, "caption"))),
+        h("md", { kind: "avatar", name: me.name, initials: initials(me.name), hue: hueOf(me.name), size: "lg", status: "success", statusLabel: "Online" }, v("xs", heading(me.name, 1), text(`${ME.title} · ${ME.team}`, "secondary"), text(ME.location, "caption"))),
         text(s.settings.bio),
         wrap("xs", ...SKILLS.map((k): Node => ({ kind: "token", text: k, tone: "neutral" }))),
       ]),

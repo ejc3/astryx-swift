@@ -2,3 +2,5 @@ export { appSnapshot, BRIDGE_VERSION, connectBridge, createClient, themeSnapshot
 export type { Now } from "./format.ts";
 export { THEME_INPUTS, type ThemeInput } from "./themes.ts";
 export * from "./ui.ts";
+export { TEMPLATES, TEMPLATE_IDS, templateById } from "./templates/index.ts";
+export type { TemplateModule, TemplateAction } from "./templates/types.ts";
