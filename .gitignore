@@ -5,3 +5,4 @@ build/
 *.xcodeproj/
 Pods/
 main.jsbundle
+.xcode.env.local

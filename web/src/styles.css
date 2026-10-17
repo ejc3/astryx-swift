@@ -1,8 +1,10 @@
 /* Only what Astryx has no component for. Everything reads Astryx's tokens. */
 
-:root { color-scheme: light dark; }
+/* Not in bare mode (?bare=1): there a template must sit on exactly what the stock page has,
+   which is Astryx's reset and CSS and nothing of ours (scripts/parity.mjs). */
+:root:not([data-bare]) { color-scheme: light dark; }
 
-body {
+:root:not([data-bare]) body {
   margin: 0;
   background: var(--color-background-body);
   color: var(--color-text-primary);

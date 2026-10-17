@@ -151,17 +151,19 @@ export type AppSnapshot = {
   theme: { id: string; label: string; setId: string; options: Option[] };
   /**
    * Which drawings of the screens a native app shows:
-   * - "native": its own SwiftUI views (AstryxKit), on this core;
-   * - "web": this core's Astryx web page, in a web view, on this same core;
-   * - "stock": Astryx as it is today, its own templates with their own React state, not on
-   *   this core (it shows `stockTemplate` for the current screen, and nothing else is shared);
-   * - "compare": native and web side by side; "all": all three side by side.
-   * A web page ignores it. A host too narrow for a side-by-side choice shows "native".
+   * - "native": its own SwiftUI views (AstryxKit), on this core (in Hermes);
+   * - "web": the refactored Astryx web page, in a web view, on this same core;
+   * - "webOwn": the same refactored page on a core of its own, in the web view's JavaScript,
+   *   with no Hermes; its state is its own (it follows the current screen, nothing else);
+   * - "stock": Astryx as it is today, its own templates with their own React state (it shows
+   *   `stockTemplate` for the current screen, and nothing else is shared);
+   * - "compare": native and web side by side; "all": all four, as a 2 by 2 grid.
+   * A web page ignores it. A host too small for a side-by-side choice shows "native".
    */
   surface: { id: string; label: string; value: Surface; options: Option[]; stockTemplate: string; stockLabel: string };
 };
 
-export const SURFACES = ["native", "web", "stock", "compare", "all"] as const;
+export const SURFACES = ["native", "web", "webOwn", "stock", "compare", "all"] as const;
 export type Surface = (typeof SURFACES)[number];
 
 /**

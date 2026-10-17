@@ -14,6 +14,7 @@ import { THEMES } from "./themes.ts";
  * (stock.html), so the two can be compared pixel for pixel (scripts/parity.mjs).
  */
 const bare = new URLSearchParams(window.location.search).get("bare") === "1";
+if (bare) document.documentElement.setAttribute("data-bare", "");
 
 function App() {
   const app = useApp();

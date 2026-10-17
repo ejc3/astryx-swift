@@ -11,6 +11,8 @@ final class ClientHost: NSObject, AXClientServices {
     private(set) var web: WebBridge!
     /// Stock Astryx, on its own state: told only which template the current screen maps to.
     let stock = StockBridge()
+    /// The refactored page on its own core: told only the current screen.
+    let own = OwnCoreBridge()
     private let runtime = ReactRuntime()
     private var nextCall = 0
     private var connected = false
@@ -35,14 +37,10 @@ final class ClientHost: NSObject, AXClientServices {
     private func deliver(_ store: String, _ json: String) {
         model.receive(store: store, snapshotJSON: json)
         web.changed(store: store, snapshotJSON: json)
-        if store == "app", let template = Self.stockTemplate(json) { stock.show(template) }
-    }
-
-    private static func stockTemplate(_ json: String) -> String? {
-        guard let data = json.data(using: .utf8),
-              let snapshot = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let surface = snapshot["surface"] as? [String: Any] else { return nil }
-        return surface["stockTemplate"] as? String
+        guard store == "app", let data = json.data(using: .utf8),
+              let snapshot = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return }
+        if let surface = snapshot["surface"] as? [String: Any], let template = surface["stockTemplate"] as? String { stock.show(template) }
+        if let current = snapshot["current"] as? String { own.show(current) }
     }
 
     func run() {

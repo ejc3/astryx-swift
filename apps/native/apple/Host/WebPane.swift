@@ -156,3 +156,49 @@ struct StockPane: UIViewRepresentable {
     func updateUIView(_ view: WKWebView, context: Context) {}
 }
 #endif
+
+/// The refactored web page on a core of its own, in the web view's JavaScript: no Hermes, and
+/// no `astryx` message handler, so the page runs standalone. Nothing of the shared state
+/// reaches it but the current screen, so the drawings stay comparable.
+@MainActor
+final class OwnCoreBridge {
+    let webView: WKWebView
+    private var shown: String?
+    private var loaded = false
+
+    init() {
+        let config = WKWebViewConfiguration()
+        config.setURLSchemeHandler(BundledPages(), forURLScheme: "astryx")
+        webView = WKWebView(frame: .zero, configuration: config)
+        #if DEBUG
+        if #available(macOS 13.3, iOS 16.4, *) { webView.isInspectable = true }
+        #endif
+    }
+
+    /// Follows the shared core to `screen`: the first time by loading the page there.
+    func show(_ screen: String) {
+        guard screen != shown else { return }
+        shown = screen
+        guard let escaped = screen.addingPercentEncoding(withAllowedCharacters: .alphanumerics) else { return }
+        if !loaded {
+            loaded = true
+            webView.load(URLRequest(url: URL(string: "astryx://app/index.html?screen=\(escaped)")!))
+        } else {
+            webView.evaluateJavaScript("window.__astryxOwn && window.__astryxOwn.navigate(decodeURIComponent('\(escaped)'))")
+        }
+    }
+}
+
+#if os(macOS)
+struct OwnCorePane: NSViewRepresentable {
+    let bridge: OwnCoreBridge
+    func makeNSView(context: Context) -> WKWebView { bridge.webView }
+    func updateNSView(_ view: WKWebView, context: Context) {}
+}
+#else
+struct OwnCorePane: UIViewRepresentable {
+    let bridge: OwnCoreBridge
+    func makeUIView(context: Context) -> WKWebView { bridge.webView }
+    func updateUIView(_ view: WKWebView, context: Context) {}
+}
+#endif

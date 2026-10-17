@@ -44,7 +44,17 @@ function standalone(): Client {
   );
   // Times like "12m" are words the core wrote at the last action; a minute's tick rewrites them.
   setInterval(() => client.dispatch({ type: "tick" }), 60_000);
+  // The native app shows this page on its own core as a fourth drawing ("Web, own core") and
+  // keeps it on the same screen as the others; nothing else of its state is shared.
+  window.__astryxOwn = { navigate: (screen) => client.dispatch({ type: "navigate", screen: screen as ScreenId }) };
   return client;
+}
+
+declare global {
+  interface Window {
+    /** Set in standalone mode: the native app's "Web, own core" pane follows the current screen with it. */
+    __astryxOwn?: { navigate(screen: string): void };
+  }
 }
 
 /** The same three calls as the core's client, backed by the host. Nothing here knows the core. */

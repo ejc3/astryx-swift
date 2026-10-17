@@ -218,7 +218,7 @@ test("the surface (native, web, both) is state in the core, so every drawing of 
   assert.equal(app(c).surface.value, "compare");
   c.dispatch({ type: "set", id: "app.surface", value: "sideways" });
   assert.equal(app(c).surface.value, "compare");
-  assert.deepEqual(app(c).surface.options.map((o) => o.value), ["native", "web", "stock", "compare", "all"]);
+  assert.deepEqual(app(c).surface.options.map((o) => o.value), ["native", "web", "webOwn", "stock", "compare", "all"]);
   go(c, "inbox");
   assert.equal(app(c).surface.stockTemplate, "inbox");
 });

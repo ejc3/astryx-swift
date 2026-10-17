@@ -75,7 +75,14 @@ export function appSnapshot(s: State, now: Now): AppSnapshot {
     theme: { id: s.theme, label: "Theme", setId: "settings.theme", options: THEME_INPUTS.map((t) => ({ value: t.id, label: t.label })) },
     surface: {
       id: "app.surface", label: "Show", value: s.surface,
-      options: [{ value: "native", label: "Native" }, { value: "web", label: "Web" }, { value: "stock", label: "Stock Astryx" }, { value: "compare", label: "Native and web" }, { value: "all", label: "All three" }],
+      options: [
+        { value: "native", label: "Native", description: "SwiftUI, on the shared core in Hermes" },
+        { value: "web", label: "Web on Hermes", description: "The refactored web page, on the same shared core" },
+        { value: "webOwn", label: "Web, own core", description: "The refactored web page, on a core of its own in the page: no Hermes" },
+        { value: "stock", label: "Stock Astryx", description: "Astryx as it is today: its own template and its own state" },
+        { value: "compare", label: "Native and web", description: "Native and web on Hermes, side by side" },
+        { value: "all", label: "All four", description: "All four drawings at once" },
+      ],
       stockTemplate: s.screen.startsWith("t.") ? templateById(s.screen.slice(2))!.astryx : STOCK_TEMPLATE[s.screen as DemoScreenId], stockLabel: "Astryx as it is today: its own template and its own state",
     },
   };

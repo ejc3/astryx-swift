@@ -554,23 +554,33 @@
   "options": [
    {
     "value": "native",
-    "label": "Native"
+    "label": "Native",
+    "description": "SwiftUI, on the shared core in Hermes"
    },
    {
     "value": "web",
-    "label": "Web"
+    "label": "Web on Hermes",
+    "description": "The refactored web page, on the same shared core"
+   },
+   {
+    "value": "webOwn",
+    "label": "Web, own core",
+    "description": "The refactored web page, on a core of its own in the page: no Hermes"
    },
    {
     "value": "stock",
-    "label": "Stock Astryx"
+    "label": "Stock Astryx",
+    "description": "Astryx as it is today: its own template and its own state"
    },
    {
     "value": "compare",
-    "label": "Native and web"
+    "label": "Native and web",
+    "description": "Native and web on Hermes, side by side"
    },
    {
     "value": "all",
-    "label": "All three"
+    "label": "All four",
+    "description": "All four drawings at once"
    }
   ],
   "stockTemplate": "calendar",
