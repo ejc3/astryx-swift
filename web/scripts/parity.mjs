@@ -40,7 +40,22 @@ mkdirSync(out, { recursive: true });
 const server = await preview({ root, logLevel: "error", build: { outDir }, preview: { port: 0, host: "localhost", strictPort: false } });
 const base = server.resolvedUrls?.local[0];
 
-async function shot(browser, url, size, scheme, problems) {
+/**
+ * A template's interaction steps, if it has any: scripts/parity-steps/<id>.mjs exports
+ * `[{ name, run: async (page) => {...} }]`, done as a person would (clicks, typing, by role
+ * and accessible name), the same on both copies. Both must match after every step.
+ */
+async function stepsFor(id) {
+  try {
+    return (await import(`./parity-steps/${id}.mjs`)).default;
+  } catch (error) {
+    if (error?.code === "ERR_MODULE_NOT_FOUND") return [];
+    throw error;
+  }
+}
+
+/** Opens `url` and returns screenshots: at rest, then after each step. */
+async function shots(browser, url, size, scheme, steps, problems) {
   // The same fixed clock for both copies, so any date a template shows is the same.
   const context = await browser.newContext({ viewport: { width: size.width, height: size.height }, deviceScaleFactor: size.scale, colorScheme: scheme, timezoneId: "America/Los_Angeles", locale: "en-US" });
   const page = await context.newPage();
@@ -50,37 +65,56 @@ async function shot(browser, url, size, scheme, problems) {
   await page.addStyleTag({ content: STILL });
   await page.waitForSelector("#root > *", { state: "attached" });
   await page.evaluate(() => document.fonts.ready);
-  await page.waitForTimeout(400);
-  const png = await page.screenshot({ fullPage: true });
+  const still = async () => {
+    await page.waitForTimeout(400);
+    return PNG.sync.read(await page.screenshot({ fullPage: true }));
+  };
+  const out = [{ name: "rest", png: await still() }];
+  for (const step of steps) {
+    try {
+      await step.run(page);
+      out.push({ name: step.name, png: await still() });
+    } catch (error) {
+      problems.push(`${url} step "${step.name}": ${error.message.split("\n")[0]}`);
+      break;
+    }
+  }
   await context.close();
-  return PNG.sync.read(png);
+  return out;
 }
 
 const rows = [];
 const problems = [];
 for (const [engine, type] of ENGINES) {
   const browser = await type.launch();
-  for (const t of chosen) for (const size of SIZES) for (const scheme of SCHEMES) {
-    const stock = await shot(browser, `${base}stock.html?template=${encodeURIComponent(t.astryx)}`, size, scheme, problems);
-    const ours = await shot(browser, `${base}?screen=t.${t.id}&bare=1`, size, scheme, problems);
-    const name = `${t.id}-${engine}-${size.name}-${scheme}`;
-    let differing;
-    if (stock.width !== ours.width || stock.height !== ours.height) {
-      differing = `size ${stock.width}x${stock.height} vs ${ours.width}x${ours.height}`;
-      writeFileSync(`${out}${name}-stock.png`, PNG.sync.write(stock));
-      writeFileSync(`${out}${name}-ours.png`, PNG.sync.write(ours));
-    } else {
-      const diff = new PNG({ width: stock.width, height: stock.height });
-      const n = pixelmatch(stock.data, ours.data, diff.data, stock.width, stock.height, { threshold: 0 });
-      differing = n === 0 ? "" : `${n} pixels`;
-      if (n > 0) {
-        writeFileSync(`${out}${name}-diff.png`, PNG.sync.write(diff));
-        writeFileSync(`${out}${name}-stock.png`, PNG.sync.write(stock));
-        writeFileSync(`${out}${name}-ours.png`, PNG.sync.write(ours));
+  for (const t of chosen) {
+    const steps = await stepsFor(t.id);
+    for (const size of SIZES) for (const scheme of SCHEMES) {
+      const stockShots = await shots(browser, `${base}stock.html?template=${encodeURIComponent(t.astryx)}`, size, scheme, steps, problems);
+      const ourShots = await shots(browser, `${base}?screen=t.${t.id}&bare=1`, size, scheme, steps, problems);
+      for (let i = 0; i < Math.max(stockShots.length, ourShots.length); i++) {
+        const stock = stockShots[i]?.png, ours = ourShots[i]?.png;
+        const name = `${t.id}-${engine}-${size.name}-${scheme}-${i}-${(stockShots[i] ?? ourShots[i]).name.replace(/[^a-z0-9]+/gi, "_")}`;
+        let differing;
+        if (!stock || !ours) differing = "one copy could not do this step";
+        else if (stock.width !== ours.width || stock.height !== ours.height) {
+          differing = `size ${stock.width}x${stock.height} vs ${ours.width}x${ours.height}`;
+          writeFileSync(`${out}${name}-stock.png`, PNG.sync.write(stock));
+          writeFileSync(`${out}${name}-ours.png`, PNG.sync.write(ours));
+        } else {
+          const diff = new PNG({ width: stock.width, height: stock.height });
+          const n = pixelmatch(stock.data, ours.data, diff.data, stock.width, stock.height, { threshold: 0 });
+          differing = n === 0 ? "" : `${n} pixels`;
+          if (n > 0) {
+            writeFileSync(`${out}${name}-diff.png`, PNG.sync.write(diff));
+            writeFileSync(`${out}${name}-stock.png`, PNG.sync.write(stock));
+            writeFileSync(`${out}${name}-ours.png`, PNG.sync.write(ours));
+          }
+        }
+        rows.push({ name, differing });
+        console.log(`${differing === "" ? "  same" : "  DIFF"}  ${name}${differing ? `  ${differing}` : ""}`);
       }
     }
-    rows.push({ name, differing });
-    console.log(`${differing === "" ? "  same" : "  DIFF"}  ${name}${differing ? `  ${differing}` : ""}`);
   }
   await browser.close();
 }
