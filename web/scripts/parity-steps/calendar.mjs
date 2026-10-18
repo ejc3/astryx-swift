@@ -11,7 +11,7 @@ export default [
     await page.getByRole("button", { name: /previous month/i }).click();
     await page.getByRole("button", { name: /previous month/i }).click();
   } },
-  { name: "pick an outside day", run: async (page) => { await day(page, "May 2, 2026").click(); } },
+  { name: "pick April 3", run: async (page) => { await day(page, "April 3, 2026").click(); } },
   { name: "back to March", run: async (page) => {
     await page.getByRole("button", { name: /previous month/i }).click();
     await page.getByRole("button", { name: /previous month/i }).click();

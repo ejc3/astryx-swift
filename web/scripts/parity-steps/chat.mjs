@@ -3,7 +3,8 @@
 // the same at both sizes, but the document is a side panel on a wide window and a dialog on
 // a narrow one, so steps that only make sense for one check what is on screen first.
 const composer = (page) => page.getByLabel("Message input");
-const card = (page) => page.getByRole("button", { name: /^Open JWT Token Refresh/ });
+// The card is a button with its content laid over it; a person clicks the content.
+const card = (page) => page.getByText("Document", { exact: true });
 const shown = (locator) => locator.first().isVisible();
 
 export default [

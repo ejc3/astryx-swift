@@ -34,20 +34,30 @@ final class ModelTests: XCTestCase {
         XCTAssertEqual(model.theme?.label, "Grape")
     }
 
+    /// Polls until `condition` holds or `seconds` pass; a loaded machine only makes it slower.
+    private func eventually(_ seconds: Double = 10, _ condition: () -> Bool) async throws -> Bool {
+        let deadline = Date().addingTimeInterval(seconds)
+        while Date() < deadline {
+            if condition() { return true }
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        return condition()
+    }
+
     func testTheClockTicksWhileRunningAndStopsWhenStopped() async throws {
         var sent: [String] = []
         let model = AppModel(send: { sent.append($0) }, tickEvery: .milliseconds(20))
-        try await Task.sleep(for: .milliseconds(200))
-        XCTAssertGreaterThanOrEqual(sent.count, 2)
+        let ticked = try await eventually { sent.count >= 2 }
+        XCTAssertTrue(ticked)
         XCTAssertTrue(sent.allSatisfy { $0 == #"{"type":"tick"}"# })
         model.stopTicking()
-        try await Task.sleep(for: .milliseconds(60))
-        let count = sent.count
         try await Task.sleep(for: .milliseconds(100))
+        let count = sent.count
+        try await Task.sleep(for: .milliseconds(300))
         XCTAssertEqual(sent.count, count, "stopped")
         model.startTicking()
-        try await Task.sleep(for: .milliseconds(100))
-        XCTAssertGreaterThan(sent.count, count, "resumed")
+        let resumed = try await eventually { sent.count > count }
+        XCTAssertTrue(resumed, "resumed")
         model.stopTicking()
     }
 

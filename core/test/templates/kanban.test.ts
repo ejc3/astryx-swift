@@ -30,6 +30,8 @@ test("a card has its words worked out", () => {
   assert.equal(c.priorityLabel, "Low");
   assert.equal(c.priorityVariant, "teal");
   assert.equal(c.title, "Draft project kickoff brief");
+  assert.equal(c.edited, "2h ago");
+  assert.equal(c.due, "Jul 8");
   assert.equal(c.meta, "Edited 2h ago · Due Jul 8");
   assert.deepEqual(c.moveTargets.map((t) => t.label), ["Move to In progress", "Move to In review", "Move to Done"]);
   assert.equal(c.moveTargets[1]!.id, "tpl.kanban.move:t1:in-review");

@@ -15,30 +15,29 @@ struct AXStack: View {
                 NodeChildren(nodes: node.children)
             }
         case .horizontal:
-            if node.wrap == true {
-                FlowLayout(spacing: spacing, align: .start) {
-                    NodeChildren(nodes: node.children)
+            if node.align == .spread, node.wrap != true {
+                HStack(alignment: verticalAlignment, spacing: spacing) {
+                    ForEach(Array(node.children.enumerated()), id: \.offset) { index, child in
+                        if index > 0 { Spacer(minLength: 0) }
+                        NodeView(node: child)
+                    }
                 }
             } else {
-                if node.align == .spread {
-                    HStack(alignment: verticalAlignment, spacing: spacing) {
-                        ForEach(Array(node.children.enumerated()), id: \.offset) { index, child in
-                            if index > 0 { Spacer(minLength: 0) }
-                            NodeView(node: child)
-                        }
-                    }
-                } else {
-                    // A row that does not fit flows onto more lines, as the web's does.
-                    ViewThatFits(in: .horizontal) {
-                        HStack(alignment: verticalAlignment, spacing: spacing) {
-                            NodeChildren(nodes: node.children)
-                        }
-                        FlowLayout(spacing: spacing, align: .start) {
-                            NodeChildren(nodes: node.children)
-                        }
-                    }
+                // Like the web's flex row: children at their natural width, the spare room
+                // shared by those that can grow, and onto more lines when they do not fit.
+                FlowLayout(spacing: spacing, crossAlignment: crossFactor) {
+                    NodeChildren(nodes: node.children)
                 }
             }
+        }
+    }
+
+    /// 0 for top, 0.5 for center, 1 for bottom.
+    private var crossFactor: CGFloat {
+        switch node.align {
+        case .start: 0
+        case .end: 1
+        default: 0.5
         }
     }
 
@@ -210,52 +209,69 @@ private struct AXSurface: ViewModifier {
     }
 }
 
-/// Lays children left to right and onto new lines when a line is full.
+/// A flex row that wraps. Each child has its natural width; when they all fit on one line the
+/// spare room is shared between the children that can grow (those a wider offer makes wider),
+/// and when they do not fit they flow onto more lines, a child alone on a line growing to it.
 struct FlowLayout: Layout {
     var spacing: CGFloat
-    var align: StackNode.Align = .start
+    /// 0 top, 0.5 center, 1 bottom: where a child sits on a line taller than it.
+    var crossAlignment: CGFloat = 0.5
+
+    private struct Item { var index: Int; var width: CGFloat; var height: CGFloat; var grows: Bool }
+    private struct Line { var items: [Item] = []; var width: CGFloat = 0; var height: CGFloat = 0 }
 
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        let lines = arrange(width: proposal.width ?? .infinity, subviews: subviews)
-        let width = lines.map(\.width).max() ?? 0
+        let limit = proposal.width ?? .infinity
+        let lines = arrange(limit: limit, subviews: subviews)
+        let widest = lines.map(\.width).max() ?? 0
+        let grows = lines.contains { $0.items.contains { $0.grows } }
+        let width = limit.isFinite && grows ? limit : widest
         let height = lines.reduce(0) { $0 + $1.height } + spacing * CGFloat(max(lines.count - 1, 0))
-        return CGSize(width: proposal.width.map { min($0, max(width, 0)) } ?? width, height: height)
+        return CGSize(width: width, height: height)
     }
 
     func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        let lines = arrange(width: bounds.width, subviews: subviews)
+        let lines = arrange(limit: bounds.width, subviews: subviews)
         var y = bounds.minY
         for line in lines {
+            let growers = line.items.filter(\.grows).count
+            let spare = max(bounds.width - line.width, 0)
             var x = bounds.minX
-            switch align {
-            case .center: x += (bounds.width - line.width) / 2
-            case .end: x += bounds.width - line.width
-            default: break
-            }
             for item in line.items {
-                let size = subviews[item].sizeThatFits(ProposedViewSize(width: bounds.width, height: nil))
-                subviews[item].place(at: CGPoint(x: x, y: y + (line.height - size.height) / 2), proposal: ProposedViewSize(width: size.width, height: size.height))
-                x += size.width + spacing
+                var width = item.width
+                var height = item.height
+                if item.grows, growers > 0 {
+                    width += spare / CGFloat(growers)
+                    height = subviews[item.index].sizeThatFits(ProposedViewSize(width: width, height: nil)).height
+                }
+                let top = y + (line.height - height) * crossAlignment
+                subviews[item.index].place(at: CGPoint(x: x, y: top), proposal: ProposedViewSize(width: width, height: height))
+                x += width + spacing
             }
             y += line.height + spacing
         }
     }
 
-    private struct Line { var items: [Int] = []; var width: CGFloat = 0; var height: CGFloat = 0 }
-
-    private func arrange(width: CGFloat, subviews: Subviews) -> [Line] {
+    private func arrange(limit: CGFloat, subviews: Subviews) -> [Line] {
+        let items: [Item] = subviews.indices.map { index in
+            var size = subviews[index].sizeThatFits(.unspecified)
+            if limit.isFinite, size.width > limit {
+                size = subviews[index].sizeThatFits(ProposedViewSize(width: limit, height: nil))
+            }
+            let wide = subviews[index].sizeThatFits(ProposedViewSize(width: 10_000, height: nil)).width
+            return Item(index: index, width: size.width, height: size.height, grows: wide > size.width + 1)
+        }
         var lines: [Line] = []
         var line = Line()
-        for index in subviews.indices {
-            let size = subviews[index].sizeThatFits(ProposedViewSize(width: width.isFinite ? width : nil, height: nil))
-            let needed = line.items.isEmpty ? size.width : line.width + spacing + size.width
-            if needed > width, !line.items.isEmpty {
+        for item in items {
+            let needed = line.items.isEmpty ? item.width : line.width + spacing + item.width
+            if needed > limit, !line.items.isEmpty {
                 lines.append(line)
                 line = Line()
             }
-            line.width = line.items.isEmpty ? size.width : line.width + spacing + size.width
-            line.height = max(line.height, size.height)
-            line.items.append(index)
+            line.width = line.items.isEmpty ? item.width : line.width + spacing + item.width
+            line.height = max(line.height, item.height)
+            line.items.append(item)
         }
         if !line.items.isEmpty { lines.append(line) }
         return lines

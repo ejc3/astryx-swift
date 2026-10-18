@@ -1,7 +1,8 @@
 // What a person does on the board: pick a sprint, use a card's menu, drag cards between
 // columns and within one. Run identically on the stock and the refactored copy.
 const card = (page, title) => page.getByRole("heading", { name: title });
-const menu = (page, title) => page.locator("div").filter({ has: card(page, title) }).getByRole("button", { name: "Work item actions" }).last();
+// The card's own menu button: the nearest ancestor of its title that holds any button.
+const menu = (page, title) => card(page, title).locator("xpath=ancestor::div[.//button][1]").getByRole("button", { name: "Work item actions" });
 
 async function moveViaMenu(page, title, entry) {
   await menu(page, title).click();

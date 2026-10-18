@@ -113,7 +113,7 @@ test("the full journey: delivery, gift, payment, pay", () => {
   assert.equal(view(s).step, 2);
   assert.equal(view(s).actions.backLabel, "Back");
   s = set(s, "delivery", "overnight");
-  assert.equal(view(s).summary.deliveryLabel, "Overnight delivery");
+  assert.equal(view(s).summary.deliveryLabel, "Overnight");
   assert.equal(view(s).summary.shipping, "$24.95");
   assert.equal(view(s).delivery.noteLabel, "Delivery instructions");
   s = set(s, "isGift", true);

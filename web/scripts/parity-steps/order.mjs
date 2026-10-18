@@ -7,18 +7,29 @@ const closeDialog = async (page) => {
   }
 };
 
+/** Each step ends with the pointer out of the way, and gives an opening or closing section time to settle. */
+const step = (name, run) => ({
+  name,
+  run: async (page) => {
+    await run(page);
+    await page.mouse.move(1, 1);
+    await page.waitForTimeout(500);
+  },
+});
+
 export default [
-  { name: "invoices tab", run: async (page) => { await page.getByRole("tab", { name: "Invoices" }).click(); } },
-  { name: "timeline tab", run: async (page) => { await page.getByRole("tab", { name: "Timeline" }).click(); } },
-  { name: "details tab", run: async (page) => { await page.getByRole("tab", { name: "Details" }).click(); } },
-  { name: "more menu opens", run: async (page) => { await page.getByRole("button", { name: "More" }).click(); } },
-  { name: "more menu picks customer", run: async (page) => { await page.getByRole("menuitem", { name: "Customer" }).click(); } },
-  { name: "back to details", run: async (page) => { await page.getByRole("tab", { name: "Details" }).click(); } },
-  { name: "toggle the panel", run: async (page) => { await panelToggle(page).click(); } },
-  { name: "close the panel dialog", run: async (page) => { await closeDialog(page); } },
-  { name: "toggle the panel again", run: async (page) => { await panelToggle(page).click(); } },
-  { name: "close the dialog again", run: async (page) => { await closeDialog(page); } },
-  { name: "click an item", run: async (page) => { await page.getByRole("button", { name: /Ember Bowl/ }).first().click(); } },
-  { name: "collapse notes", run: async (page) => { await page.getByRole("button", { name: "Notes" }).click(); } },
-  { name: "collapse fraud analysis", run: async (page) => { await page.getByRole("button", { name: "Fraud Analysis" }).click(); } },
+  step("invoices tab", async (page) => { await page.getByRole("button", { name: "Invoices", exact: true }).click(); }),
+  step("timeline tab", async (page) => { await page.getByRole("button", { name: "Timeline", exact: true }).click(); }),
+  step("details tab", async (page) => { await page.getByRole("button", { name: "Details", exact: true }).click(); }),
+  step("more menu opens", async (page) => { await page.getByRole("button", { name: "More", exact: true }).click(); }),
+  step("more menu picks customer", async (page) => { await page.getByRole("menuitemradio", { name: "Customer" }).click(); }),
+  step("back to details", async (page) => { await page.getByRole("button", { name: "Details", exact: true }).click(); }),
+  step("click an item", async (page) => { await page.getByRole("button", { name: /Ember Bowl/ }).first().click(); }),
+  step("toggle the panel", async (page) => { await panelToggle(page).click(); }),
+  step("close the panel dialog", async (page) => { await closeDialog(page); }),
+  step("toggle the panel again", async (page) => { await panelToggle(page).click(); }),
+  step("collapse notes", async (page) => { await page.getByRole("button", { name: "Notes", exact: true }).click(); }),
+  step("collapse fraud analysis", async (page) => { await page.getByRole("button", { name: "Fraud Analysis" }).click(); }),
+  step("expand notes again", async (page) => { await page.getByRole("button", { name: "Notes", exact: true }).click(); }),
+  step("close the dialog at the end", async (page) => { await closeDialog(page); }),
 ];

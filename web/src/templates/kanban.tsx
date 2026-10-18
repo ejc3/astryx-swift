@@ -190,7 +190,7 @@ function BoardCardBody({item, send}: {item: CardView; send: Send}) {
       </VStack>
 
       <Text type="supporting" color="secondary">
-        {item.meta}
+        Edited {item.edited} · Due {item.due}
       </Text>
     </VStack>
   );

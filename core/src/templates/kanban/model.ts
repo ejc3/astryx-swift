@@ -180,7 +180,9 @@ export type CardView = {
   priorityVariant: PriorityVariant;
   title: string;
   description: string;
-  /** "Edited 2h ago · Due Jul 8" */
+  edited: string;
+  due: string;
+  /** "Edited 2h ago · Due Jul 8", the two above in one line */
   meta: string;
   /** The card menu's "Move to ..." entries; `id` is the action to press. */
   moveTargets: { label: string; id: string }[];
@@ -272,6 +274,8 @@ export const kanban: TemplateModule<KanbanState, KanbanView> = {
             priorityVariant: PRIORITY_META[it.priority].variant,
             title: it.title,
             description: it.description,
+            edited: it.lastEdited,
+            due: it.dueDate,
             meta: `Edited ${it.lastEdited} · Due ${it.dueDate}`,
             moveTargets: COLUMNS.filter((o) => o.id !== it.column).map((o) => ({ label: `Move to ${o.title}`, id: `tpl.kanban.move:${it.id}:${o.id}` })),
           }));

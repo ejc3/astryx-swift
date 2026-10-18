@@ -21,7 +21,7 @@ export default [
       await field(page, "ZIP code").fill("9720");
   } },
   { name: "choose state and fix ZIP", run: async (page) => {
-      await page.getByRole("combobox", { name: "State" }).click();
+      await page.getByRole("button", { name: /^(Select )?state/i }).click();
       await page.getByRole("option", { name: "Oregon" }).click();
       await field(page, "ZIP code").fill("97201");
   } },

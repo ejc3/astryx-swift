@@ -204,16 +204,19 @@ struct SurfaceLayout: View {
     private func cell(_ drawing: SurfaceMode) -> some View {
         VStack(spacing: 0) {
             caption(drawing)
-            Group {
-                switch drawing {
-                case .web: web
-                case .webOwn: webOwn
-                case .stock: stock
-                default: NativeColumn(app: app)
+            // The drawing is an overlay of an empty box, so its own ideal size cannot stretch
+            // the cell; the cell is what the layout gives it.
+            Color.clear
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .overlay(alignment: .topLeading) {
+                    switch drawing {
+                    case .web: web
+                    case .webOwn: webOwn
+                    case .stock: stock
+                    default: NativeColumn(app: app)
+                    }
                 }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .clipped()
+                .clipped()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }

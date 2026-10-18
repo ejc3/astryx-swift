@@ -213,7 +213,7 @@ export default function CheckoutWizardPage({view: raw, send}: TemplateProps) {
       )}
       <HStack hAlign="between" vAlign="center">
         <Text type="body" color="secondary">
-          {view.summary.deliveryLabel}
+          {view.summary.deliveryLabel} delivery
         </Text>
         <Text type="body">{view.summary.shipping}</Text>
       </HStack>

@@ -102,7 +102,7 @@ function PageHeader({
                     than collapsing items behind a "+N more" overflow). */}
                 <HStack gap={1} vAlign="center" wrap="wrap">
                   <Text type="body" maxLines={1}>
-                    {view.itemCount}
+                    {view.itemCount} ordered items
                   </Text>
                   <HStack gap={1} vAlign="center">
                     <Bullet />

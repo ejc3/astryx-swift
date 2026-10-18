@@ -3,7 +3,7 @@
 export default [
   { name: "type an email", run: async (page) => { await page.getByRole("textbox", { name: "Email" }).fill("someone@example.com"); } },
   { name: "choose express shipping", run: async (page) => { await page.getByRole("radio", { name: /Express Shipping/ }).click(); } },
-  { name: "choose Apple Pay", run: async (page) => { await page.getByRole("button", { name: /Pay with Apple Pay/ }).or(page.getByRole("radio", { name: /Pay with Apple Pay/ })).first().click(); } },
+  { name: "choose Apple Pay", run: async (page) => { await page.getByText("Apple Pay", { exact: true }).click(); } },
   { name: "type a card number", run: async (page) => { await page.getByRole("textbox", { name: "Card number" }).fill("4242424242424242"); } },
   { name: "type expiry and CVC", run: async (page) => {
     await page.getByRole("textbox", { name: "Expiry" }).fill("12 / 30");
@@ -11,12 +11,12 @@ export default [
   } },
   { name: "uncheck save my information", run: async (page) => { await page.getByRole("checkbox", { name: /Securely save my information/ }).click(); } },
   { name: "open the country list and pick Japan", run: async (page) => {
-    await page.getByRole("combobox", { name: "Country" }).or(page.getByRole("button", { name: /Country/ })).first().click();
+    await page.getByRole("combobox", { name: "Country" }).click();
     await page.getByRole("option", { name: "Japan" }).click();
   } },
   { name: "pay now", run: async (page) => { await page.getByRole("button", { name: "Pay now" }).click(); } },
   { name: "ask the chat a question", run: async (page) => {
-    const box = page.getByRole("textbox", { name: /Ask Studio AI/ });
+    const box = page.getByRole("textbox", { name: "Message input" });
     await box.fill("Where is my parcel?");
     await box.press("Enter");
   } },
@@ -31,5 +31,5 @@ export default [
     await page.getByRole("checkbox", { name: "Select Leather Wallet" }).click();
   } },
   { name: "open a row menu", run: async (page) => { await page.getByRole("button", { name: "Row actions" }).first().click(); } },
-  { name: "close the row menu", run: async (page) => { await page.keyboard.press("Escape"); } },
+  { name: "pick a row menu item", run: async (page) => { await page.getByRole("menuitem", { name: "Duplicate" }).click(); } },
 ];

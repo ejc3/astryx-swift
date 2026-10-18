@@ -87,8 +87,13 @@ async function shots(browser, url, size, scheme, steps, problems) {
   await page.waitForSelector("#root > *", { state: "attached" });
   await page.evaluate(() => document.fonts.ready);
   const still = async () => {
-    // Recharts animates its lines from JavaScript (about 1.5 s), which the CSS above cannot
-    // stop, and the two copies mount at different moments: a page with a chart settles longer.
+    // A full-page screenshot resizes the viewport for a moment, and anything that measures
+    // itself (Recharts' ResponsiveContainer) re-renders and restarts its animation. So the
+    // viewport is made the page's full height first, then everything settles, and the
+    // screenshot changes nothing. Recharts animates from JavaScript (about 1.5 s), which the
+    // CSS above cannot stop: a page with a chart settles longer.
+    const height = await page.evaluate(() => document.documentElement.scrollHeight);
+    if (height > size.height) await page.setViewportSize({ width: size.width, height });
     const charts = await page.locator(".recharts-surface").count();
     await page.waitForTimeout(charts > 0 ? 2000 : 400);
     return PNG.sync.read(await page.screenshot({ fullPage: true }));

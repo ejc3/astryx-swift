@@ -72,15 +72,16 @@ export type OrderView = {
   panelDialog: boolean;
   /** The order number as the heading shows it. */
   number: string;
-  /** "5 ordered items". */
-  itemCount: string;
+  /** How many items the order has: the page says "5 ordered items", "5 items". */
+  itemCount: number;
   customerName: string;
   status: string;
   date: string;
   flag: string;
-  products: { name: string; image: string; lines: string[]; amount: string; unit: string }[];
+  products: { name: string; image: string; lines: string[]; amount: string; unit: (string | number)[] }[];
   /** The invoice's summary rows. */
-  summary: { label: string; note: string | null; amount: string; strong: boolean }[];
+  /** Notes and units are lists of parts, drawn one after another (a count, then its unit). */
+  summary: { label: string; note: (string | number)[] | null; amount: string; strong: boolean }[];
   paidBy: { label: string; note: string; amount: string };
   activity: { user: string; text: string; changes: string[] | null; reactions: number | null; time: string }[];
   notes: string;
@@ -115,7 +116,7 @@ export const order: TemplateModule<OrderState, OrderView> = {
     sidePanel: s.sidePanel,
     panelDialog: s.panelDialog,
     number: "#1001",
-    itemCount: `${PRODUCTS.length} ordered items`,
+    itemCount: PRODUCTS.length,
     customerName: "Jane Doe",
     status: "Unfulfilled",
     date: "02/23/2026",
@@ -125,13 +126,13 @@ export const order: TemplateModule<OrderState, OrderView> = {
       image: PRODUCT_IMAGE,
       lines: p.details.split("\n"),
       amount: fmt(p.price * p.qty),
-      unit: `${fmt(p.price)} × ${p.qty}`,
+      unit: [fmt(p.price), " ", "×", " ", p.qty],
     })),
     summary: [
-      { label: "Subtotal", note: `${PRODUCTS.length} items`, amount: fmt(SUBTOTAL), strong: false },
-      { label: "Discount", note: "New customer code: NEW15", amount: `– ${fmt(DISCOUNT)}`, strong: false },
-      { label: "Shipping", note: "Free shipping (0.0lbs) USPS", amount: fmt(SHIPPING), strong: false },
-      { label: "Tax", note: "Sales tax (8.25%)", amount: fmt(TAX), strong: false },
+      { label: "Subtotal", note: [PRODUCTS.length, " items"], amount: fmt(SUBTOTAL), strong: false },
+      { label: "Discount", note: ["New customer code: NEW15"], amount: `– ${fmt(DISCOUNT)}`, strong: false },
+      { label: "Shipping", note: ["Free shipping (0.0lbs) USPS"], amount: fmt(SHIPPING), strong: false },
+      { label: "Tax", note: ["Sales tax (8.25%)"], amount: fmt(TAX), strong: false },
       { label: "Total", note: null, amount: fmt(TOTAL), strong: true },
     ],
     paidBy: { label: "Paid by customer", note: "Visa ...7482", amount: fmt(TOTAL) },

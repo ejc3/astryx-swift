@@ -27,7 +27,7 @@
  *   set  surface | list    widths in px the host measured (0 = not measured yet)
  *   set  touch             true when the primary pointer cannot hover
  */
-import { grouped, plural } from "../../format.ts";
+import { grouped } from "../../format.ts";
 import type { TemplateAction, TemplateModule } from "../types.ts";
 import { CATEGORIES, CONVERSATIONS, type Category, type Conversation, type Priority, type ThreadMessage } from "./data.ts";
 
@@ -393,8 +393,8 @@ export type MessageView = {
   receivedFull: string;
   body: string[];
   attachments: AttachmentView[];
-  /** "2 attachments", or "" when there are none. */
-  attachmentsLabel: string;
+  /** "2 attachments" as separate text nodes (the stock template draws them so), or [] when there are none. */
+  attachmentsLabel: string[];
   /** The open attachment's index when this message's viewer is open, else null. */
   lightboxIndex: number | null;
 };
@@ -425,8 +425,8 @@ export type ComposeView = {
 
 export type InboxView = {
   text: typeof TEXT;
-  /** "3 unread of 9 conversations". */
-  subtitle: string;
+  /** "3 unread of 9 conversations", as the separate text nodes the stock template draws. */
+  subtitle: string[];
   tab: Category;
   tabs: { value: Category; label: string; badge: number | null }[];
   rows: RowView[];
@@ -434,8 +434,8 @@ export type InboxView = {
   selectedKeys: string[];
   /** Whether the bulk-selection band replaces the tab strip. */
   hasSelection: boolean;
-  /** "2 conversations selected". */
-  selectionLabel: string;
+  /** "2 conversations selected", as the separate text nodes the stock template draws. */
+  selectionLabel: string[];
   bulkActions: { id: ActionId; label: string }[];
   openId: string | null;
   mode: { isSingleSurface: boolean; isPaneFullWidth: boolean; isStacked: boolean; isTight: boolean; isTouch: boolean };
@@ -498,7 +498,7 @@ function view(s: InboxState): InboxView {
           receivedFull: message.receivedFull,
           body: message.body,
           attachments: attachments.map((a) => ({ id: a.id, name: a.name, src: a.src, previewAlt: `Preview of ${a.name}`, lightboxAlt: `Attachment: ${a.name}` })),
-          attachmentsLabel: attachments.length === 0 ? "" : plural(attachments.length, "attachment"),
+          attachmentsLabel: attachments.length === 0 ? [] : [String(attachments.length), " attachment", attachments.length === 1 ? "" : "s"],
           lightboxIndex: s.lightbox && s.lightbox.id === message.id ? s.lightbox.index : null,
         };
       }),
@@ -507,7 +507,7 @@ function view(s: InboxState): InboxView {
 
   return {
     text: TEXT,
-    subtitle: `${grouped(s.conversations.filter((x) => x.isUnread).length)} unread of ${plural(s.conversations.length, "conversation")}`,
+    subtitle: [grouped(s.conversations.filter((x) => x.isUnread).length), " unread of ", grouped(s.conversations.length), " ", "conversations"],
     tab: s.category,
     tabs: CATEGORIES.map((option) => {
       const unread = unreadByTab(option.value);
@@ -516,7 +516,7 @@ function view(s: InboxState): InboxView {
     rows,
     selectedKeys: s.selected,
     hasSelection: selectedCount > 0 && !d.isStacked,
-    selectionLabel: `${plural(selectedCount, "conversation")} selected`,
+    selectionLabel: [String(selectedCount), " ", selectedCount === 1 ? "conversation" : "conversations", " ", "selected"],
     bulkActions: THREAD_ACTIONS,
     openId: d.openId,
     mode: { isSingleSurface: d.isSingleSurface, isPaneFullWidth: d.isPaneFullWidth, isStacked: d.isStacked, isTight: d.isTight, isTouch: s.layout.touch },

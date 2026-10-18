@@ -188,6 +188,7 @@ export type CheckoutView = {
     subtotal: string;
     promoLabel: string | null;
     discount: string;
+    /** The method alone: the page adds " delivery" as its own text, as the stock markup does. */
     deliveryLabel: string;
     shipping: string;
     tax: string;
@@ -337,7 +338,7 @@ export const checkout: TemplateModule<CheckoutState, CheckoutView> = {
         subtotal: money(subtotal),
         promoLabel: promo ? promo.label : null,
         discount: `−${money(discount)}`,
-        deliveryLabel: `${deliveryOption.label} delivery`,
+        deliveryLabel: deliveryOption.label,
         shipping: shipping === 0 ? "Free" : money(shipping),
         tax: money(tax),
         total: money(total),
