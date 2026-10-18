@@ -66,7 +66,10 @@ async function shots(browser, url, size, scheme, steps, problems) {
   await page.waitForSelector("#root > *", { state: "attached" });
   await page.evaluate(() => document.fonts.ready);
   const still = async () => {
-    await page.waitForTimeout(400);
+    // Recharts animates its lines from JavaScript (about 1.5 s), which the CSS above cannot
+    // stop, and the two copies mount at different moments: a page with a chart settles longer.
+    const charts = await page.locator(".recharts-surface").count();
+    await page.waitForTimeout(charts > 0 ? 2000 : 400);
     return PNG.sync.read(await page.screenshot({ fullPage: true }));
   };
   const out = [{ name: "rest", png: await still() }];
