@@ -115,7 +115,9 @@ async function shots(browser, url, size, scheme, steps, problems) {
 const rows = [];
 const problems = [];
 for (const [engine, type] of ENGINES) {
-  const browser = await type.launch();
+  // Chromium on a shared, GPU-less box rasterizes tall pages with 1-2 pixels of noise that
+  // differ run to run (stock against stock does it too); one raster thread, no partial raster.
+  const browser = await type.launch(engine === "chromium" ? { args: ["--num-raster-threads=1", "--disable-partial-raster", "--disable-gpu"] } : {});
   for (const t of chosen) {
     const steps = await stepsFor(t.id);
     for (const size of SIZES) for (const scheme of SCHEMES) {

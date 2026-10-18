@@ -3,12 +3,16 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "exports": { ".": "./src/index.ts" },
+  "exports": {
+    ".": "./src/index.ts",
+    "./src/templates/*": "./src/templates/*"
+  },
   "scripts": {
     "lint": "eslint",
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.test.json",
     "test": "node --test --test-reporter=spec \"test/**/*.test.ts\"",
-    "themes": "node scripts/themes.mjs", "fixtures": "node scripts/fixtures.ts"
+    "themes": "node scripts/themes.mjs",
+    "fixtures": "node scripts/fixtures.ts"
   },
   "devDependencies": {
     "@astryxdesign/core": "0.7.1",

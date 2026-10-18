@@ -237,7 +237,6 @@ function ActiveUsersChart({chart}: {chart: ActiveUsers}) {
               stroke={dataColors[s.color]}
               strokeWidth={2}
               dot={false}
-              isAnimationActive={false}
             />
           ))}
         </LineChart>

@@ -4,9 +4,6 @@
 
 const isPhone = (page) => page.viewportSize().width < 900;
 
-/** See the "open an attachment" step: false only for Chromium on a desktop viewport. */
-const viewerSurvivesScreenshot = (page) => isPhone(page) || page.context().browser().browserType().name() !== "chromium";
-
 /** On a phone an open thread replaces the list; the back button brings the list back. */
 async function toList(page) {
   const back = page.getByRole("button", { name: "Inbox", exact: true });
@@ -37,32 +34,15 @@ export default [
   },
   {
     name: "open an attachment in the viewer",
-    run: async (page) => {
-      const thumbnail = page.getByRole("button", { name: /direction-1-colourful.png/ });
-      await thumbnail.click();
-      // A click that lands while the pane is still settling can be lost; press once more if so.
-      const opened = await page.locator("dialog[open]").waitFor({ timeout: 2000 }).then(() => true, () => false);
-      if (!opened) await thumbnail.click();
-      if (!viewerSurvivesScreenshot(page)) {
-        // The stock copy loses its open viewer when this engine takes a full-page screenshot on a
-        // desktop viewport (its state is the thumbnail strip's own, and the strip is rebuilt), so
-        // the whole viewer round trip happens inside this one step instead.
-        await page.getByRole("button", { name: /next/i }).click();
-        await page.keyboard.press("Escape");
-      }
-    },
+    run: async (page) => page.getByRole("button", { name: /direction-1-colourful.png/ }).click(),
   },
   {
     name: "page to the next attachment",
-    run: async (page) => {
-      if (viewerSurvivesScreenshot(page)) await page.getByRole("button", { name: /next/i }).click();
-    },
+    run: async (page) => page.getByRole("button", { name: /next/i }).click(),
   },
   {
     name: "close the viewer",
-    run: async (page) => {
-      if (viewerSurvivesScreenshot(page)) await page.keyboard.press("Escape");
-    },
+    run: async (page) => page.keyboard.press("Escape"),
   },
   {
     name: "reply all",
@@ -80,6 +60,8 @@ export default [
     run: async (page) => {
       await page.getByRole("textbox", { name: "Subject" }).fill("Re: Homepage refresh, we pick the light direction");
       await page.getByRole("textbox", { name: "Message" }).fill("Thanks all.\nWe will go with the light direction.");
+      // The focus ring is drawn by an animation; let it finish so both copies are captured settled.
+      await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished.catch(() => {}))));
     },
   },
   {
