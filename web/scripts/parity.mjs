@@ -6,7 +6,7 @@
 //   npm run parity -w web                    build, then compare every template
 //   npm run parity -w web -- dashboard chat  only these
 //   npm run parity -w web -- --no-build
-import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { build, preview } from "vite";
 import { chromium, webkit } from "playwright";
@@ -28,6 +28,27 @@ const ENGINES = [["chromium", chromium], ["webkit", webkit]];
 
 // Nothing that moves or blinks: the two copies are compared at rest.
 const STILL = "*,*::before,*::after{animation:none!important;transition:none!important;caret-color:transparent!important}";
+
+// One run at a time on this machine: each starts two browsers, and several agents may be
+// checking templates at once on a small box. A run waits for the lock (a directory holding
+// its owner's pid; a lock whose owner is gone is taken over).
+const lock = fileURLToPath(new URL("../.parity-lock", import.meta.url));
+for (;;) {
+  try {
+    mkdirSync(lock);
+    writeFileSync(`${lock}/pid`, String(process.pid));
+    break;
+  } catch {
+    let owner = 0;
+    try { owner = Number(readFileSync(`${lock}/pid`, "utf8")); } catch { /* being written */ }
+    let alive = owner > 0;
+    if (alive) { try { process.kill(owner, 0); } catch { alive = false; } }
+    if (!alive && owner > 0) { rmSync(lock, { recursive: true, force: true }); continue; }
+    await new Promise((r) => setTimeout(r, 3000));
+  }
+}
+process.on("exit", () => { try { if (readFileSync(`${lock}/pid`, "utf8") === String(process.pid)) rmSync(lock, { recursive: true, force: true }); } catch { /* gone */ } });
+for (const signal of ["SIGINT", "SIGTERM"]) process.on(signal, () => process.exit(130));
 
 // A build of its own, so several runs at once (one per template being refactored) do not
 // overwrite each other's dist/. `--no-build` serves dist/ as it is.

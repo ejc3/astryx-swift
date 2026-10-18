@@ -2,3 +2,4 @@ shots/
 dist/
 parity/
 .parity-build/
+.parity-lock/
