@@ -7,53 +7,67 @@ struct SettingsGroups: View {
     /// The explanation beside the fields (true) or above them (false).
     let columns: Bool
     @Environment(\.ax) private var ax
+    @FocusState private var focus: String?
 
-    private func field(_ id: String, _ label: String, _ value: String, content: COSContent = .plain, secure: Bool = false) -> some View {
-        COSField(label: label) {
-            COSTextBox(id: "tpl.settings." + id, label: label, value: value, content: content, secure: secure)
+    /// The text fields in the order they sit on the page: Return moves along them.
+    private static let order = ["username", "firstName", "lastName", "email", "currentPw", "newPw", "confirmPw"]
+
+    private func next(after key: String) -> String? {
+        guard let index = Self.order.firstIndex(of: key), index + 1 < Self.order.count else { return nil }
+        return Self.order[index + 1]
+    }
+
+    /// A text field. `startsEmpty` draws a password field empty (its placeholder showing) although the
+    /// core holds the stock template's sample password: native-only, since Apple says never to
+    /// prefill a password field and the web copy must match stock.
+    private func field(
+        _ id: String, _ label: String, _ value: String, placeholder: String = "", content: COSContent = .plain,
+        secure: Bool = false
+    ) -> some View {
+        let following = next(after: id)
+        return COSField(label: label) {
+            COSTextBox(
+                id: "tpl.settings." + id, label: label, value: value, placeholder: placeholder, content: content,
+                secure: secure, focusKey: id, focus: $focus, startsEmpty: secure,
+                submitLabel: following == nil ? .done : .next
+            ) { focus = following }
         }
     }
 
+    private func save(_ control: String) -> some View {
+        COSButton(label: model.words.save, variant: .primary) {}
+            .disabled(model.isInert(control))
+    }
+
     var body: some View {
+        let w = model.words
         VStack(alignment: .leading, spacing: ax.space(6)) {
-            SettingsGroup(
-                title: "Basic information",
-                detail: "View and update your personal details and account information.",
-                columns: columns
-            ) {
-                field("username", "Username", model.username, content: .username)
-                field("firstName", "First name", model.firstName, content: .givenName)
-                field("lastName", "Last name", model.lastName, content: .familyName)
-                field("email", "Email address", model.email, content: .email)
-                COSButton(label: "Save", variant: .primary) {}
+            SettingsGroup(title: w.basic.title, detail: w.basic.detail, columns: columns) {
+                field("username", w.basic.username, model.username, content: .username)
+                field("firstName", w.basic.firstName, model.firstName, content: .givenName)
+                field("lastName", w.basic.lastName, model.lastName, content: .familyName)
+                field("email", w.basic.email, model.email, content: .email)
+                save("save.basic")
             }
             AXDivider()
-            SettingsGroup(
-                title: "Change password",
-                detail: "Update your password to keep your account secure.",
-                columns: columns
-            ) {
-                field("currentPw", "Verify current password", model.currentPw, content: .password, secure: true)
-                field("newPw", "New password", model.newPw, content: .newPassword, secure: true)
-                field("confirmPw", "Confirm password", model.confirmPw, content: .newPassword, secure: true)
-                COSButton(label: "Save", variant: .primary) {}
+            SettingsGroup(title: w.password.title, detail: w.password.detail, columns: columns) {
+                field("currentPw", w.password.current, model.currentPw, placeholder: w.password.currentPlaceholder, content: .password, secure: true)
+                field("newPw", w.password.new, model.newPw, placeholder: w.password.newPlaceholder, content: .newPassword, secure: true)
+                field("confirmPw", w.password.confirm, model.confirmPw, placeholder: w.password.confirmPlaceholder, content: .newPassword, secure: true)
+                save("save.password")
             }
             AXDivider()
-            SettingsGroup(
-                title: "Advanced settings",
-                detail: "Configure detailed account preferences and security options.",
-                columns: columns
-            ) {
-                COSSwitch(label: "Data Export Access", description: "Allow export of personal data and backups.", isOn: model.dataExport) {
+            SettingsGroup(title: w.advanced.title, detail: w.advanced.detail, columns: columns) {
+                COSSwitch(label: w.advanced.dataExport, description: w.advanced.dataExportDetail, isOn: model.dataExport) {
                     actions.set("dataExport", .bool($0))
                 }
-                COSSwitch(label: "Allow Admin to Add Members", description: "Admins can invite and manage members.", isOn: model.adminMembers) {
+                COSSwitch(label: w.advanced.adminMembers, description: w.advanced.adminMembersDetail, isOn: model.adminMembers) {
                     actions.set("adminMembers", .bool($0))
                 }
-                COSSwitch(label: "Enable Two-Factor Authentication", description: "Require 2FA for added account security.", isOn: model.twoFactor) {
+                COSSwitch(label: w.advanced.twoFactor, description: w.advanced.twoFactorDetail, isOn: model.twoFactor) {
                     actions.set("twoFactor", .bool($0))
                 }
-                COSButton(label: "Save", variant: .primary) {}
+                save("save.advanced")
             }
         }
     }
@@ -100,6 +114,7 @@ private struct SettingsGroup<Fields: View>: View {
 struct SettingsSearch: View {
     let items: [SettingsModel.SearchItem]
     let selected: SettingsModel.SearchItem?
+    let words: SettingsModel.Words
     let actions: SettingsSender
     @State private var query: String
     /// The label of a result the user just picked, so the change it makes to `query` is not
@@ -109,8 +124,8 @@ struct SettingsSearch: View {
     @Environment(\.ax) private var ax
     @Environment(\.axStatic) private var isStatic
 
-    init(items: [SettingsModel.SearchItem], selected: SettingsModel.SearchItem?, actions: SettingsSender) {
-        self.items = items; self.selected = selected; self.actions = actions
+    init(items: [SettingsModel.SearchItem], selected: SettingsModel.SearchItem?, words: SettingsModel.Words, actions: SettingsSender) {
+        self.items = items; self.selected = selected; self.words = words; self.actions = actions
         _query = State(initialValue: selected?.label ?? "")
     }
 
@@ -124,12 +139,12 @@ struct SettingsSearch: View {
         HStack(spacing: ax.space(2)) {
             Image(systemName: "magnifyingglass").foregroundStyle(ax.iconSecondary).accessibilityHidden(true)
             if isStatic {
-                Text(query.isEmpty ? "Search settings..." : query)
+                Text(query.isEmpty ? words.searchPlaceholder : query)
                     .font(ax.fontBase)
                     .foregroundStyle(query.isEmpty ? ax.textDisabled : ax.text)
                     .frame(maxWidth: .infinity, alignment: .leading)
             } else {
-                TextField("Search", text: $query, prompt: Text("Search settings...").foregroundColor(ax.textDisabled))
+                TextField(words.searchLabel, text: $query, prompt: Text(words.searchPlaceholder).foregroundColor(ax.textDisabled))
                     .textFieldStyle(.plain)
                     .font(ax.fontBase)
                     .foregroundStyle(ax.text)
@@ -141,16 +156,22 @@ struct SettingsSearch: View {
                 Button {
                     query = ""
                 } label: {
-                    Image(systemName: "xmark.circle.fill").foregroundStyle(ax.iconSecondary).frame(minWidth: 24, minHeight: 24)
+                    Image(systemName: "xmark.circle.fill").foregroundStyle(ax.iconSecondary)
+                        .frame(minWidth: cosTouch, minHeight: cosTouch)
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel("Clear search")
+                .accessibilityLabel(words.clearSearch)
             }
         }
-        .padding(.horizontal, ax.space(3))
-        .frame(minHeight: 36 * min(ax.scale, 1.4))
+        .padding(.leading, ax.space(3))
+        .padding(.trailing, query.isEmpty || isStatic ? ax.space(3) : 0)
+        .frame(minHeight: max(cosTouch, 36 * min(ax.scale, 1.4)))
         .background(RoundedRectangle(cornerRadius: ax.radiusElement, style: .continuous).fill(ax.surface))
         .overlay(RoundedRectangle(cornerRadius: ax.radiusElement, style: .continuous).strokeBorder(focused ? ax.accent : ax.borderStrong, lineWidth: 1))
+        // Tapping anywhere in the box, its icon and padding included, puts the cursor in it.
+        .contentShape(RoundedRectangle(cornerRadius: ax.radiusElement, style: .continuous))
+        .onTapGesture { if !isStatic { focused = true } }
         .overlay(alignment: .bottomLeading) {
             if focused && !matches.isEmpty {
                 let gap = ax.space(1)
@@ -189,7 +210,7 @@ struct SettingsSearch: View {
                             }
                         }
                         .padding(.horizontal, ax.space(3))
-                        .frame(minHeight: 36)
+                        .frame(minHeight: cosTouch)
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)

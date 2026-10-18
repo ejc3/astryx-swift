@@ -53,3 +53,11 @@ test("the view is plain JSON", () => {
   const v = view(start());
   assert.deepEqual(JSON.parse(JSON.stringify(v)), v);
 });
+
+test("the view says which controls are inert, and carries the native words", () => {
+  const v = view(start());
+  assert.deepEqual(v.inert, ["save.basic", "save.password", "save.advanced"]);
+  assert.equal(v.words.save, "Save");
+  assert.equal(v.words.password.current, "Verify current password");
+  assert.equal(v.words.done, "Done");
+});

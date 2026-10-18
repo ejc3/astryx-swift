@@ -15,13 +15,20 @@ struct OrderHeader: View {
         VStack(alignment: .leading, spacing: ax.space(3)) {
             HStack(alignment: .top, spacing: ax.space(4)) {
                 VStack(alignment: .leading, spacing: 0) {
-                    HStack(spacing: ax.space(1)) {
-                        Image(systemName: "arrow.left").font(ax.fontSmall)
-                        Text("All orders").font(ax.fontBase)
+                    // Inert in the stock template: a disabled button, not a link that does nothing.
+                    Button {} label: {
+                        HStack(spacing: ax.space(1)) {
+                            Image(systemName: "arrow.left").font(ax.fontSmall)
+                            Text(model.words.allOrders).font(ax.fontBase)
+                        }
+                        .frame(minHeight: cosTouch, alignment: .leading)
+                        .contentShape(Rectangle())
                     }
+                    .buttonStyle(.plain)
+                    .disabled(model.isInert("allOrders"))
                     .foregroundStyle(ax.textSecondary)
+                    .padding(.vertical, -(cosTouch - 20) / 2)
                     .padding(.bottom, ax.space(1))
-                    .accessibilityElement(children: .combine)
                     Text(model.number)
                         .font(ax.heading(1))
                         .foregroundStyle(ax.text)
@@ -31,23 +38,17 @@ struct OrderHeader: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 if !narrow {
-                    HStack(spacing: ax.space(2)) {
-                        COSButton(label: "Restock", variant: .secondary) {}
-                        COSButton(label: "Edit", variant: .secondary) {}
-                    }
+                    HStack(spacing: ax.space(2)) { restock; edit }
                 }
             }
             if narrow {
-                HStack(spacing: ax.space(2)) {
-                    COSButton(label: "Restock", variant: .secondary, fills: true) {}
-                    COSButton(label: "Edit", variant: .secondary, fills: true) {}
-                }
+                HStack(spacing: ax.space(2)) { restock; edit }
             }
             HStack(spacing: ax.space(2)) {
-                OrderTabs(tab: model.tab)
-                    .environment(\.axWidth, max(width - 36 * min(ax.scale, 1.4) - ax.space(2), 0))
+                OrderTabs(model: model)
+                    .environment(\.axWidth, max(width - max(cosTouch, 36 * min(ax.scale, 1.4)) - ax.space(2), 0))
                 COSIconButton(
-                    label: panelShown ? "Hide panel" : "Show panel",
+                    label: panelShown ? model.words.hidePanel : model.words.showPanel,
                     symbol: panelShown ? "sidebar.right" : "sidebar.right"
                 ) {
                     send(.press(id: narrow ? "tpl.order.panel:dialog" : "tpl.order.panel:side"))
@@ -62,10 +63,20 @@ struct OrderHeader: View {
         .padding(.top, ax.space(1))
     }
 
+    private var restock: some View {
+        COSButton(label: model.words.restock, variant: .secondary, fills: narrow) {}
+            .disabled(model.isInert("restock"))
+    }
+
+    private var edit: some View {
+        COSButton(label: model.words.edit, variant: .secondary, fills: narrow) {}
+            .disabled(model.isInert("edit"))
+    }
+
     /// Facts wrap onto more lines on a narrow screen rather than collapse behind "+N more".
     private var facts: some View {
         FlowLayout(spacing: ax.space(1), crossAlignment: 0.5) {
-            Text("\(model.itemCount) ordered items").font(ax.fontBase).foregroundStyle(ax.text)
+            Text(model.itemsLabel).font(ax.fontBase).foregroundStyle(ax.text)
             HStack(spacing: ax.space(1)) {
                 COSBullet()
                 COSAvatar(name: model.customerName, size: .sm)
@@ -81,7 +92,7 @@ struct OrderHeader: View {
                 Text(model.date).font(ax.fontBase).foregroundStyle(ax.text)
             }
             .accessibilityElement(children: .combine)
-            .accessibilityLabel("Date \(model.date)")
+            .accessibilityLabel("\(model.words.date) \(model.date)")
             HStack(spacing: ax.space(1)) {
                 COSBullet()
                 Image(systemName: "flag").font(ax.fontSmall).foregroundStyle(ax.iconSecondary)
@@ -90,27 +101,33 @@ struct OrderHeader: View {
             .accessibilityElement(children: .combine)
             HStack(spacing: ax.space(1)) {
                 COSBullet()
-                Text("See all").font(ax.fontBase).foregroundStyle(ax.textSecondary).underline()
+                Button {} label: {
+                    Text(model.words.seeAll).font(ax.fontBase).underline()
+                        .frame(minHeight: cosTouch)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .disabled(model.isInert("seeAll"))
+                .foregroundStyle(ax.textSecondary)
+                .padding(.vertical, -(cosTouch - 20) / 2)
             }
         }
     }
 }
 
-/// Details, Invoices and Timeline, and a More menu for Customer and Analysis. Choosing sends
-/// `set tab`.
+/// The first tabs in a row and a More menu for the rest. Choosing sends `set tab`.
 struct OrderTabs: View {
-    let tab: String
+    let model: OrderModel
     @Environment(\.ax) private var ax
     @Environment(\.axSend) private var send
 
-    private let more: [(value: String, label: String)] = [("customer", "Customer"), ("analysis", "Analysis")]
+    private var tab: String { model.tab }
+    private var more: [OrderModel.Tab] { model.tabs.filter(\.more) }
 
     var body: some View {
         AXHScroll {
             HStack(spacing: ax.space(1)) {
-                button("details", "Details")
-                button("invoices", "Invoices")
-                button("timeline", "Timeline")
+                ForEach(model.tabs.filter { !$0.more }, id: \.value) { button($0.value, $0.label) }
                 menu
             }
         }
@@ -137,7 +154,7 @@ struct OrderTabs: View {
         } label: {
             label(title, selected: selected)
                 .padding(.horizontal, ax.space(3))
-                .frame(minHeight: 40)
+                .frame(minHeight: max(cosTouch, 40))
                 .overlay(alignment: .bottom) { underline(selected) }
                 .contentShape(Rectangle())
         }
@@ -161,20 +178,20 @@ struct OrderTabs: View {
             }
         } label: {
             HStack(spacing: ax.space(1)) {
-                label("More", selected: selected)
+                label(model.words.more, selected: selected)
                 Image(systemName: "chevron.down")
                     .font(.system(size: ax.fontSize("font-size-xs", 10), weight: .semibold))
                     .foregroundStyle(ax.iconSecondary)
             }
             .padding(.horizontal, ax.space(3))
-            .frame(minHeight: 40)
+            .frame(minHeight: max(cosTouch, 40))
             .overlay(alignment: .bottom) { underline(selected) }
             .contentShape(Rectangle())
         }
         .menuStyle(.button)
         .buttonStyle(.plain)
         .menuIndicator(.hidden)
-        .accessibilityLabel("More")
+        .accessibilityLabel(model.words.more)
         .accessibilityValue(more.first { $0.value == tab }?.label ?? "")
     }
 }

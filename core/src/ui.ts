@@ -134,9 +134,17 @@ export type DemoScreenId = (typeof SCREENS)[number];
 export type TemplateScreenId = `t.${string}`;
 export type ScreenId = DemoScreenId | TemplateScreenId;
 
-export type NavItem = { id: ScreenId; label: string; icon: Icon; badge?: string; section: string };
+export type NavItem = {
+  id: ScreenId; label: string; icon: Icon; badge?: string; section: string;
+  /** What a screen reader says: the label and its section, since two sections share names. */
+  accessibilityLabel: string;
+};
 
-export type Toast = { id: number; tone: Tone; text: string; action?: { id: string; label: string } };
+export type Toast = {
+  id: number; tone: Tone; text: string; action?: { id: string; label: string };
+  /** The tone in a word for a screen reader (absent for a neutral toast), and the close button's label. */
+  toneLabel?: string; dismissLabel: string;
+};
 
 export type Dialog = { title: string; text: string; confirm: ButtonNode; cancel: ButtonNode };
 
@@ -162,7 +170,14 @@ export type AppSnapshot = {
    * - "compare": native and web side by side; "all": all four, as a 2 by 2 grid.
    * A web page ignores it. A host too small for a side-by-side choice shows "native".
    */
-  surface: { id: string; label: string; value: Surface; options: Option[]; stockTemplate: string; stockLabel: string };
+  surface: {
+    id: string; label: string; value: Surface; options: Option[];
+    /** The options in two groups: which drawing, and how many at once (the side-by-side choices). */
+    groups: { label: string; values: Surface[] }[];
+    /** Why a side-by-side choice is dimmed when the window is too small for it. */
+    unavailable: string;
+    stockTemplate: string; stockLabel: string;
+  };
   /** The shipped scenarios and the one playing (core/src/scenarios.ts). */
   scenarios: ScenariosSnapshot;
 };

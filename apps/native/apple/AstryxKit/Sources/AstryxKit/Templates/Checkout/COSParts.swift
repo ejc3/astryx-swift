@@ -4,6 +4,46 @@ import SwiftUI
 // form fields with the right keyboards, a menu select, switches, buttons, banners, a collapsible
 // and the product tile. They read every color, radius, spacing and size from the theme's tokens.
 
+// MARK: Shared words and sizes
+
+/// The words the three templates share, from each model's `words` (the core's
+/// `COMMON_WORDS`): field marks, the keyboard's buttons and a collapsible section's state.
+/// A screen puts them in the environment for the parts below.
+struct COSWords: Decodable, Sendable, Equatable {
+    var optional = ""
+    /// Spoken before an error's message.
+    var errorPrefix = ""
+    var expanded = ""
+    var collapsed = ""
+    var expandHint = ""
+    var collapseHint = ""
+    var previous = ""
+    var next = ""
+    var done = ""
+}
+
+private struct COSWordsKey: EnvironmentKey {
+    static let defaultValue = COSWords()
+}
+
+extension EnvironmentValues {
+    var cosWords: COSWords {
+        get { self[COSWordsKey.self] }
+        set { self[COSWordsKey.self] = newValue }
+    }
+}
+
+/// The smallest touch target: 44 points on iPhone and iPad (Apple's default), 28 on the Mac
+/// where the pointer is precise. Controls draw smaller than this only if they grow their
+/// tappable area to it.
+let cosTouch: CGFloat = {
+    #if os(macOS)
+    28
+    #else
+    44
+    #endif
+}()
+
 // MARK: Text entry
 
 /// What a text field is for, so the platform can offer the right keyboard, autofill and
@@ -64,12 +104,14 @@ extension View {
 private struct COSFocusModifier: ViewModifier {
     let binding: FocusState<String?>.Binding?
     let key: String
+    /// The box's own focus, when the form gave none.
+    let own: FocusState<Bool>.Binding
 
     func body(content: Content) -> some View {
         if let binding {
             content.focused(binding, equals: key)
         } else {
-            content
+            content.focused(own)
         }
     }
 }
@@ -82,8 +124,12 @@ struct COSField<Content: View>: View {
     var hint: String? = nil
     var error: String? = nil
     var info: String? = nil
+    /// The info button's spoken name ("About CVC").
+    var infoLabel: String? = nil
     @ViewBuilder var content: Content
     @Environment(\.ax) private var ax
+    @Environment(\.cosWords) private var words
+    @Environment(\.horizontalSizeClass) private var sizeClass
     @State private var showsInfo = false
 
     var body: some View {
@@ -91,7 +137,7 @@ struct COSField<Content: View>: View {
             HStack(spacing: ax.space(1)) {
                 Text(label).font(ax.fontLabel).foregroundStyle(ax.text)
                 if optional {
-                    Text("Optional").font(ax.fontSmall).foregroundStyle(ax.textSecondary)
+                    Text(words.optional).font(ax.fontSmall).foregroundStyle(ax.textSecondary)
                 }
                 if let info {
                     Button {
@@ -100,22 +146,24 @@ struct COSField<Content: View>: View {
                         Image(systemName: "info.circle")
                             .font(ax.fontBase)
                             .foregroundStyle(ax.iconSecondary)
-                            .frame(minWidth: 24, minHeight: 24)
+                            // A 44-point target that takes no more room than the icon: the extra
+                            // is padding taken back, and the content shape reaches into it.
+                            .frame(minWidth: cosTouch, minHeight: cosTouch)
                             .contentShape(Rectangle())
-                            .padding(.vertical, -5)
+                            .padding(.vertical, -(cosTouch - 20) / 2)
+                            .padding(.horizontal, -(cosTouch - 20) / 2)
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel("About \(label)")
+                    .accessibilityLabel(infoLabel ?? label)
                     .accessibilityHint(info)
+                    // A popover on the Mac and iPad; on an iPhone it adapts to a small sheet, as
+                    // Apple asks (a popover in a compact view is a poor fit).
                     .popover(isPresented: $showsInfo) {
-                        Text(info)
-                            .font(ax.fontBase)
-                            .foregroundStyle(ax.text)
-                            .padding(ax.space(4))
-                            .frame(maxWidth: 280, alignment: .leading)
-                            .fixedSize(horizontal: false, vertical: true)
+                        COSInfoContent(text: info, showsDone: sizeClass == .compact) { showsInfo = false }
+                            .environment(\.ax, ax)
+                            .environment(\.cosWords, words)
                             #if os(iOS)
-                            .presentationCompactAdaptation(.popover)
+                            .presentationCompactAdaptation(.sheet)
                             #endif
                     }
                 }
@@ -133,11 +181,42 @@ struct COSField<Content: View>: View {
     }
 }
 
+/// The words of a field's help: in a popover beside the field, or in a short sheet on an iPhone.
+private struct COSInfoContent: View {
+    let text: String
+    let showsDone: Bool
+    let dismiss: () -> Void
+    @Environment(\.ax) private var ax
+    @Environment(\.cosWords) private var words
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: ax.space(3)) {
+            Text(text)
+                .font(ax.fontBase)
+                .foregroundStyle(ax.text)
+                .fixedSize(horizontal: false, vertical: true)
+            if showsDone {
+                HStack {
+                    Spacer(minLength: 0)
+                    COSButton(label: words.done, variant: .secondary, action: dismiss)
+                }
+            }
+        }
+        .padding(ax.space(4))
+        .frame(maxWidth: showsDone ? .infinity : 280, alignment: .leading)
+        #if os(iOS)
+        .presentationDetents([.height(showsDone ? 200 : 120), .medium])
+        .presentationDragIndicator(.visible)
+        #endif
+    }
+}
+
 /// A status message with its mark: red for an error, green for success, orange for a warning.
 struct COSStatus: View {
     let tone: Tone
     let message: String
     @Environment(\.ax) private var ax
+    @Environment(\.cosWords) private var words
 
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: ax.space(1)) {
@@ -146,7 +225,7 @@ struct COSStatus: View {
         }
         .foregroundStyle(ax.tone(tone).text)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel(tone == .danger ? "Error: \(message)" : message)
+        .accessibilityLabel(tone == .danger ? "\(words.errorPrefix) \(message)" : message)
     }
 
     private var symbol: String {
@@ -175,22 +254,33 @@ struct COSTextBox: View {
     var hasError = false
     var focusKey: String? = nil
     var focus: FocusState<String?>.Binding? = nil
+    /// The label on the keyboard's Return key: `.next` where another field follows, `.done` on the last.
+    var submitLabel: SubmitLabel = .return
     var onSubmit: (() -> Void)? = nil
     @State private var text: String
+    @FocusState private var ownFocus: Bool
     @Environment(\.ax) private var ax
     @Environment(\.axStatic) private var isStatic
 
+    /// `startsEmpty` draws the field empty although the model holds a value: used for password
+    /// fields, whose sample text is the stock template's data. It is a native-only
+    /// presentation choice (the web copy must match stock); typing sends the new text as usual.
     init(
         id: String, label: String, value: String, placeholder: String = "", content: COSContent = .plain,
         secure: Bool = false, multiline: Bool = false, maxLength: Int? = nil, icon: String? = nil,
         hasError: Bool = false, focusKey: String? = nil, focus: FocusState<String?>.Binding? = nil,
-        onSubmit: (() -> Void)? = nil
+        startsEmpty: Bool = false, submitLabel: SubmitLabel = .return, onSubmit: (() -> Void)? = nil
     ) {
         self.id = id; self.label = label; self.value = value; self.placeholder = placeholder
         self.content = content; self.secure = secure; self.multiline = multiline; self.maxLength = maxLength
         self.icon = icon; self.hasError = hasError; self.focusKey = focusKey; self.focus = focus
-        self.onSubmit = onSubmit
-        _text = State(initialValue: value)
+        self.submitLabel = submitLabel; self.onSubmit = onSubmit
+        _text = State(initialValue: startsEmpty ? "" : value)
+    }
+
+    /// Tapping anywhere in the box (its padding or icon, not only the text line) focuses the field.
+    private func focusField() {
+        if let focus { focus.wrappedValue = focusKey ?? id } else { ownFocus = true }
     }
 
     var body: some View {
@@ -204,12 +294,14 @@ struct COSTextBox: View {
         }
         .padding(.horizontal, ax.space(3))
         .padding(.vertical, multiline ? ax.space(2) : ax.space(2) + 2)
-        .frame(minHeight: 36 * min(ax.scale, 1.4))
+        .frame(minHeight: max(cosTouch, 36 * min(ax.scale, 1.4)))
         .background(RoundedRectangle(cornerRadius: radius, style: .continuous).fill(ax.surface))
         .overlay(
             RoundedRectangle(cornerRadius: radius, style: .continuous)
                 .strokeBorder(hasError ? ax.danger : ax.borderStrong, lineWidth: 1)
         )
+        .contentShape(RoundedRectangle(cornerRadius: radius, style: .continuous))
+        .onTapGesture { if !isStatic { focusField() } }
         .syncedText(id: id, value: value, text: $text)
         .onChange(of: text) { _, new in
             if let maxLength, new.count > maxLength { text = String(new.prefix(maxLength)) }
@@ -234,7 +326,8 @@ struct COSTextBox: View {
                 .font(ax.fontBase)
                 .foregroundStyle(ax.text)
                 .cosContent(content)
-                .modifier(COSFocusModifier(binding: focus, key: focusKey ?? id))
+                .modifier(COSFocusModifier(binding: focus, key: focusKey ?? id, own: $ownFocus))
+                .submitLabel(submitLabel)
                 .onSubmit { onSubmit?() }
         } else if multiline {
             TextField(label, text: $text, prompt: Text(placeholder).foregroundColor(ax.textDisabled), axis: .vertical)
@@ -243,14 +336,15 @@ struct COSTextBox: View {
                 .font(ax.fontBase)
                 .foregroundStyle(ax.text)
                 .cosContent(content)
-                .modifier(COSFocusModifier(binding: focus, key: focusKey ?? id))
+                .modifier(COSFocusModifier(binding: focus, key: focusKey ?? id, own: $ownFocus))
         } else {
             TextField(label, text: $text, prompt: Text(placeholder).foregroundColor(ax.textDisabled))
                 .textFieldStyle(.plain)
                 .font(ax.fontBase)
                 .foregroundStyle(ax.text)
                 .cosContent(content)
-                .modifier(COSFocusModifier(binding: focus, key: focusKey ?? id))
+                .modifier(COSFocusModifier(binding: focus, key: focusKey ?? id, own: $ownFocus))
+                .submitLabel(submitLabel)
                 .onSubmit { onSubmit?() }
         }
     }
@@ -296,7 +390,7 @@ struct COSSelect: View {
                     .foregroundStyle(ax.iconSecondary)
             }
             .padding(.horizontal, ax.space(3))
-            .frame(minHeight: 36 * min(ax.scale, 1.4))
+            .frame(minHeight: max(cosTouch, 36 * min(ax.scale, 1.4)))
             .background(RoundedRectangle(cornerRadius: ax.radiusElement, style: .continuous).fill(ax.surface))
             .overlay(
                 RoundedRectangle(cornerRadius: ax.radiusElement, style: .continuous)
@@ -365,6 +459,7 @@ struct COSButton: View {
                 Text(label).lineLimit(1)
             }
             .frame(maxWidth: fills ? .infinity : nil)
+            .frame(minHeight: cosTouch)
         }
         .buttonStyle(AXButtonStyle(variant: variant, ax: ax))
     }
@@ -378,7 +473,7 @@ struct COSIconButton: View {
     @Environment(\.ax) private var ax
 
     var body: some View {
-        let side = 36 * min(ax.scale, 1.4)
+        let side = max(cosTouch, 36 * min(ax.scale, 1.4))
         Button(action: action) {
             Image(systemName: symbol)
                 .font(.system(size: ax.fontSize("font-size-lg", 17) * 0.95))
@@ -433,6 +528,7 @@ struct COSCollapsible<Title: View, Content: View>: View {
     @ViewBuilder var content: Content
     @State private var isOpen: Bool
     @Environment(\.ax) private var ax
+    @Environment(\.cosWords) private var words
 
     init(startsOpen: Bool = true, spokenTitle: String, @ViewBuilder title: () -> Title, @ViewBuilder content: () -> Content) {
         self.startsOpen = startsOpen
@@ -455,13 +551,13 @@ struct COSCollapsible<Title: View, Content: View>: View {
                         .foregroundStyle(ax.iconSecondary)
                         .rotationEffect(.degrees(isOpen ? 90 : 0))
                 }
-                .frame(minHeight: 28)
+                .frame(minHeight: cosTouch)
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .accessibilityLabel(spokenTitle)
-            .accessibilityValue(isOpen ? "Expanded" : "Collapsed")
-            .accessibilityHint(isOpen ? "Collapses this section" : "Expands this section")
+            .accessibilityValue(isOpen ? words.expanded : words.collapsed)
+            .accessibilityHint(isOpen ? words.collapseHint : words.expandHint)
             if isOpen { content }
         }
         .frame(maxWidth: .infinity, alignment: .leading)

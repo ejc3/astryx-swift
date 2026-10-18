@@ -12,6 +12,7 @@
  * knows, so the state keeps both flags and the host picks.
  */
 import type { TemplateModule } from "../types.ts";
+import { COMMON_WORDS, type CommonWords } from "../checkout/words.ts";
 
 /** One picture stands in for every product. */
 const PRODUCT_IMAGE =
@@ -83,12 +84,84 @@ export type OrderView = {
   /** Notes and units are lists of parts, drawn one after another (a count, then its unit). */
   summary: { label: string; note: (string | number)[] | null; amount: string; strong: boolean }[];
   paidBy: { label: string; note: string; amount: string };
-  activity: { user: string; text: string; changes: string[] | null; reactions: number | null; time: string }[];
+  /** `reactionsLabel` is what a screen reader says of the reactions: "3 reactions", or "Reactions" with no count. */
+  activity: { user: string; text: string; changes: string[] | null; reactions: number | null; reactionsLabel: string; time: string }[];
   notes: string;
   customer: { label: string; value: string }[];
-  fraud: { risk: number; recommendation: string; detail: string };
+  fraud: { risk: number; riskValue: string; recommendation: string; detail: string };
+  /** The tabs in order; the last two sit behind a More menu. */
+  tabs: { value: string; label: string; more: boolean }[];
+  /** "5 ordered items", the facts line's first fact. */
+  itemsLabel: string;
+  /** Controls that do nothing in the stock template and stay inert here: a host draws them disabled. */
+  inert: string[];
+  /** The words only the native drawing writes (the web page writes its own inline). */
+  words: OrderWords;
 };
 export type View = OrderView;
+
+export type OrderWords = CommonWords & {
+  allOrders: string;
+  restock: string;
+  edit: string;
+  seeAll: string;
+  date: string;
+  showPanel: string;
+  hidePanel: string;
+  more: string;
+  panelTitle: string;
+  items: string;
+  fulfillItem: string;
+  createLabel: string;
+  invoice: string;
+  paid: string;
+  refund: string;
+  sendInvoice: string;
+  timeline: string;
+  filters: string;
+  like: string;
+  reply: string;
+  reactions: string;
+  notes: string;
+  showMore: string;
+  customer: string;
+  fraudAnalysis: string;
+  riskLevel: string;
+};
+
+const WORDS: OrderWords = {
+  ...COMMON_WORDS,
+  allOrders: "All orders",
+  restock: "Restock",
+  edit: "Edit",
+  seeAll: "See all",
+  date: "Date",
+  showPanel: "Show panel",
+  hidePanel: "Hide panel",
+  more: "More",
+  panelTitle: "Order details",
+  items: "Items",
+  fulfillItem: "Fulfill item",
+  createLabel: "Create label",
+  invoice: "Invoice",
+  paid: "Paid",
+  refund: "Refund",
+  sendInvoice: "Send Invoice",
+  timeline: "Timeline",
+  filters: "Filters",
+  like: "Like",
+  reply: "Reply",
+  reactions: "Reactions",
+  notes: "Notes",
+  showMore: "Show more",
+  customer: "Customer",
+  fraudAnalysis: "Fraud Analysis",
+  riskLevel: "Risk level",
+};
+
+const TAB_LABELS: Record<(typeof TABS)[number], string> = {
+  details: "Details", invoices: "Invoices", timeline: "Timeline", customer: "Customer", analysis: "Analysis",
+};
 
 export const order: TemplateModule<OrderState, OrderView> = {
   id: "order",
@@ -141,6 +214,7 @@ export const order: TemplateModule<OrderState, OrderView> = {
       text: a.text,
       changes: a.changes ? [...a.changes] : null,
       reactions: a.reactions ?? null,
+      reactionsLabel: a.reactions == null ? "Reactions" : `${a.reactions} ${a.reactions === 1 ? "reaction" : "reactions"}`,
       time: a.time,
     })),
     notes:
@@ -154,8 +228,14 @@ export const order: TemplateModule<OrderState, OrderView> = {
     ],
     fraud: {
       risk: 15,
+      riskValue: "15 percent",
       recommendation: "Recommendation: Fulfill order",
       detail: "There is a low chance that you will receive a chargeback on this order.",
     },
+    tabs: TABS.map((value, i) => ({ value, label: TAB_LABELS[value], more: i >= 3 })),
+    itemsLabel: `${PRODUCTS.length} ordered items`,
+    // Refund moves money out and cannot be undone: if it is ever wired, it needs a destructive confirmation.
+    inert: ["allOrders", "restock", "edit", "seeAll", "fulfill", "label", "refund", "invoice", "filters", "like", "reply"],
+    words: WORDS,
   }),
 };

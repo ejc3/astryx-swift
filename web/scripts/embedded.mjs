@@ -104,7 +104,8 @@ await check("a click in the page reaches the host's client as a dispatch of the 
   await w.page.goto(w.url);
   await w.page.waitForSelector("main");
   await w.page.locator("button").filter({ has: w.page.locator("svg") }).first().click(); // nav drawer
-  await w.page.getByRole("button", { name: "Inbox" }).first().click();
+  // The demo inbox: the nav lists the Astryx templates (their own Inbox among them) above the demos.
+  await w.page.getByRole("button", { name: "Inbox" }).last().click();
   await w.page.waitForFunction(() => document.querySelector("h1")?.textContent === "Inbox");
   const dispatches = w.received.filter((m) => m.type === "dispatch");
   assert(dispatches.some((m) => m.action.type === "navigate" && m.action.screen === "inbox"), `saw ${JSON.stringify(dispatches)}`);
@@ -159,6 +160,19 @@ await check("the page never sends tick in embedded mode; the toast timeout goes 
   await w.page.locator(".an-toast").waitFor({ state: "detached", timeout: 3000 });
   assert(w.received.some((m) => m.type === "dispatch" && m.action.type === "dismissToast"), "dismissToast reached the host");
   assert(w.host.getSnapshot("app").toast === null, "the host's toast is gone");
+  await w.context.close();
+});
+
+await check("a toast that offers Undo is not timed out: it stays until a person acts", async () => {
+  const w = await webview({ start: { screen: "inbox" } });
+  await w.page.clock.install();
+  await w.page.goto(w.url);
+  await w.page.waitForSelector("main");
+  w.host.dispatch({ type: "press", id: "inbox.archive:m1" });
+  await w.page.locator(".an-toast").waitFor({ timeout: 3000 });
+  await w.page.clock.fastForward(30_000);
+  assert(await w.page.locator(".an-toast").isVisible(), "the Undo toast is still on screen after 30 s");
+  assert(!w.received.some((m) => m.type === "dispatch" && m.action.type === "dismissToast"), "no dismissToast was sent");
   await w.context.close();
 });
 

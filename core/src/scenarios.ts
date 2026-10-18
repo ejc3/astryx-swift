@@ -69,6 +69,10 @@ export type ScenariosSnapshot = {
     caption: string;
     /** The step to perform now (null when paused or done). The host reports `scenario.done:<n>`. */
     step: null | { index: number } & ScenarioStep;
-    controls: { pauseId: string; resumeId: string; stopId: string; pauseLabel: string; resumeLabel: string; stopLabel: string };
+    controls: ScenarioControls;
   };
+  /** The controls with nothing playing (for a menu that offers them dimmed). */
+  controls: ScenarioControls;
 };
+
+export type ScenarioControls = { pauseId: string; resumeId: string; stopId: string; pauseLabel: string; resumeLabel: string; stopLabel: string };

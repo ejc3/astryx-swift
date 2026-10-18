@@ -8,11 +8,14 @@
  *   set    promo, email, firstName, lastName, address, apartment, city, state, postalCode, country,
  *          delivery, deliveryNote, cardNumber, cardName, expiry, cvc  <string>
  *   set    isGift, billingMatches  <boolean>
+ *   press  blur:<field>   the person left a text field: its error may show now, before Continue
+ *                         (the web page never sends it, so the web copy is unchanged)
  *
  * Totals are worked out in dollars as floats and shown with toFixed(2), exactly as the stock
  * template does, so every figure matches it to the cent.
  */
 import type { TemplateModule } from "../types.ts";
+import { COMMON_WORDS, type CommonWords } from "./words.ts";
 
 // Product artwork: the same inline placeholder for every item, as the Astryx CLI scaffolds it.
 const PLACEHOLDER = "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20400%20300%22%20preserveAspectRatio%3D%22xMidYMid%20slice%22%3E%3Crect%20width%3D%22400%22%20height%3D%22300%22%20fill%3D%22%23f5f6f8%22%2F%3E%3Cg%20transform%3D%22translate%28200%20150%29%22%20fill%3D%22none%22%20stroke%3D%22%23c2cad6%22%20stroke-width%3D%225%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Crect%20x%3D%22-44%22%20y%3D%22-44%22%20width%3D%2288%22%20height%3D%2288%22%20rx%3D%2216%22%2F%3E%3Ccircle%20cx%3D%2218%22%20cy%3D%22-18%22%20r%3D%222.5%22%20fill%3D%22%23c2cad6%22%20stroke%3D%22none%22%2F%3E%3Cpath%20d%3D%22M-34%2030%20L-8%200%20L10%2018%20L20%208%20L34%2024%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E";
@@ -95,6 +98,8 @@ export type CheckoutState = {
   step: number;
   /** Steps whose Continue (or a jump past them) has been tried, in the order tried. */
   attempted: number[];
+  /** Text fields the person has left, in the order they left them: their errors show without Continue. */
+  touched: string[];
   isComplete: boolean;
   quantities: Record<string, number>;
   promoInput: string;
@@ -140,6 +145,12 @@ function errorsByStep(s: CheckoutState): Errors[] {
 }
 
 const shownErrors = (s: CheckoutState, errors: Errors[], index: number): Errors => (s.attempted.includes(index) ? errors[index]! : {});
+
+/** What the current step shows: all its errors once Continue was tried, else only those of fields the person left. */
+function visibleErrors(s: CheckoutState, errors: Errors[], index: number): Errors {
+  if (s.attempted.includes(index)) return errors[index]!;
+  return Object.fromEntries(Object.entries(errors[index]!).filter(([field]) => s.touched.includes(field)));
+}
 const count = (e: Errors) => Object.keys(e).length;
 
 function markAttempted(s: CheckoutState, indices: number[]): number[] {
@@ -178,10 +189,17 @@ export type CheckoutView = {
   isComplete: boolean;
   /** Changes when focus should move to the first invalid field of the current step. */
   focusTicket: number;
-  steps: { label: string; icon: StepIcon; hasError: boolean }[];
-  /** The errors showing for the current step, by field. */
+  /** What a screen reader says of each step: "Shipping, step 2 of 4", and its state ("Current step, Has problems"). */
+  steps: { label: string; icon: StepIcon; hasError: boolean; spoken: string; state: string }[];
+  /** The errors showing for the current step, by field: all of them once Continue was tried, else those of fields the person left. */
   errors: Record<string, string>;
-  items: { id: string; name: string; variant: string; src: string; qty: number; isLimited: boolean; priceEach: string; lineTotal: string }[];
+  /** The current step's text fields in the order they sit on the page: the Return key moves along it. */
+  fieldOrder: string[];
+  items: {
+    id: string; name: string; variant: string; src: string; qty: number; isLimited: boolean; priceEach: string; lineTotal: string;
+    /** "Remove <name>" and "Quantity of <name>", for a screen reader. */
+    removeLabel: string; quantityLabel: string;
+  }[];
   summary: {
     itemCount: string;
     trigger: string;
@@ -217,8 +235,88 @@ export type CheckoutView = {
   };
   payment: { cardNumber: string; cardName: string; expiry: string; cvc: string; billingMatches: boolean };
   confirmation: string;
+  /** The words only the native drawing writes (the web page writes its own inline). */
+  words: CheckoutWords;
 };
 export type View = CheckoutView;
+
+export type CheckoutWords = CommonWords & {
+  secureCheckout: string;
+  progress: string;
+  cart: { heading: string; limited: string; remove: string; promoLabel: string; promoPlaceholder: string; apply: string; quantity: string };
+  shipping: {
+    heading: string; detail: string; email: string; emailPlaceholder: string; emailHint: string; firstName: string; lastName: string;
+    country: string; address: string; addressPlaceholder: string; apartment: string; city: string; state: string; statePlaceholder: string;
+  };
+  delivery: { heading: string; detail: string; method: string; gift: string };
+  payment: {
+    heading: string; detail: string; cardNumber: string; cardNumberPlaceholder: string; cardName: string; expiry: string;
+    expiryPlaceholder: string; cvc: string; cvcPlaceholder: string; cvcInfoLabel: string; cvcInfo: string; billingMatches: string;
+    billingTitle: string; billingDetail: string;
+  };
+  confirmed: { title: string; heading: string; detail: string };
+  summary: { title: string; subtotal: string; deliverySuffix: string; tax: string; total: string; qty: string };
+};
+
+const WORDS: CheckoutWords = {
+  ...COMMON_WORDS,
+  secureCheckout: "Secure checkout",
+  progress: "Checkout progress",
+  cart: {
+    heading: "Review your cart", limited: "Limited", remove: "Remove", promoLabel: "Promo code", promoPlaceholder: "WELCOME10",
+    apply: "Apply", quantity: "Quantity",
+  },
+  shipping: {
+    heading: "Where should it go?",
+    detail: "Delivery options and tax are calculated from this address.",
+    email: "Email",
+    emailPlaceholder: "you@example.com",
+    emailHint: "Order confirmation and tracking go here.",
+    firstName: "First name",
+    lastName: "Last name",
+    country: "Country",
+    address: "Street address",
+    addressPlaceholder: "123 Main Street",
+    apartment: "Apartment, suite, etc.",
+    city: "City",
+    state: "State",
+    statePlaceholder: "Select state",
+  },
+  delivery: {
+    heading: "How fast do you need it?",
+    detail: "Estimates run from the day the order ships, usually 1–3 business days after you place it.",
+    method: "Delivery method",
+    gift: "This is a gift",
+  },
+  payment: {
+    heading: "Payment",
+    detail: "This template validates payment details and completes locally. No card is charged.",
+    cardNumber: "Card number",
+    cardNumberPlaceholder: "4242 4242 4242 4242",
+    cardName: "Name on card",
+    expiry: "Expiry",
+    expiryPlaceholder: "MM/YY",
+    cvc: "CVC",
+    cvcPlaceholder: "123",
+    cvcInfoLabel: "About CVC",
+    cvcInfo: "Three digits on the back of the card, or four on the front for American Express.",
+    billingMatches: "Billing address matches the shipping address",
+    billingTitle: "Connect a billing-address step",
+    billingDetail: "This local example does not collect a separate billing address or send payment. Add that flow with your payment provider.",
+  },
+  confirmed: {
+    title: "Order confirmed",
+    heading: "Thanks for your order",
+    detail: "The order is recorded in the app's state, so the template ends in a real, reviewable outcome.",
+  },
+  summary: { title: "Order summary", subtotal: "Subtotal", deliverySuffix: "delivery", tax: "Estimated tax", total: "Total", qty: "Qty" },
+};
+
+/** The text fields of each step in the order they sit on the page (the select menus are not text fields). */
+const FIELD_ORDER: Record<number, readonly string[]> = {
+  1: ["email", "firstName", "lastName", "address", "apartment", "city", "postalCode"],
+  3: ["cardNumber", "cardName", "expiry", "cvc"],
+};
 
 export const checkout: TemplateModule<CheckoutState, CheckoutView> = {
   id: "checkout",
@@ -227,6 +325,7 @@ export const checkout: TemplateModule<CheckoutState, CheckoutView> = {
   initial: () => ({
     step: 0,
     attempted: [],
+    touched: [],
     isComplete: false,
     quantities: Object.fromEntries(CART_ITEMS.map((item) => [item.id, item.qty])),
     promoInput: "",
@@ -268,6 +367,8 @@ export const checkout: TemplateModule<CheckoutState, CheckoutView> = {
           const code = s.promoInput.trim().toUpperCase();
           return { ...s, promoWasChecked: code.length > 0, appliedPromo: promoOf(code) ? code : null };
         }
+        case "blur":
+          return (TEXT_FIELDS as readonly string[]).includes(arg) && !s.touched.includes(arg) ? { ...s, touched: [...s.touched, arg] } : s;
         case "remove":
           return CART_ITEMS.some((item) => item.id === arg) ? { ...s, quantities: { ...s.quantities, [arg]: 0 } } : s;
         default:
@@ -307,7 +408,7 @@ export const checkout: TemplateModule<CheckoutState, CheckoutView> = {
     const rule = POSTAL_CODE_RULES[s.country] ?? POSTAL_CODE_RULES.us!;
 
     const all = errorsByStep(s);
-    const errors = shownErrors(s, all, s.step);
+    const errors = visibleErrors(s, all, s.step);
     const isLastStep = s.step === STEPS.length - 1;
 
     let promoStatus: CheckoutView["promo"]["status"] = null;
@@ -320,8 +421,18 @@ export const checkout: TemplateModule<CheckoutState, CheckoutView> = {
       isLastStep,
       isComplete: s.isComplete,
       focusTicket: s.focusTicket,
-      steps: STEPS.map((step, i) => ({ label: step.label, icon: step.icon, hasError: count(shownErrors(s, all, i)) > 0 })),
+      steps: STEPS.map((step, i) => {
+        const hasError = count(shownErrors(s, all, i)) > 0;
+        return {
+          label: step.label,
+          icon: step.icon,
+          hasError,
+          spoken: `${step.label}, step ${i + 1} of ${STEPS.length}`,
+          state: [i === s.step ? "Current step" : null, hasError ? "Has problems" : null].filter(Boolean).join(", "),
+        };
+      }),
       errors,
+      fieldOrder: [...(FIELD_ORDER[s.step] ?? [])],
       items: items.map((item) => ({
         id: item.id,
         name: item.name,
@@ -331,6 +442,8 @@ export const checkout: TemplateModule<CheckoutState, CheckoutView> = {
         isLimited: item.isLimited,
         priceEach: money(item.price),
         lineTotal: money(item.price * item.qty),
+        removeLabel: `Remove ${item.name}`,
+        quantityLabel: `Quantity of ${item.name}`,
       })),
       summary: {
         itemCount: `${itemCount} ${itemCount === 1 ? "item" : "items"}`,
@@ -346,7 +459,7 @@ export const checkout: TemplateModule<CheckoutState, CheckoutView> = {
           subtotal - discount < FREE_SHIPPING_THRESHOLD ? `${money(FREE_SHIPPING_THRESHOLD - (subtotal - discount))} away from free standard shipping` : null,
       },
       actions: {
-        blocked: count(errors) > 0 ? blockedMessage(count(errors)) : null,
+        blocked: count(shownErrors(s, all, s.step)) > 0 ? blockedMessage(count(shownErrors(s, all, s.step))) : null,
         backLabel: s.step === 0 ? "Continue shopping" : "Back",
         nextLabel: isLastStep ? `Pay ${money(total)}` : "Continue",
       },
@@ -385,6 +498,7 @@ export const checkout: TemplateModule<CheckoutState, CheckoutView> = {
       },
       payment: { cardNumber: s.cardNumber, cardName: s.cardName, expiry: s.expiry, cvc: s.cvc, billingMatches: s.billingMatches },
       confirmation: `This local example completed an order for ${money(total)}. No payment was sent.`,
+      words: WORDS,
     };
   },
 };

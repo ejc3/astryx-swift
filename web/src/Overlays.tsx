@@ -14,13 +14,16 @@ const TOAST_ICON = { success: "check", danger: "warning", warning: "warning", in
 
 export function Overlays({ app }: { app: AppSnapshot }) {
   const { toast, dialog } = app;
-  // The core owns the toast; the host only times it out.
+  // The core owns the toast; the host only times it out, and never one that offers an action
+  // (Undo): a person must have time to use it (WCAG 2.2.1), and on Hermes the native drawing
+  // shows the same toast, so timing it out here would take it from there too.
   const toastId = toast?.id;
+  const hasAction = toast?.action !== undefined;
   useEffect(() => {
-    if (toastId === undefined) return;
+    if (toastId === undefined || hasAction) return;
     const t = setTimeout(() => send({ type: "dismissToast" }), TOAST_MS);
     return () => clearTimeout(t);
-  }, [toastId]);
+  }, [toastId, hasAction]);
 
   const dialogRef = useRef(dialog);
   dialogRef.current = dialog;

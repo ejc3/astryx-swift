@@ -167,3 +167,51 @@ test("the view is plain JSON", () => {
   const v = view(press(press(start(), "next"), "next"));
   assert.deepEqual(JSON.parse(JSON.stringify(v)), v);
 });
+
+test("leaving a field shows its error without Continue; the web never sends blur, so it keeps the stock behavior", () => {
+  let s = press(start(), "next");
+  assert.deepEqual(view(s).errors, {});
+  // Typing alone shows nothing; leaving the field shows that field's error, and only that one.
+  s = set(s, "email", "ada@");
+  assert.deepEqual(view(s).errors, {});
+  s = press(s, "blur:email");
+  assert.deepEqual(view(s).errors, { email: "Enter an email address for order updates." });
+  s = press(s, "blur:firstName");
+  assert.deepEqual(view(s).errors, { email: "Enter an email address for order updates.", firstName: "Required" });
+  // The step is not marked, and Continue's count stays quiet, until Continue is tried.
+  assert.deepEqual(view(s).steps.map((x) => x.hasError), [false, false, false, false]);
+  assert.equal(view(s).actions.blocked, null);
+  assert.equal(view(s).focusTicket, 0);
+  // Fixing the field clears its error; an unknown field or a repeat changes nothing.
+  assert.deepEqual(view(set(s, "email", "ada@example.com")).errors, { firstName: "Required" });
+  assert.equal(press(s, "blur:nope"), s);
+  assert.equal(press(s, "blur:email"), s);
+  // Continue then shows every error, as before.
+  s = press(s, "next");
+  assert.equal(Object.keys(view(s).errors).length, 7);
+  assert.equal(view(s).actions.blocked, "7 problems above need fixing first.");
+});
+
+test("blur on a step shows only that step's fields; the other step's stay quiet", () => {
+  let s = press(start(), "next");
+  s = press(s, "blur:cvc");
+  assert.deepEqual(view(s).errors, {});
+  s = press(set(s, "country", "us"), "back");
+  assert.equal(view(s).step, 0);
+  assert.deepEqual(view(s).fieldOrder, []);
+  assert.deepEqual(view(press(start(), "next")).fieldOrder, ["email", "firstName", "lastName", "address", "apartment", "city", "postalCode"]);
+});
+
+test("the view carries the words, per-item labels and spoken step states the native hosts draw", () => {
+  const v = view(start());
+  assert.equal(v.words.cart.heading, "Review your cart");
+  assert.equal(v.words.done, "Done");
+  assert.equal(v.items[0]!.removeLabel, "Remove Speckled Stoneware Mug");
+  assert.equal(v.items[0]!.quantityLabel, "Quantity of Speckled Stoneware Mug");
+  assert.deepEqual(v.steps.map((x) => [x.spoken, x.state]), [
+    ["Cart, step 1 of 4", "Current step"],
+    ["Shipping, step 2 of 4", ""],
+    ["Delivery, step 3 of 4", ""],
+    ["Payment, step 4 of 4", ""],
+  ]);
+});

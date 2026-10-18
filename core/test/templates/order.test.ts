@@ -74,3 +74,16 @@ test("unknown actions change nothing, and the view is plain JSON", () => {
   assert.equal(set(s, "nope", 1), s);
   assert.deepEqual(JSON.parse(JSON.stringify(view(s))), view(s));
 });
+
+test("the view says which controls are inert, and carries tabs, labels and the native words", () => {
+  const v = view(start());
+  assert.ok(v.inert.includes("refund") && v.inert.includes("like") && v.inert.includes("allOrders"));
+  assert.deepEqual(v.tabs.map((t) => [t.value, t.label, t.more]), [
+    ["details", "Details", false], ["invoices", "Invoices", false], ["timeline", "Timeline", false],
+    ["customer", "Customer", true], ["analysis", "Analysis", true],
+  ]);
+  assert.equal(v.itemsLabel, "5 ordered items");
+  assert.deepEqual(v.activity.map((a) => a.reactionsLabel), ["2 reactions", "3 reactions", "Reactions", "1 reaction"]);
+  assert.equal(v.fraud.riskValue, "15 percent");
+  assert.equal(v.words.panelTitle, "Order details");
+});

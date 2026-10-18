@@ -13,7 +13,7 @@ import { SCENARIOS } from "./scenarios.generated.ts";
 import type { ScenariosSnapshot } from "./scenarios.ts";
 import { THEMES } from "./themes.generated.ts";
 import { THEME_INPUTS, type ResolvedTheme } from "./themes.ts";
-import { PROTOCOL, SURFACES, type Action, type AppSnapshot, type DemoScreenId, type Dialog, type Icon, type NavItem, type Screen, type TemplateScreenId } from "./ui.ts";
+import { PROTOCOL, SURFACES, type Action, type AppSnapshot, type DemoScreenId, type Dialog, type Icon, type NavItem, type Screen, type TemplateScreenId, type Tone } from "./ui.ts";
 
 /**
  * The stock Astryx template closest to each screen (web/stock: Astryx's own templates,
@@ -36,15 +36,23 @@ const TEMPLATE_ICONS: Record<string, Icon> = { showcase: "sparkle", dashboard: "
 
 export type ThemeSnapshot = ResolvedTheme;
 
+/** A toast's tone in a word, for a screen reader (the tone is only a colored dot to the eye). */
+const TONE_WORDS: Partial<Record<Tone, string>> = { success: "Success", warning: "Warning", danger: "Error", info: "Information" };
+
 export function nav(s: State): NavItem[] {
-  const templates: NavItem[] = TEMPLATES.map((t) => ({ id: `t.${t.id}` as const, label: t.title, icon: TEMPLATE_ICONS[t.id] ?? "grid", section: "Astryx templates" }));
-  return [...templates, ...demoNav(s).map((n) => ({ ...n, section: "More demos" }))];
+  const templates: NavItem[] = TEMPLATES.map((t) => withSection({ id: `t.${t.id}` as const, label: t.title, icon: TEMPLATE_ICONS[t.id] ?? "grid" }, "Astryx templates"));
+  return [...templates, ...demoNav(s).map((n) => withSection(n, "More demos"))];
 }
 
-function demoNav(s: State): Omit<NavItem, "section">[] {
+/** Both sections have a Dashboard, an Inbox...: a screen reader hears the section with the name. */
+function withSection(n: Omit<NavItem, "section" | "accessibilityLabel">, section: string): NavItem {
+  return { ...n, section, accessibilityLabel: `${n.label}, ${section}` };
+}
+
+function demoNav(s: State): Omit<NavItem, "section" | "accessibilityLabel">[] {
   const unread = s.inbox.messages.filter((m) => !m.read && !m.archived).length;
   const open = s.tasks.tasks.filter((t) => t.column !== "done").length;
-  const items: Omit<NavItem, "section">[] = [
+  const items: Omit<NavItem, "section" | "accessibilityLabel">[] = [
     { id: "overview", label: "Components", icon: "grid" },
     { id: "dashboard", label: "Dashboard", icon: "chart" },
     { id: "inbox", label: "Inbox", icon: "inbox", ...(unread > 0 ? { badge: String(unread) } : {}) },
@@ -76,6 +84,7 @@ export function scenariosSnapshot(s: State): ScenariosSnapshot {
       { value: "native", label: "Drive from native", description: "Each step taps the SwiftUI side; the web drawings follow" },
       { value: "web", label: "Drive from web", description: "Each step clicks the web page on Hermes; the native side follows" },
     ],
+    controls: { pauseId: "scenario.pause", resumeId: "scenario.resume", stopId: "scenario.stop", pauseLabel: "Pause", resumeLabel: "Resume", stopLabel: "Stop" },
     playing: !p || !scenario ? null : {
       id: scenario.id, title: scenario.title, driver: p.driver, status: p.status,
       progress: p.status === "done" ? `Done: ${steps} of ${steps} steps` : `Step ${p.step + 1} of ${steps}`,
@@ -93,7 +102,7 @@ export function appSnapshot(s: State, now: Now): AppSnapshot {
     nav: nav(s),
     current: s.screen,
     screen: s.screen.startsWith("t.") ? templateScreen(s, s.screen as TemplateScreenId, now) : BUILDERS[s.screen as DemoScreenId](s),
-    toast: s.toast ? { id: s.toastSeq, tone: s.toast.tone, text: s.toast.text, ...(s.toast.undo ? { action: { id: "toast.undo", label: "Undo" } } : {}) } : null,
+    toast: s.toast ? { id: s.toastSeq, tone: s.toast.tone, text: s.toast.text, ...(TONE_WORDS[s.toast.tone] ? { toneLabel: TONE_WORDS[s.toast.tone] } : {}), dismissLabel: "Dismiss", ...(s.toast.undo ? { action: { id: "toast.undo", label: "Undo" } } : {}) } : null,
     dialog: dialog(s),
     theme: { id: s.theme, label: "Theme", setId: "settings.theme", options: THEME_INPUTS.map((t) => ({ value: t.id, label: t.label })) },
     scenarios: scenariosSnapshot(s),
@@ -107,6 +116,11 @@ export function appSnapshot(s: State, now: Now): AppSnapshot {
         { value: "compare", label: "Native and web", description: "Native and web on Hermes, side by side" },
         { value: "all", label: "All four", description: "All four drawings at once" },
       ],
+      groups: [
+        { label: "Drawing", values: ["native", "web", "webOwn", "stock"] },
+        { label: "Side by side", values: ["compare", "all"] },
+      ],
+      unavailable: "Needs a wider window",
       stockTemplate: s.screen.startsWith("t.") ? templateById(s.screen.slice(2))!.astryx : STOCK_TEMPLATE[s.screen as DemoScreenId], stockLabel: "Astryx as it is today: its own template and its own state",
     },
   };

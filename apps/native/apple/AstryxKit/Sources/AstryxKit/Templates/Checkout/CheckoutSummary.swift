@@ -19,7 +19,7 @@ struct CheckoutSummary: View {
             } else {
                 VStack(alignment: .leading, spacing: ax.space(4)) {
                     HStack(spacing: ax.space(2)) {
-                        Text("Order summary")
+                        Text(model.words.summary.title)
                             .font(ax.fontLabel)
                             .foregroundStyle(ax.text)
                             .accessibilityAddTraits(.isHeader)
@@ -48,7 +48,7 @@ struct CheckoutSummary: View {
                                 Spacer(minLength: ax.space(2))
                                 Text(item.lineTotal).font(ax.fontStrong).foregroundStyle(ax.text)
                             }
-                            Text("\(item.variant) \u{B7} Qty \(item.qty)")
+                            Text("\(item.variant) \u{B7} \(model.words.summary.qty) \(item.qty)")
                                 .font(ax.fontSmall)
                                 .foregroundStyle(ax.textSecondary)
                         }
@@ -68,13 +68,13 @@ struct CheckoutSummary: View {
     private var totals: some View {
         let s = model.summary
         return VStack(alignment: .leading, spacing: ax.space(2)) {
-            row("Subtotal", s.subtotal)
+            row(model.words.summary.subtotal, s.subtotal)
             if let promo = s.promoLabel { row(promo, s.discount) }
-            row("\(s.deliveryLabel) delivery", s.shipping)
-            row("Estimated tax", s.tax)
+            row("\(s.deliveryLabel) \(model.words.summary.deliverySuffix)", s.shipping)
+            row(model.words.summary.tax, s.tax)
             AXDivider()
             HStack(alignment: .firstTextBaseline) {
-                Text("Total").font(big).foregroundStyle(ax.text)
+                Text(model.words.summary.total).font(big).foregroundStyle(ax.text)
                 Spacer(minLength: ax.space(2))
                 Text(s.total).font(big).foregroundStyle(ax.text)
             }

@@ -43,16 +43,19 @@ private struct FormText: View {
     var optional = false
     var hint: String? = nil
     var info: String? = nil
+    var infoLabel: String? = nil
     var icon: String? = nil
     var focus: FocusState<String?>.Binding
 
     var body: some View {
-        COSField(label: label, optional: optional, hint: hint, error: model.errors[key], info: info) {
+        // Return moves to the next text field of the step; the last one puts the keyboard away.
+        let next = model.fieldAfter(key)
+        COSField(label: label, optional: optional, hint: hint, error: model.errors[key], info: info, infoLabel: infoLabel) {
             COSTextBox(
                 id: CheckoutSender.id(key), label: label, value: value, placeholder: placeholder,
                 content: content, icon: icon, hasError: model.errors[key] != nil,
-                focusKey: key, focus: focus
-            )
+                focusKey: key, focus: focus, submitLabel: next == nil ? .done : .next
+            ) { focus.wrappedValue = next }
         }
     }
 }
@@ -62,12 +65,13 @@ private struct FormText: View {
 struct CheckoutCartStep: View {
     let model: CheckoutModel
     let actions: CheckoutSender
+    var focus: FocusState<String?>.Binding? = nil
     @Environment(\.ax) private var ax
     @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
         VStack(alignment: .leading, spacing: ax.space(5)) {
-            StepHeading(title: "Review your cart")
+            StepHeading(title: model.words.cart.heading)
             VStack(alignment: .leading, spacing: ax.space(4)) {
                 ForEach(model.items, id: \.id) { item in
                     VStack(alignment: .leading, spacing: ax.space(3)) {
@@ -91,7 +95,7 @@ struct CheckoutCartStep: View {
                 VStack(alignment: .leading, spacing: ax.hair) {
                     Text(item.name).font(ax.fontLabel).foregroundStyle(ax.text)
                         .fixedSize(horizontal: false, vertical: true)
-                    if item.isLimited { AXBadge(text: "Limited", tone: .success) }
+                    if item.isLimited { AXBadge(text: model.words.cart.limited, tone: .success) }
                     Text(item.lineTotal).font(ax.fontStrong).foregroundStyle(ax.text)
                 }
             } else {
@@ -99,7 +103,7 @@ struct CheckoutCartStep: View {
                     HStack(alignment: .firstTextBaseline, spacing: ax.space(2)) {
                         Text(item.name).font(ax.fontLabel).foregroundStyle(ax.text)
                             .fixedSize(horizontal: false, vertical: true)
-                        if item.isLimited { AXBadge(text: "Limited", tone: .success) }
+                        if item.isLimited { AXBadge(text: model.words.cart.limited, tone: .success) }
                     }
                     Spacer(minLength: ax.space(2))
                     Text(item.lineTotal).font(ax.fontStrong).foregroundStyle(ax.text)
@@ -129,18 +133,20 @@ struct CheckoutCartStep: View {
     }
 
     private func quantity(_ item: CheckoutModel.Item) -> some View {
-        CheckoutQuantity(name: item.name, qty: item.qty) { actions.set("qty:\(item.id)", .number(Double($0))) }
+        CheckoutQuantity(
+            label: item.quantityLabel, field: model.words.cart.quantity, qty: item.qty, focusKey: "qty:\(item.id)", focus: focus
+        ) { actions.set("qty:\(item.id)", .number(Double($0))) }
     }
 
     private func remove(_ item: CheckoutModel.Item) -> some View {
-        COSButton(label: "Remove", variant: .ghost) { actions.press("remove:\(item.id)") }
-            .accessibilityLabel("Remove \(item.name)")
+        COSButton(label: model.words.cart.remove, variant: .ghost) { actions.press("remove:\(item.id)") }
+            .accessibilityLabel(item.removeLabel)
     }
 
     /// The code and its Apply button level with the box; the status sits under the pair.
     private var promo: some View {
         VStack(alignment: .leading, spacing: ax.space(1)) {
-            Text("Promo code").font(ax.fontLabel).foregroundStyle(ax.text)
+            Text(model.words.cart.promoLabel).font(ax.fontLabel).foregroundStyle(ax.text)
             ViewThatFits(in: .horizontal) {
                 HStack(spacing: ax.space(2)) { promoBox; applyButton }
                 VStack(alignment: .leading, spacing: ax.space(2)) { promoBox; applyButton }
@@ -153,33 +159,43 @@ struct CheckoutCartStep: View {
 
     private var promoBox: some View {
         COSTextBox(
-            id: CheckoutSender.id("promo"), label: "Promo code", value: model.promo.value,
-            placeholder: "WELCOME10", content: .code, hasError: false
+            id: CheckoutSender.id("promo"), label: model.words.cart.promoLabel, value: model.promo.value,
+            placeholder: model.words.cart.promoPlaceholder, content: .code, hasError: false,
+            focusKey: "promo", focus: focus, submitLabel: .done
         ) { actions.press("apply") }
     }
 
     private var applyButton: some View {
-        COSButton(label: "Apply", variant: .secondary) { actions.press("apply") }
+        COSButton(label: model.words.cart.apply, variant: .secondary) { actions.press("apply") }
     }
 }
 
 /// A quantity: minus, a number you can type, plus; 0 to 10, as the web field. VoiceOver
 /// adjusts it with swipes up and down.
 struct CheckoutQuantity: View {
-    let name: String
+    /// The spoken name, "Quantity of <name>", and the field's own name ("Quantity").
+    let label: String
+    let field: String
     let qty: Int
+    var focusKey: String? = nil
+    var focus: FocusState<String?>.Binding? = nil
     let change: (Int) -> Void
     @State private var text: String
+    @FocusState private var ownFocus: Bool
     @Environment(\.ax) private var ax
     @Environment(\.axStatic) private var isStatic
 
-    init(name: String, qty: Int, change: @escaping (Int) -> Void) {
-        self.name = name; self.qty = qty; self.change = change
+    init(
+        label: String, field: String, qty: Int, focusKey: String? = nil, focus: FocusState<String?>.Binding? = nil,
+        change: @escaping (Int) -> Void
+    ) {
+        self.label = label; self.field = field; self.qty = qty; self.focusKey = focusKey; self.focus = focus
+        self.change = change
         _text = State(initialValue: String(qty))
     }
 
     var body: some View {
-        let side = 36 * min(ax.scale, 1.4)
+        let side = max(cosTouch, 36 * min(ax.scale, 1.4))
         let shape = RoundedRectangle(cornerRadius: ax.radiusElement, style: .continuous)
         HStack(spacing: 0) {
             stepper("minus", enabled: qty > 0) { change(max(qty - 1, 0)) }
@@ -187,10 +203,11 @@ struct CheckoutQuantity: View {
                 if isStatic {
                     Text(text)
                 } else {
-                    TextField("Quantity", text: $text)
+                    TextField(field, text: $text)
                         .textFieldStyle(.plain)
                         .multilineTextAlignment(.center)
                         .cosContent(.integer)
+                        .modifier(CheckoutQuantityFocus(binding: focus, key: focusKey, own: $ownFocus))
                 }
             }
             .font(ax.fontBase.monospacedDigit())
@@ -208,7 +225,7 @@ struct CheckoutQuantity: View {
             if Int(text) != new { text = String(new) }
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Quantity of \(name)")
+        .accessibilityLabel(label)
         .accessibilityValue("\(qty)")
         .accessibilityAdjustableAction { direction in
             switch direction {
@@ -220,7 +237,7 @@ struct CheckoutQuantity: View {
     }
 
     private func stepper(_ symbol: String, enabled: Bool, action: @escaping () -> Void) -> some View {
-        let side = 36 * min(ax.scale, 1.4)
+        let side = max(cosTouch, 36 * min(ax.scale, 1.4))
         return Button(action: action) {
             Image(systemName: symbol)
                 .font(.system(size: ax.fontSize("font-size-sm", 12), weight: .semibold))
@@ -230,6 +247,21 @@ struct CheckoutQuantity: View {
         }
         .buttonStyle(.plain)
         .disabled(!enabled)
+    }
+}
+
+/// Puts the quantity's number field in the form's focus order, or in a focus of its own.
+private struct CheckoutQuantityFocus: ViewModifier {
+    let binding: FocusState<String?>.Binding?
+    let key: String?
+    let own: FocusState<Bool>.Binding
+
+    func body(content: Content) -> some View {
+        if let binding, let key {
+            content.focused(binding, equals: key)
+        } else {
+            content.focused(own)
+        }
     }
 }
 
@@ -244,35 +276,36 @@ struct CheckoutShippingStep: View {
 
     var body: some View {
         let s = model.shipping
+        let w = model.words.shipping
         VStack(alignment: .leading, spacing: ax.space(5)) {
-            StepHeading(title: "Where should it go?", detail: "Delivery options and tax are calculated from this address.")
+            StepHeading(title: w.heading, detail: w.detail)
             VStack(alignment: .leading, spacing: ax.space(4)) {
                 FormText(
-                    key: "email", label: "Email", value: s.email, model: model, placeholder: "you@example.com",
-                    content: .email, hint: "Order confirmation and tracking go here.", focus: focus
+                    key: "email", label: w.email, value: s.email, model: model, placeholder: w.emailPlaceholder,
+                    content: .email, hint: w.emailHint, focus: focus
                 )
                 FieldRow(narrow: narrow) {
-                    FormText(key: "firstName", label: "First name", value: s.firstName, model: model, content: .givenName, focus: focus)
-                    FormText(key: "lastName", label: "Last name", value: s.lastName, model: model, content: .familyName, focus: focus)
+                    FormText(key: "firstName", label: w.firstName, value: s.firstName, model: model, content: .givenName, focus: focus)
+                    FormText(key: "lastName", label: w.lastName, value: s.lastName, model: model, content: .familyName, focus: focus)
                 }
-                COSField(label: "Country") {
+                COSField(label: w.country) {
                     COSSelect(
-                        label: "Country",
+                        label: w.country,
                         choices: s.countries.map { .init(value: $0.value, label: $0.label) },
                         value: s.country
                     ) { actions.set("country", .string($0)) }
                 }
-                FormText(key: "address", label: "Street address", value: s.address, model: model, placeholder: "123 Main Street", content: .street, focus: focus)
-                FormText(key: "apartment", label: "Apartment, suite, etc.", value: s.apartment, model: model, content: .street2, optional: true, focus: focus)
+                FormText(key: "address", label: w.address, value: s.address, model: model, placeholder: w.addressPlaceholder, content: .street, focus: focus)
+                FormText(key: "apartment", label: w.apartment, value: s.apartment, model: model, content: .street2, optional: true, focus: focus)
                 FieldRow(narrow: narrow) {
-                    FormText(key: "city", label: "City", value: s.city, model: model, content: .city, focus: focus)
+                    FormText(key: "city", label: w.city, value: s.city, model: model, content: .city, focus: focus)
                     if s.hasState {
-                        COSField(label: "State", error: model.errors["state"]) {
+                        COSField(label: w.state, error: model.errors["state"]) {
                             COSSelect(
-                                label: "State",
+                                label: w.state,
                                 choices: s.states.map { .init(value: $0, label: $0) },
                                 value: s.state,
-                                placeholder: "Select state",
+                                placeholder: w.statePlaceholder,
                                 hasError: model.errors["state"] != nil
                             ) { actions.set("state", .string($0)) }
                         }
@@ -297,14 +330,11 @@ struct CheckoutDeliveryStep: View {
     var body: some View {
         let d = model.delivery
         VStack(alignment: .leading, spacing: ax.space(5)) {
-            StepHeading(
-                title: "How fast do you need it?",
-                detail: "Estimates run from the day the order ships, usually 1\u{2013}3 business days after you place it."
-            )
+            StepHeading(title: model.words.delivery.heading, detail: model.words.delivery.detail)
             VStack(alignment: .leading, spacing: ax.space(4)) {
                 methods
                 AXDivider()
-                COSSwitch(label: "This is a gift", isOn: d.isGift) { actions.set("isGift", .bool($0)) }
+                COSSwitch(label: model.words.delivery.gift, isOn: d.isGift) { actions.set("isGift", .bool($0)) }
                 COSField(label: d.noteLabel, optional: true, hint: d.noteDescription) {
                     COSTextBox(
                         id: CheckoutSender.id("deliveryNote"), label: d.noteLabel, value: d.note,
@@ -318,7 +348,7 @@ struct CheckoutDeliveryStep: View {
     private var methods: some View {
         let d = model.delivery
         return VStack(alignment: .leading, spacing: ax.space(2)) {
-            Text("Delivery method").font(ax.fontLabel).foregroundStyle(ax.text)
+            Text(model.words.delivery.method).font(ax.fontLabel).foregroundStyle(ax.text)
             VStack(spacing: ax.space(2)) {
                 ForEach(d.options, id: \.value) { option in
                     let selected = option.value == d.value
@@ -359,7 +389,7 @@ struct CheckoutDeliveryStep: View {
             if let error = model.errors["delivery"] { COSStatus(tone: .danger, message: error) }
         }
         .accessibilityElement(children: .contain)
-        .accessibilityLabel("Delivery method")
+        .accessibilityLabel(model.words.delivery.method)
     }
 }
 
@@ -374,33 +404,31 @@ struct CheckoutPaymentStep: View {
 
     var body: some View {
         let p = model.payment
+        let w = model.words.payment
         VStack(alignment: .leading, spacing: ax.space(5)) {
-            StepHeading(title: "Payment", detail: "This template validates payment details and completes locally. No card is charged.")
+            StepHeading(title: w.heading, detail: w.detail)
             VStack(alignment: .leading, spacing: ax.space(4)) {
                 FormText(
-                    key: "cardNumber", label: "Card number", value: p.cardNumber, model: model,
-                    placeholder: "4242 4242 4242 4242", content: .cardNumber, icon: "lock.fill", focus: focus
+                    key: "cardNumber", label: w.cardNumber, value: p.cardNumber, model: model,
+                    placeholder: w.cardNumberPlaceholder, content: .cardNumber, icon: "lock.fill", focus: focus
                 )
-                FormText(key: "cardName", label: "Name on card", value: p.cardName, model: model, content: .fullName, focus: focus)
+                FormText(key: "cardName", label: w.cardName, value: p.cardName, model: model, content: .fullName, focus: focus)
                 HStack(alignment: .top, spacing: ax.space(4)) {
-                    FormText(key: "expiry", label: "Expiry", value: p.expiry, model: model, placeholder: "MM/YY", content: .cardExpiry, focus: focus)
+                    FormText(key: "expiry", label: w.expiry, value: p.expiry, model: model, placeholder: w.expiryPlaceholder, content: .cardExpiry, focus: focus)
                         .frame(maxWidth: 140)
                     FormText(
-                        key: "cvc", label: "CVC", value: p.cvc, model: model, placeholder: "123", content: .cardCode,
-                        info: "Three digits on the back of the card, or four on the front for American Express.", focus: focus
+                        key: "cvc", label: w.cvc, value: p.cvc, model: model, placeholder: w.cvcPlaceholder, content: .cardCode,
+                        info: w.cvcInfo, infoLabel: w.cvcInfoLabel, focus: focus
                     )
                     .frame(maxWidth: 140)
                     Spacer(minLength: 0)
                 }
                 AXDivider()
-                COSSwitch(label: "Billing address matches the shipping address", isOn: p.billingMatches) {
+                COSSwitch(label: w.billingMatches, isOn: p.billingMatches) {
                     actions.set("billingMatches", .bool($0))
                 }
                 if !p.billingMatches {
-                    COSBanner(
-                        tone: .info, symbol: "info.circle.fill", title: "Connect a billing-address step",
-                        description: "This local example does not collect a separate billing address or send payment. Add that flow with your payment provider."
-                    )
+                    COSBanner(tone: .info, symbol: "info.circle.fill", title: w.billingTitle, description: w.billingDetail)
                 }
             }
         }

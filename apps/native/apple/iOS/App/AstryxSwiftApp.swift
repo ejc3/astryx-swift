@@ -15,11 +15,12 @@ struct AstryxSwiftApp: App {
     }()
 
     var body: some Scene {
+        // One scene (the Info.plist says so): every drawing's web view has one superview.
         WindowGroup {
             RootView(model: Self.host.model, web: AnyView(WebPane(bridge: Self.host.web)), webOwn: AnyView(OwnCorePane(bridge: Self.host.own)), stock: AnyView(StockPane(bridge: Self.host.stock)))
         }
-        #if os(macOS)
-        .defaultSize(width: 1500, height: 920)
-        #endif
+        .commands {
+            AstryxCommands(model: Self.host.model)
+        }
     }
 }

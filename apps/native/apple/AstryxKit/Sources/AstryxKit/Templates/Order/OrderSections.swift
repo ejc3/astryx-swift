@@ -53,11 +53,13 @@ struct OrderItems: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: ax.space(4)) {
-            SectionHeader(title: "Items") {
+            SectionHeader(title: model.words.items) {
                 AXBadge(text: model.status, tone: .warning)
             } buttons: {
-                COSButton(label: "Fulfill item", variant: .ghost) {}
-                COSButton(label: "Create label", variant: .secondary) {}
+                COSButton(label: model.words.fulfillItem, variant: .ghost) {}
+                    .disabled(model.isInert("fulfill"))
+                COSButton(label: model.words.createLabel, variant: .secondary) {}
+                    .disabled(model.isInert("label"))
             }
             VStack(alignment: .leading, spacing: ax.space(4)) {
                 ForEach(Array(model.products.enumerated()), id: \.offset) { _, product in
@@ -91,11 +93,15 @@ struct OrderInvoice: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: ax.space(4)) {
-            SectionHeader(title: "Invoice") {
-                AXBadge(text: "Paid", tone: .success)
+            SectionHeader(title: model.words.invoice) {
+                AXBadge(text: model.words.paid, tone: .success)
             } buttons: {
-                COSButton(label: "Refund", variant: .ghost) {}
-                COSButton(label: "Send Invoice", variant: .secondary) {}
+                // Refund moves money out and cannot be undone: if it is ever enabled it needs a
+                // destructive confirmation (`.confirmationDialog`, destructive Refund, Cancel) first.
+                COSButton(label: model.words.refund, variant: .ghost) {}
+                    .disabled(model.isInert("refund"))
+                COSButton(label: model.words.sendInvoice, variant: .secondary) {}
+                    .disabled(model.isInert("invoice"))
             }
             VStack(alignment: .leading, spacing: ax.space(2)) {
                 ForEach(Array(model.summary.enumerated()), id: \.offset) { _, row in
@@ -134,9 +140,10 @@ struct OrderTimeline: View {
     var body: some View {
         VStack(alignment: .leading, spacing: ax.space(4)) {
             HStack {
-                Text("Timeline").font(ax.heading(2)).foregroundStyle(ax.text).accessibilityAddTraits(.isHeader)
+                Text(model.words.timeline).font(ax.heading(2)).foregroundStyle(ax.text).accessibilityAddTraits(.isHeader)
                 Spacer(minLength: 0)
-                COSIconButton(label: "Filters", symbol: "line.3.horizontal.decrease") {}
+                COSIconButton(label: model.words.filters, symbol: "line.3.horizontal.decrease") {}
+                    .disabled(model.isInert("filters"))
             }
             VStack(alignment: .leading, spacing: ax.space(4)) {
                 ForEach(Array(model.activity.enumerated()), id: \.offset) { _, item in
@@ -175,6 +182,20 @@ struct OrderTimeline: View {
         .accessibilityElement(children: .combine)
     }
 
+    /// A text link with a 44-point target (the extra is taken back from the layout, so the line
+    /// does not grow). The stock page's Like and Reply do nothing, so they are drawn disabled.
+    private func inertLink(_ title: String, control: String) -> some View {
+        Button {} label: {
+            Text(title).font(ax.fontSmall)
+                .frame(minWidth: cosTouch, minHeight: cosTouch)
+                .contentShape(Rectangle())
+                .padding(.vertical, -(cosTouch - 16) / 2)
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(ax.textSecondary)
+        .disabled(model.isInert(control))
+    }
+
     private func footer(_ item: OrderModel.Activity) -> some View {
         FlowLayout(spacing: ax.space(2), crossAlignment: 0.5) {
             HStack(spacing: ax.space(1)) {
@@ -184,12 +205,10 @@ struct OrderTimeline: View {
             }
             .foregroundStyle(ax.textSecondary)
             .accessibilityElement(children: .combine)
-            .accessibilityLabel(item.reactions.map { "\($0) reactions" } ?? "Reactions")
-            Button {} label: { Text("Like").font(ax.fontSmall).foregroundStyle(ax.textSecondary).frame(minHeight: 28) }
-                .buttonStyle(.plain)
+            .accessibilityLabel(item.reactionsLabel)
+            inertLink(model.words.like, control: "like")
             COSBullet()
-            Button {} label: { Text("Reply").font(ax.fontSmall).foregroundStyle(ax.textSecondary).frame(minHeight: 28) }
-                .buttonStyle(.plain)
+            inertLink(model.words.reply, control: "reply")
             COSBullet()
             Text(item.time).font(ax.fontSmall).foregroundStyle(ax.textSecondary)
         }
@@ -203,15 +222,15 @@ struct OrderPanelContent: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: ax.space(4)) {
-            COSCollapsible(spokenTitle: "Notes") {
-                Text("Notes").font(ax.heading(4)).foregroundStyle(ax.text).accessibilityAddTraits(.isHeader)
+            COSCollapsible(spokenTitle: model.words.notes) {
+                Text(model.words.notes).font(ax.heading(4)).foregroundStyle(ax.text).accessibilityAddTraits(.isHeader)
             } content: {
-                (Text(model.notes + " ").foregroundStyle(ax.text) + Text("Show more").foregroundStyle(ax.textSecondary).underline())
+                (Text(model.notes + " ").foregroundStyle(ax.text) + Text(model.words.showMore).foregroundStyle(ax.textSecondary).underline())
                     .font(ax.fontBase)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            COSCollapsible(spokenTitle: "Customer") {
-                Text("Customer").font(ax.heading(4)).foregroundStyle(ax.text).accessibilityAddTraits(.isHeader)
+            COSCollapsible(spokenTitle: model.words.customer) {
+                Text(model.words.customer).font(ax.heading(4)).foregroundStyle(ax.text).accessibilityAddTraits(.isHeader)
             } content: {
                 VStack(alignment: .leading, spacing: ax.space(2)) {
                     ForEach(Array(model.customer.enumerated()), id: \.offset) { _, field in
@@ -226,8 +245,8 @@ struct OrderPanelContent: View {
                     }
                 }
             }
-            COSCollapsible(spokenTitle: "Fraud Analysis") {
-                Text("Fraud Analysis").font(ax.heading(4)).foregroundStyle(ax.text).accessibilityAddTraits(.isHeader)
+            COSCollapsible(spokenTitle: model.words.fraudAnalysis) {
+                Text(model.words.fraudAnalysis).font(ax.heading(4)).foregroundStyle(ax.text).accessibilityAddTraits(.isHeader)
             } content: {
                 VStack(alignment: .leading, spacing: ax.space(1)) {
                     risk
@@ -237,6 +256,7 @@ struct OrderPanelContent: View {
                 .fixedSize(horizontal: false, vertical: true)
             }
         }
+        .environment(\.cosWords, model.words.common)
     }
 
     /// The risk level as a bar, filled in the success color.
@@ -252,7 +272,7 @@ struct OrderPanelContent: View {
             }
             .padding(.vertical, ax.space(1))
             .accessibilityElement(children: .ignore)
-            .accessibilityLabel("Risk level")
-            .accessibilityValue("\(Int(model.fraud.risk)) percent")
+            .accessibilityLabel(model.words.riskLevel)
+            .accessibilityValue(model.fraud.riskValue)
     }
 }

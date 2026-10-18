@@ -51,6 +51,7 @@ struct OrderScreen: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .topLeading)
+        .environment(\.cosWords, model.words.common)
         .sheet(isPresented: Binding(
             get: { narrow && model.panelDialog },
             set: { open in
@@ -60,38 +61,40 @@ struct OrderScreen: View {
             OrderPanelSheet(model: model)
                 .environment(\.ax, ax)
                 .environment(\.axSend, send)
+                .environment(\.cosWords, model.words.common)
         }
     }
 }
 
-/// The panel as a sheet: "Order details" with its Done button, over the panel's content.
+/// The panel as a system sheet: a navigation stack with the title "Order details" and a Done
+/// button, medium and large detents, and the system's grabber and material (no custom background).
 private struct OrderPanelSheet: View {
     let model: OrderModel
     @Environment(\.ax) private var ax
     @Environment(\.axSend) private var send
 
     var body: some View {
-        VStack(spacing: 0) {
-            HStack {
-                Text("Order details")
-                    .font(ax.heading(3))
-                    .foregroundStyle(ax.text)
-                    .accessibilityAddTraits(.isHeader)
-                Spacer()
-                COSButton(label: "Done", variant: .ghost) {
-                    send(.set(id: "tpl.order.panelDialog", value: .bool(false)))
-                }
-            }
-            .padding(.horizontal, ax.space(4))
-            .padding(.vertical, ax.space(2))
-            AXDivider()
+        NavigationStack {
             ScrollView {
                 OrderPanelContent(model: model)
                     .padding(ax.space(4))
                     .frame(maxWidth: .infinity, alignment: .topLeading)
             }
+            .navigationTitle(model.words.panelTitle)
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(model.words.common.done) {
+                        send(.set(id: "tpl.order.panelDialog", value: .bool(false)))
+                    }
+                }
+            }
         }
-        .background(ax.page)
+        .tint(ax.accent)
+        .presentationDetents([.medium, .large])
+        .presentationDragIndicator(.visible)
         #if os(macOS)
         .frame(minWidth: 420, minHeight: 480)
         #endif

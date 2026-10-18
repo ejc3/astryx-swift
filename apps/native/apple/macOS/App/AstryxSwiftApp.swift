@@ -14,12 +14,26 @@ struct AstryxSwiftApp: App {
         return host
     }()
 
+    /// The window's name before the core's `appName` replaces it with the screen's title.
+    private static let windowName = Bundle.main.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String ?? ProcessInfo.processInfo.processName
+
     var body: some Scene {
-        WindowGroup {
+        // One window, not a group: every drawing's web view has one superview, so a second
+        // window (File > New Window) would take the web views from the first.
+        Window(Self.windowName, id: "main") {
             RootView(model: Self.host.model, web: AnyView(WebPane(bridge: Self.host.web)), webOwn: AnyView(OwnCorePane(bridge: Self.host.own)), stock: AnyView(StockPane(bridge: Self.host.stock)))
+                .frame(minWidth: 720, minHeight: 520)
         }
-        #if os(macOS)
         .defaultSize(width: 1500, height: 920)
-        #endif
+        .windowResizability(.contentMinSize)
+        .commands {
+            SidebarCommands()
+            ToolbarCommands()
+            AstryxCommands(model: Self.host.model)
+        }
+        // The Settings window, opened with the app menu's Settings item or Command-comma.
+        Settings {
+            AstryxSettingsView(model: Self.host.model)
+        }
     }
 }

@@ -11,6 +11,8 @@ struct CheckoutModel: Decodable, Sendable {
     let steps: [Step]
     /// The errors showing for the current step, by field.
     let errors: [String: String]
+    /// The current step's text fields in the order they sit on the page: Return moves along it.
+    let fieldOrder: [String]
     let items: [Item]
     let summary: Summary
     let actions: Actions
@@ -19,12 +21,18 @@ struct CheckoutModel: Decodable, Sendable {
     let delivery: Delivery
     let payment: Payment
     let confirmation: String
+    /// The words only the native drawing writes.
+    let words: Words
 
     struct Step: Decodable, Sendable {
         let label: String
         /// "cart", "pin", "truck" or "card".
         let icon: String
         let hasError: Bool
+        /// "Shipping, step 2 of 4".
+        let spoken: String
+        /// "Current step, Has problems", or empty.
+        let state: String
     }
 
     struct Item: Decodable, Sendable {
@@ -36,6 +44,9 @@ struct CheckoutModel: Decodable, Sendable {
         let isLimited: Bool
         let priceEach: String
         let lineTotal: String
+        /// "Remove <name>" and "Quantity of <name>", for VoiceOver.
+        let removeLabel: String
+        let quantityLabel: String
     }
 
     struct Summary: Decodable, Sendable {
@@ -113,6 +124,60 @@ struct CheckoutModel: Decodable, Sendable {
         let billingMatches: Bool
     }
 
+    struct Words: Decodable, Sendable {
+        struct Cart: Decodable, Sendable {
+            let heading: String, limited: String, remove: String, promoLabel: String, promoPlaceholder: String
+            let apply: String, quantity: String
+        }
+        struct Shipping: Decodable, Sendable {
+            let heading: String, detail: String, email: String, emailPlaceholder: String, emailHint: String
+            let firstName: String, lastName: String, country: String, address: String, addressPlaceholder: String
+            let apartment: String, city: String, state: String, statePlaceholder: String
+        }
+        struct Delivery: Decodable, Sendable {
+            let heading: String, detail: String, method: String, gift: String
+        }
+        struct Payment: Decodable, Sendable {
+            let heading: String, detail: String, cardNumber: String, cardNumberPlaceholder: String, cardName: String
+            let expiry: String, expiryPlaceholder: String, cvc: String, cvcPlaceholder: String, cvcInfoLabel: String
+            let cvcInfo: String, billingMatches: String, billingTitle: String, billingDetail: String
+        }
+        struct Confirmed: Decodable, Sendable {
+            let title: String, heading: String, detail: String
+        }
+        struct Summary: Decodable, Sendable {
+            let title: String, subtotal: String, deliverySuffix: String, tax: String, total: String, qty: String
+        }
+
+        /// The words all three templates share (field marks, the keyboard's buttons, collapsibles).
+        let common: COSWords
+        let secureCheckout: String
+        let progress: String
+        let cart: Cart
+        let shipping: Shipping
+        let delivery: Delivery
+        let payment: Payment
+        let confirmed: Confirmed
+        let summary: Summary
+
+        private enum CodingKeys: String, CodingKey {
+            case secureCheckout, progress, cart, shipping, delivery, payment, confirmed, summary
+        }
+
+        init(from decoder: Decoder) throws {
+            common = try COSWords(from: decoder)
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            secureCheckout = try c.decode(String.self, forKey: .secureCheckout)
+            progress = try c.decode(String.self, forKey: .progress)
+            cart = try c.decode(Cart.self, forKey: .cart)
+            shipping = try c.decode(Shipping.self, forKey: .shipping)
+            delivery = try c.decode(Delivery.self, forKey: .delivery)
+            payment = try c.decode(Payment.self, forKey: .payment)
+            confirmed = try c.decode(Confirmed.self, forKey: .confirmed)
+            summary = try c.decode(Summary.self, forKey: .summary)
+        }
+    }
+
     /// The text fields of each step in the order they sit on the page: the first one with an
     /// error is where focus goes.
     static let focusOrder: [Int: [String]] = [
@@ -123,5 +188,16 @@ struct CheckoutModel: Decodable, Sendable {
     /// The first text field of the current step that has an error showing.
     var firstInvalidField: String? {
         (Self.focusOrder[step] ?? []).first { errors[$0] != nil }
+    }
+
+    /// The Return key's next stop after `key` in this step's text fields, or nil on the last.
+    func fieldAfter(_ key: String) -> String? {
+        guard let index = fieldOrder.firstIndex(of: key), index + 1 < fieldOrder.count else { return nil }
+        return fieldOrder[index + 1]
+    }
+
+    /// Fields on a number pad, which has no Return key: they get a keyboard bar with Next and Done.
+    static func hasNumberPad(_ key: String) -> Bool {
+        key == "cardNumber" || key == "cvc" || key.hasPrefix("qty:")
     }
 }

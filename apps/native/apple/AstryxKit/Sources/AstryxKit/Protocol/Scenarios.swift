@@ -36,4 +36,6 @@ public struct ScenariosSnapshot: Decodable, Sendable {
     public let list: [Item]
     public let drivers: [Driver]
     public let playing: Playing?
+    /// The controls with nothing playing, for a menu that offers them dimmed.
+    public let controls: Playing.Controls?
 }

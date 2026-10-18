@@ -24,11 +24,40 @@ final class TemplatesCheckoutOrderSettingsTests: XCTestCase {
         if let view {
             var screen = try XCTUnwrap(json["screen"] as? [String: Any])
             var body = try XCTUnwrap(screen["body"] as? [String: Any])
-            body["view"] = try JSONSerialization.jsonObject(with: Data(view.utf8))
+            let replaced = try Self.completed(view, template: template, current: try XCTUnwrap(body["view"] as? [String: Any]))
+            body["view"] = replaced
             screen["body"] = body
             json["screen"] = screen
         }
         return try JSONDecoder().decode(AppSnapshot.self, from: JSONSerialization.data(withJSONObject: json))
+    }
+
+
+    /// The variant views were recorded before the core added fields to the models (the words, the
+    /// inert controls, the per-item labels): they take those the template's fixture carries.
+    static func completed(_ view: String, template: String, current: [String: Any]? = nil) throws -> [String: Any] {
+        var replaced = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(view.utf8)) as? [String: Any])
+        let fixture = try XCTUnwrap(JSONSerialization.jsonObject(with: Library.data("template-\(template)")) as? [String: Any])
+        let screen = try XCTUnwrap(fixture["screen"] as? [String: Any])
+        let body = try XCTUnwrap(screen["body"] as? [String: Any])
+        let current = try XCTUnwrap(current ?? (body["view"] as? [String: Any]))
+        for key in ["words", "inert", "tabs", "itemsLabel", "fieldOrder"] where replaced[key] == nil { replaced[key] = current[key] }
+        if var steps = replaced["steps"] as? [[String: Any]], let fixtureSteps = current["steps"] as? [[String: Any]] {
+            for i in steps.indices where steps[i]["spoken"] == nil {
+                steps[i]["spoken"] = fixtureSteps[i]["spoken"]; steps[i]["state"] = ""
+            }
+            replaced["steps"] = steps
+        }
+        for (key, extra) in [("items", ["removeLabel", "quantityLabel"]), ("activity", ["reactionsLabel"])] {
+            if var rows = replaced[key] as? [[String: Any]] {
+                for i in rows.indices { for k in extra where rows[i][k] == nil { rows[i][k] = "label" } }
+                replaced[key] = rows
+            }
+        }
+        if var fraud = replaced["fraud"] as? [String: Any], fraud["riskValue"] == nil {
+            fraud["riskValue"] = "15 percent"; replaced["fraud"] = fraud
+        }
+        return replaced
     }
 
     private func templateView(_ app: AppSnapshot) throws -> JSONValue {
@@ -49,6 +78,11 @@ final class TemplatesCheckoutOrderSettingsTests: XCTestCase {
         XCTAssertEqual(checkout.summary.total, "$332.64")
         XCTAssertEqual(checkout.actions.nextLabel, "Continue")
         XCTAssertNil(checkout.firstInvalidField)
+        XCTAssertEqual(checkout.words.cart.heading, "Review your cart")
+        XCTAssertEqual(checkout.words.common.done, "Done")
+        XCTAssertEqual(checkout.items.first?.removeLabel, "Remove Speckled Stoneware Mug")
+        XCTAssertEqual(checkout.steps.first?.spoken, "Cart, step 1 of 4")
+        XCTAssertEqual(checkout.fieldOrder, [])
 
         let order = try templateView(app("order")).decode(OrderModel.self)
         XCTAssertEqual(order.number, "#1001")
@@ -59,6 +93,12 @@ final class TemplatesCheckoutOrderSettingsTests: XCTestCase {
         XCTAssertEqual(order.activity[2].changes?.count, 2)
         XCTAssertNil(order.activity[2].reactions)
         XCTAssertEqual(order.customer.count, 5)
+        XCTAssertEqual(order.tabs.map(\.label), ["Details", "Invoices", "Timeline", "Customer", "Analysis"])
+        XCTAssertEqual(order.tabs.filter(\.more).map(\.value), ["customer", "analysis"])
+        XCTAssertTrue(order.isInert("refund"))
+        XCTAssertFalse(order.isInert("nonsense"))
+        XCTAssertEqual(order.words.panelTitle, "Order details")
+        XCTAssertEqual(order.activity[0].reactionsLabel, "2 reactions")
 
         let settings = try templateView(app("settings")).decode(SettingsModel.self)
         XCTAssertEqual(settings.navItems.map(\.label), ["Profile", "Account", "Members", "Billing", "Invoices", "API"])
@@ -66,31 +106,45 @@ final class TemplatesCheckoutOrderSettingsTests: XCTestCase {
         XCTAssertEqual(settings.searchItems.count, 8)
         XCTAssertNil(settings.search)
         XCTAssertEqual(settings.username, "nicol43")
+        XCTAssertEqual(settings.inert, ["save.basic", "save.password", "save.advanced"])
+        XCTAssertEqual(settings.words.password.currentPlaceholder, "Current password")
+        XCTAssertEqual(settings.words.common.optional, "Optional")
+    }
+
+    private func variant(_ name: String) throws -> JSONValue {
+        let template = String(name.prefix(while: { $0 != "-" }))
+        let json = try Self.completed(try XCTUnwrap(variantViews[name]), template: template)
+        return try JSONDecoder().decode(JSONValue.self, from: JSONSerialization.data(withJSONObject: json))
     }
 
     func testVariantsDecode() throws {
         XCTAssertFalse(variantViews.isEmpty)
         for (name, json) in variantViews {
-            let view = try JSONDecoder().decode(JSONValue.self, from: Data(json.utf8))
-            switch name.prefix(while: { $0 != "-" }) {
-            case "checkout": _ = try view.decode(CheckoutModel.self)
-            case "order": _ = try view.decode(OrderModel.self)
-            case "settings": _ = try view.decode(SettingsModel.self)
-            default: XCTFail("unknown variant \(name)")
+            let template = String(name.prefix(while: { $0 != "-" }))
+            let view = try JSONDecoder().decode(JSONValue.self, from: JSONSerialization.data(withJSONObject: Self.completed(json, template: template)))
+            do {
+                switch template {
+                case "checkout": _ = try view.decode(CheckoutModel.self)
+                case "order": _ = try view.decode(OrderModel.self)
+                case "settings": _ = try view.decode(SettingsModel.self)
+                default: XCTFail("unknown variant \(name)")
+                }
+            } catch {
+                XCTFail("variant \(name) does not decode: \(error)")
             }
         }
-        let errors = try JSONDecoder().decode(JSONValue.self, from: Data(try XCTUnwrap(variantViews["checkout-shipping-errors2"]).utf8))
+        let errors = try variant("checkout-shipping-errors2")
             .decode(CheckoutModel.self)
         XCTAssertEqual(errors.step, 1)
         XCTAssertEqual(errors.firstInvalidField, "email")
         XCTAssertEqual(errors.errors.count, 7)
         XCTAssertEqual(errors.steps.map(\.hasError), [false, true, false, false])
         XCTAssertNotNil(errors.actions.blocked)
-        let promo = try JSONDecoder().decode(JSONValue.self, from: Data(try XCTUnwrap(variantViews["checkout-promo"]).utf8))
+        let promo = try variant("checkout-promo")
             .decode(CheckoutModel.self)
         XCTAssertEqual(promo.promo.status?.type, "success")
         XCTAssertNotNil(promo.summary.promoLabel)
-        let search = try JSONDecoder().decode(JSONValue.self, from: Data(try XCTUnwrap(variantViews["settings-search"]).utf8))
+        let search = try variant("settings-search")
             .decode(SettingsModel.self)
         XCTAssertEqual(search.search?.label, "Change password")
         XCTAssertTrue(search.twoFactor)
@@ -106,6 +160,27 @@ final class TemplatesCheckoutOrderSettingsTests: XCTestCase {
         XCTAssertEqual(
             Action.set(id: CheckoutSender.id("isGift"), value: .bool(true)).json,
             #"{"id":"tpl.checkout.isGift","type":"set","value":true}"#
+        )
+    }
+
+    /// Return walks the step's text fields and the last one finishes; a number pad gets the keyboard bar.
+    func testFieldChain() throws {
+        var json = try Self.completed(try XCTUnwrap(variantViews["checkout-shipping"]), template: "checkout")
+        json["fieldOrder"] = ["email", "firstName", "lastName", "address", "apartment", "city", "postalCode"]
+        let model = try JSONDecoder().decode(CheckoutModel.self, from: JSONSerialization.data(withJSONObject: json))
+        XCTAssertEqual(model.fieldAfter("email"), "firstName")
+        XCTAssertEqual(model.fieldAfter("apartment"), "city")
+        XCTAssertNil(model.fieldAfter("postalCode"))
+        XCTAssertNil(model.fieldAfter("qty:mug"))
+        XCTAssertTrue(CheckoutModel.hasNumberPad("cardNumber"))
+        XCTAssertTrue(CheckoutModel.hasNumberPad("qty:mug"))
+        XCTAssertFalse(CheckoutModel.hasNumberPad("email"))
+    }
+
+    func testBlurActionId() {
+        XCTAssertEqual(
+            Action.press(id: CheckoutSender.id("blur:email")).json,
+            #"{"id":"tpl.checkout.blur:email","type":"press"}"#
         )
     }
 

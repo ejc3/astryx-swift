@@ -7,8 +7,13 @@
  *   set    <field>  <string>    username, firstName, lastName, email, currentPw, newPw, confirmPw
  *   set    <toggle> <boolean>   dataExport, adminMembers, twoFactor
  *   set    search   <item id>   the chosen search result ("" clears it)
+ *
+ * The password fields start with the stock sample text, so the web copy matches stock. A native
+ * host may draw them empty (their `words.*Placeholder` shows), which is its own presentation
+ * choice: Apple's guidance is never to prefill a password field.
  */
 import type { TemplateModule } from "../types.ts";
+import { COMMON_WORDS, type CommonWords } from "../checkout/words.ts";
 
 const NAV_ITEMS = ["Profile", "Account", "Members", "Billing", "Invoices", "API"] as const;
 
@@ -58,8 +63,67 @@ export type SettingsView = {
   dataExport: boolean;
   adminMembers: boolean;
   twoFactor: boolean;
+  /** Controls that do nothing in the stock template and stay inert here: a host draws them disabled. */
+  inert: string[];
+  /** The words only the native drawing writes (the web page writes its own inline). */
+  words: SettingsWords;
 };
 export type View = SettingsView;
+
+export type SettingsWords = CommonWords & {
+  sections: string;
+  searchLabel: string;
+  searchPlaceholder: string;
+  clearSearch: string;
+  save: string;
+  basic: { title: string; detail: string; username: string; firstName: string; lastName: string; email: string };
+  password: {
+    title: string; detail: string; current: string; currentPlaceholder: string; new: string; newPlaceholder: string;
+    confirm: string; confirmPlaceholder: string;
+  };
+  advanced: {
+    title: string; detail: string;
+    dataExport: string; dataExportDetail: string; adminMembers: string; adminMembersDetail: string;
+    twoFactor: string; twoFactorDetail: string;
+  };
+};
+
+const WORDS: SettingsWords = {
+  ...COMMON_WORDS,
+  sections: "Settings sections",
+  searchLabel: "Search",
+  searchPlaceholder: "Search settings...",
+  clearSearch: "Clear search",
+  save: "Save",
+  basic: {
+    title: "Basic information",
+    detail: "View and update your personal details and account information.",
+    username: "Username",
+    firstName: "First name",
+    lastName: "Last name",
+    email: "Email address",
+  },
+  password: {
+    title: "Change password",
+    detail: "Update your password to keep your account secure.",
+    current: "Verify current password",
+    currentPlaceholder: "Current password",
+    new: "New password",
+    newPlaceholder: "New password",
+    confirm: "Confirm password",
+    confirmPlaceholder: "Repeat the new password",
+  },
+  advanced: {
+    title: "Advanced settings",
+    detail: "Configure detailed account preferences and security options.",
+    dataExport: "Data Export Access",
+    dataExportDetail: "Allow export of personal data and backups.",
+    adminMembers: "Allow Admin to Add Members",
+    adminMembersDetail: "Admins can invite and manage members.",
+    twoFactor: "Enable Two-Factor Authentication",
+    twoFactorDetail: "Require 2FA for added account security.",
+  },
+};
 
 export const settings: TemplateModule<SettingsState, SettingsView> = {
   id: "settings",
@@ -110,5 +174,7 @@ export const settings: TemplateModule<SettingsState, SettingsView> = {
     dataExport: s.dataExport,
     adminMembers: s.adminMembers,
     twoFactor: s.twoFactor,
+    inert: ["save.basic", "save.password", "save.advanced"],
+    words: WORDS,
   }),
 };

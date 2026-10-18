@@ -27,4 +27,51 @@ struct SettingsModel: Decodable, Sendable {
     let dataExport: Bool
     let adminMembers: Bool
     let twoFactor: Bool
+    /// Controls that do nothing in the stock template: "save.basic", "save.password", "save.advanced".
+    let inert: [String]
+    /// The words only the native drawing writes.
+    let words: Words
+
+    func isInert(_ control: String) -> Bool { inert.contains(control) }
+
+    struct Words: Decodable, Sendable {
+        struct Basic: Decodable, Sendable {
+            let title: String, detail: String, username: String, firstName: String, lastName: String, email: String
+        }
+        struct Password: Decodable, Sendable {
+            let title: String, detail: String, current: String, currentPlaceholder: String
+            let new: String, newPlaceholder: String, confirm: String, confirmPlaceholder: String
+        }
+        struct Advanced: Decodable, Sendable {
+            let title: String, detail: String, dataExport: String, dataExportDetail: String
+            let adminMembers: String, adminMembersDetail: String, twoFactor: String, twoFactorDetail: String
+        }
+
+        let common: COSWords
+        let sections: String
+        let searchLabel: String
+        let searchPlaceholder: String
+        let clearSearch: String
+        let save: String
+        let basic: Basic
+        let password: Password
+        let advanced: Advanced
+
+        private enum CodingKeys: String, CodingKey {
+            case sections, searchLabel, searchPlaceholder, clearSearch, save, basic, password, advanced
+        }
+
+        init(from decoder: Decoder) throws {
+            common = try COSWords(from: decoder)
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            sections = try c.decode(String.self, forKey: .sections)
+            searchLabel = try c.decode(String.self, forKey: .searchLabel)
+            searchPlaceholder = try c.decode(String.self, forKey: .searchPlaceholder)
+            clearSearch = try c.decode(String.self, forKey: .clearSearch)
+            save = try c.decode(String.self, forKey: .save)
+            basic = try c.decode(Basic.self, forKey: .basic)
+            password = try c.decode(Password.self, forKey: .password)
+            advanced = try c.decode(Advanced.self, forKey: .advanced)
+        }
+    }
 }

@@ -16,6 +16,8 @@ public struct NavItem: Decodable, Sendable, Identifiable {
     public let badge: String?
     /** The group the core puts it in ("Astryx templates", "More demos"). */
     public let section: String
+    /// What VoiceOver says: the label and its section (both sections share some names).
+    public let accessibilityLabel: String?
 }
 
 extension AppSnapshot {
@@ -40,6 +42,9 @@ public struct ToastInfo: Decodable, Sendable {
     public let tone: Tone
     public let text: String
     public let action: Action?
+    /// The tone in a word for VoiceOver (absent when neutral), and the close button's label.
+    public let toneLabel: String?
+    public let dismissLabel: String?
 }
 
 public struct DialogInfo: Decodable, Sendable {
@@ -60,10 +65,18 @@ public struct AppSnapshot: Decodable, Sendable {
     }
     /// Which drawings of the screens to show: "native", "web", "stock", "compare" or "all".
     public struct SurfaceChoice: Decodable, Sendable {
+        public struct OptionGroup: Decodable, Sendable {
+            public let label: String
+            public let values: [String]
+        }
         public let id: String
         public let label: String
         public let value: String
         public let options: [Option]
+        /// The options in groups: which drawing, and how many at once.
+        public let groups: [OptionGroup]?
+        /// Why a side-by-side choice is dimmed when the window is too small.
+        public let unavailable: String?
         public let stockTemplate: String?
         public let stockLabel: String?
     }

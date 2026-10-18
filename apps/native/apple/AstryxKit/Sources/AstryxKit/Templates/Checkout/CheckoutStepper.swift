@@ -20,6 +20,7 @@ struct CheckoutStepper: View {
                                 Text(step.label).font(label(index)).foregroundStyle(color(index, step))
                                 Spacer(minLength: 0)
                             }
+                            .frame(minHeight: cosTouch)
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
@@ -44,7 +45,7 @@ struct CheckoutStepper: View {
                                     .lineLimit(1)
                                     .minimumScaleFactor(0.8)
                             }
-                            .frame(maxWidth: .infinity)
+                            .frame(maxWidth: .infinity, minHeight: cosTouch)
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
@@ -54,7 +55,7 @@ struct CheckoutStepper: View {
             }
         }
         .accessibilityElement(children: .contain)
-        .accessibilityLabel("Checkout progress")
+        .accessibilityLabel(model.words.progress)
     }
 
     private func line(filled: Bool) -> some View {
@@ -114,11 +115,8 @@ private struct StepAccessibility: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .accessibilityLabel("\(step.label), step \(index + 1) of \(model.steps.count)")
-            .accessibilityValue(
-                [index == model.step ? "Current step" : nil, step.hasError ? "Has problems" : nil]
-                    .compactMap { $0 }.joined(separator: ", ")
-            )
+            .accessibilityLabel(step.spoken)
+            .accessibilityValue(step.state)
             .accessibilityAddTraits(index == model.step ? [.isButton, .isSelected] : .isButton)
     }
 }

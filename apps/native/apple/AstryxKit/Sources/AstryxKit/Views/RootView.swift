@@ -37,18 +37,13 @@ public struct RootView: View {
             if let app = model.app {
                 if let web, let webOwn, let stock {
                     GeometryReader { geo in
-                        SurfaceRoot(app: app, size: geo.size, web: web, webOwn: webOwn, stock: stock)
+                        SurfaceRoot(app: app, size: geo.size, drawings: Drawings(web: web, webOwn: webOwn, stock: stock))
                     }
                 } else {
-                    AppShell(app: app, picker: nil)
+                    AppShell(app: app, mode: .native, picker: nil, drawings: nil)
                 }
             } else {
                 ProgressView()
-            }
-        }
-        .overlay(alignment: .bottom) {
-            if let playing = model.app?.scenarios?.playing, web != nil {
-                ScenarioBar(playing: playing).padding(.bottom, 12)
             }
         }
         .axTheme(model.theme, scheme: scheme, typeSize: typeSize)
@@ -94,74 +89,104 @@ enum SurfaceMode: String {
         }
     }
 
+    /// Whether the SwiftUI drawing is on display (alone, or beside the web ones).
+    var drawsNative: Bool { self == .native || self == .compare || self == .all }
+
     /// A side-by-side choice in a window too small for it draws as the SwiftUI drawing.
     func effective(_ size: CGSize) -> SurfaceMode { fits(size) ? self : .native }
 }
 
-/// The surface choice as a segmented control in the toolbar. Choosing sends `set` with the
-/// snapshot's `surface.id`; options that do not fit the window are left out.
+/// The surface choice as a menu in the toolbar: a short label that fits any width (on a phone
+/// only the icon), the options in the core's two groups (which drawing; how many at once).
+/// Choosing sends `set` with the snapshot's `surface.id`. A side-by-side choice the window is
+/// too small for is dimmed, with the core's reason under it, rather than left out.
 struct SurfacePicker: View {
     let surface: AppSnapshot.SurfaceChoice
     let size: CGSize
-    @Environment(\.ax) private var ax
     @Environment(\.axSend) private var send
     @Environment(\.axStatic) private var isStatic
+    @Environment(\.horizontalSizeClass) private var sizeClass
 
-    private var visible: [Option] {
-        surface.options.filter { SurfaceMode($0.value).fits(size) }
-    }
     private var selection: String {
         SurfaceMode(surface.value).effective(size).rawValue
+    }
+    private var current: Option? {
+        surface.options.first { $0.value == selection }
+    }
+    /// The options in the core's groups; one group without a title when the core gave none.
+    private var sections: [(title: String?, options: [Option])] {
+        guard let groups = surface.groups, !groups.isEmpty else { return [(nil, surface.options)] }
+        return groups.map { group in
+            (group.label, group.values.compactMap { value in surface.options.first { $0.value == value } })
+        }
     }
 
     var body: some View {
         if isStatic {
-            StaticSegmented(options: visible, value: selection)
+            StaticSegmented(options: surface.options.filter { SurfaceMode($0.value).fits(size) }, value: selection)
         } else {
-            Picker(surface.label, selection: Binding(
-                get: { selection },
-                set: { send(.set(id: surface.id, value: .string($0))) }
-            )) {
-                ForEach(visible, id: \.value) { Text($0.label).tag($0.value) }
+            let menu = Menu {
+                ForEach(Array(sections.enumerated()), id: \.offset) { _, section in
+                    Section {
+                        ForEach(section.options, id: \.value) { row($0) }
+                    } header: {
+                        if let title = section.title { Text(title) }
+                    }
+                }
+            } label: {
+                Label(current?.label ?? surface.label, systemImage: "rectangle.on.rectangle")
             }
-            .pickerStyle(.segmented)
-            .labelsHidden()
+            .help(surface.label)
             .accessibilityLabel(surface.label)
-            .fixedSize()
+            .accessibilityValue(current?.label ?? "")
+            if sizeClass == .compact {
+                menu.labelStyle(.iconOnly)
+            } else {
+                menu.labelStyle(.titleAndIcon)
+            }
         }
+    }
+
+    private func row(_ option: Option) -> some View {
+        let fits = SurfaceMode(option.value).fits(size)
+        let chosen = option.value == selection
+        let note = fits ? option.description : surface.unavailable
+        return Button {
+            send(.set(id: surface.id, value: .string(option.value)))
+        } label: {
+            if chosen { Label(option.label, systemImage: "checkmark") } else { Text(option.label) }
+            if let note { Text(note) }
+        }
+        .disabled(!fits)
+        .accessibilityAddTraits(chosen ? .isSelected : [])
     }
 }
 
-/// Chooses the layout for the surface, native included, and puts the picker in its toolbar.
-private struct SurfaceRoot: View {
-    let app: AppSnapshot
-    let size: CGSize
+/// The views of the other drawings, given by the host.
+struct Drawings {
     let web: AnyView
     let webOwn: AnyView
     let stock: AnyView
+}
+
+/// Chooses the layout for the surface and gives it the picker in its toolbar. Every drawing
+/// sits in the same split view, so the sidebar and the navigation position stay when the
+/// drawing changes.
+private struct SurfaceRoot: View {
+    let app: AppSnapshot
+    let size: CGSize
+    let drawings: Drawings
 
     var body: some View {
         if let surface = app.surface {
-            let mode = SurfaceMode(surface.value).effective(size)
-            let picker = SurfacePicker(surface: surface, size: size)
-            if mode == .native {
-                AppShell(app: app, picker: AnyView(picker))
-            } else {
-                NavigationStack {
-                    SurfaceLayout(app: app, mode: mode, web: web, webOwn: webOwn, stock: stock)
-                        .toolbar {
-                            if let scenarios = app.scenarios {
-                                ToolbarItem(placement: .primaryAction) { ScenarioMenu(scenarios: scenarios) }
-                            }
-                            ToolbarItem(placement: .primaryAction) { picker }
-                        }
-                        #if os(iOS)
-                        .navigationBarTitleDisplayMode(.inline)
-                        #endif
-                }
-            }
+            AppShell(
+                app: app,
+                mode: SurfaceMode(surface.value).effective(size),
+                picker: AnyView(SurfacePicker(surface: surface, size: size)),
+                drawings: drawings
+            )
         } else {
-            AppShell(app: app, picker: nil)
+            AppShell(app: app, mode: .native, picker: nil, drawings: nil)
         }
     }
 }
@@ -174,7 +199,11 @@ struct SurfaceLayout: View {
     let web: AnyView
     let webOwn: AnyView
     let stock: AnyView
+    /// The SwiftUI drawing brings a sidebar of its own (for rendering without a split view).
+    /// In the app the split view's sidebar is the only one.
+    var ownSidebar: Bool = true
     @Environment(\.ax) private var ax
+    @Environment(\.horizontalSizeClass) private var sizeClass
 
     var body: some View {
         switch mode {
@@ -210,8 +239,11 @@ struct SurfaceLayout: View {
 
     /// One drawing under its caption.
     private func cell(_ drawing: SurfaceMode) -> some View {
-        VStack(spacing: 0) {
-            caption(drawing)
+        // One drawing alone on a phone gives its caption's line to the page; the picker
+        // says the same in its menu.
+        let showsCaption = !(sizeClass == .compact && (mode == .web || mode == .webOwn || mode == .stock))
+        return VStack(spacing: 0) {
+            if showsCaption { caption(drawing) }
             // The drawing is an overlay of an empty box, so its own ideal size cannot stretch
             // the cell; the cell is what the layout gives it.
             Color.clear
@@ -221,12 +253,14 @@ struct SurfaceLayout: View {
                     case .web: web
                     case .webOwn: webOwn
                     case .stock: stock
-                    default: NativeColumn(app: app)
+                    default: NativeColumn(app: app, ownSidebar: ownSidebar)
                     }
                 }
                 .clipped()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(app.surface?.options.first { $0.value == drawing.rawValue }?.label ?? "")
     }
 
     private func caption(_ drawing: SurfaceMode) -> some View {
@@ -252,37 +286,44 @@ struct SurfaceLayout: View {
     }
 }
 
-/// The SwiftUI drawing as one column of a side-by-side layout: a narrow sidebar and the
-/// screen, without a navigation container of their own.
+/// The SwiftUI drawing as one column of a side-by-side layout: the screen, and with
+/// `ownSidebar` a narrow sidebar before it (for rendering without a split view).
 struct NativeColumn: View {
     let app: AppSnapshot
+    var ownSidebar: Bool = true
     @Environment(\.axSend) private var send
     @Environment(\.axStatic) private var isStatic
 
     var body: some View {
         HStack(spacing: 0) {
-            Group {
-                if isStatic {
-                    StaticSidebar(app: app)
-                } else {
-                    SidebarView(app: app, selection: Binding(
-                        get: { app.current },
-                        set: { if $0 != app.current { send(.navigate(screen: $0)) } }
-                    ))
+            if ownSidebar {
+                Group {
+                    if isStatic {
+                        StaticSidebar(app: app)
+                    } else {
+                        SidebarView(app: app, selection: Binding(
+                            get: { app.current },
+                            set: { if $0 != app.current { send(.navigate(screen: $0)) } }
+                        ))
+                    }
                 }
+                .frame(width: 190)
             }
-            .frame(width: 190)
-            ScreenView(app: app, inlineToolbar: true, scrolls: !isStatic)
+            ScreenView(app: app, inlineToolbar: ownSidebar, scrolls: !isStatic, largeTitle: false)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 
-/// The split view proper, below the theme and the sender.
+/// The split view proper, below the theme and the sender: the sidebar of the core's `nav`
+/// and, for whichever drawing is on display, the detail. Its toolbar offers the scenarios and
+/// the surface choice when the host gave web views.
 private struct AppShell: View {
     let app: AppSnapshot
+    let mode: SurfaceMode
     /// The surface picker, when the host gave web views.
     let picker: AnyView?
+    let drawings: Drawings?
     @Environment(\.ax) private var ax
     @Environment(\.axSend) private var send
 
@@ -296,7 +337,10 @@ private struct AppShell: View {
             .navigationSplitViewColumnWidth(min: 200, ideal: 240, max: 320)
             #endif
         } detail: {
-            ScreenView(app: app, inlineToolbar: false)
+            SurfaceDetail(app: app, mode: mode, drawings: drawings)
+                .safeAreaInset(edge: .bottom, spacing: 0) {
+                    BottomStack(app: app, showsToast: mode.drawsNative, showsScenarios: drawings != nil)
+                }
                 .toolbar {
                     if picker != nil, let scenarios = app.scenarios {
                         ToolbarItem(placement: .primaryAction) { ScenarioMenu(scenarios: scenarios) }
@@ -307,6 +351,57 @@ private struct AppShell: View {
                 }
         }
         .tint(ax.accent)
+    }
+}
+
+/// The detail column: the SwiftUI screen, one web drawing, or several side by side.
+private struct SurfaceDetail: View {
+    let app: AppSnapshot
+    let mode: SurfaceMode
+    let drawings: Drawings?
+
+    var body: some View {
+        if let drawings, mode != .native {
+            let layout = SurfaceLayout(app: app, mode: mode, web: drawings.web, webOwn: drawings.webOwn, stock: drawings.stock, ownSidebar: false)
+            if mode.drawsNative {
+                // The SwiftUI column sets the title and the toolbar.
+                layout
+            } else {
+                layout.modifier(ScreenTitle(screen: app.screen, large: false))
+            }
+        } else {
+            ScreenView(app: app, inlineToolbar: false)
+        }
+    }
+}
+
+/// What sits above the content's bottom edge, in one stack so nothing covers anything: the
+/// toast, then the scenario bar. It is a safe-area inset, so the page scrolls clear of it.
+private struct BottomStack: View {
+    let app: AppSnapshot
+    let showsToast: Bool
+    let showsScenarios: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        let toast = showsToast ? app.toast : nil
+        let playing = showsScenarios ? app.scenarios?.playing : nil
+        let appear: AnyTransition = reduceMotion ? .opacity : .move(edge: .bottom).combined(with: .opacity)
+        VStack(spacing: 8) {
+            if let toast {
+                ToastView(toast: toast)
+                    .id(toast.id)
+                    .transition(appear)
+            }
+            if let playing {
+                ScenarioBar(playing: playing)
+                    .transition(appear)
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.bottom, toast != nil || playing != nil ? 8 : 0)
+        .animation(reduceMotion ? .easeInOut(duration: 0.15) : .snappy, value: toast?.id)
+        .animation(reduceMotion ? .easeInOut(duration: 0.15) : .snappy, value: playing != nil)
     }
 }
 
@@ -335,6 +430,8 @@ private struct SidebarRow: View {
             }
         }
         .accessibilityElement(children: .combine)
+        .accessibilityLabel(item.accessibilityLabel ?? item.label)
+        .accessibilityValue(Text(item.badge ?? ""))
     }
 }
 
@@ -355,9 +452,22 @@ struct SidebarView: View {
             }
         }
         .listStyle(.sidebar)
-        .scrollContentBackground(.hidden)
-        .background(ax.surface)
+        .modifier(SidebarBackground())
         .navigationTitle(app.appName)
+    }
+}
+
+/// Before the glass design the sidebar is painted with the theme's surface; with it the system's
+/// own sidebar (glass, floating above the content) is left alone.
+private struct SidebarBackground: ViewModifier {
+    @Environment(\.ax) private var ax
+
+    func body(content: Content) -> some View {
+        if #available(iOS 26, macOS 26, *) {
+            content
+        } else {
+            content.scrollContentBackground(.hidden).background(ax.surface)
+        }
     }
 }
 
@@ -395,7 +505,36 @@ struct StaticSidebar: View {
     }
 }
 
-/// The current screen: its title and subtitle, toolbar and body, with the toast over it.
+/// The title and subtitle of a screen, in the window's or the navigation bar's own title
+/// (the subtitle where the system has one: iOS and macOS 26 and the Mac before). `large` asks
+/// for the large title that collapses as the page scrolls.
+struct ScreenTitle: ViewModifier {
+    let screen: Screen
+    var large: Bool = false
+
+    func body(content: Content) -> some View {
+        #if os(macOS)
+        content
+            .navigationTitle(screen.title)
+            .navigationSubtitle(screen.subtitle)
+        #else
+        if #available(iOS 26, *) {
+            content
+                .navigationTitle(screen.title)
+                .navigationSubtitle(screen.subtitle)
+                .toolbarTitleDisplayMode(large ? .large : .inline)
+        } else {
+            content
+                .navigationTitle(screen.title)
+                .navigationBarTitleDisplayMode(.inline)
+        }
+        #endif
+    }
+}
+
+/// The current screen: its toolbar and body, under the title in the navigation bar (the page
+/// draws its own heading only where the system title is not enough: before the glass design,
+/// and when rendering without a window). The toast is not here but in the bottom stack.
 /// `inlineToolbar` draws the toolbar buttons in the header instead of the window toolbar,
 /// for rendering without a window.
 struct ScreenView: View {
@@ -404,8 +543,17 @@ struct ScreenView: View {
     var scrolls: Bool = true
     /// The width to lay out in, when known (rendering without a window); else it is measured.
     var fixedWidth: CGFloat? = nil
+    /// Ask for the large title (the screen is the detail's own scroll view).
+    var largeTitle: Bool = true
     @Environment(\.ax) private var ax
     @Environment(\.axSend) private var send
+
+    /// The page repeats the title and subtitle unless the system's title carries them.
+    private var showsHeader: Bool {
+        if inlineToolbar { return true }
+        if #available(iOS 26, macOS 26, *) { return false }
+        return true
+    }
 
     var body: some View {
         Group {
@@ -416,21 +564,7 @@ struct ScreenView: View {
             }
         }
         .background(ax.page)
-        .overlay(alignment: .bottom) {
-            if let toast = app.toast {
-                ToastView(toast: toast)
-                    .id(toast.id)
-                    .padding(ax.space(4))
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
-            }
-        }
-        .animation(.snappy, value: app.toast?.id)
-        .navigationTitle(app.screen.title)
-        #if os(macOS)
-        .navigationSubtitle(app.screen.subtitle)
-        #else
-        .navigationBarTitleDisplayMode(.inline)
-        #endif
+        .modifier(ScreenTitle(screen: app.screen, large: largeTitle && scrolls))
         .toolbar {
             if !inlineToolbar {
                 ToolbarItemGroup(placement: .primaryAction) {
@@ -446,7 +580,7 @@ struct ScreenView: View {
     private func page(width: CGFloat) -> some View {
         let pad = width < 600 ? ax.space(4) : ax.space(6)
         let content = VStack(alignment: .leading, spacing: ax.space(6)) {
-            header
+            if showsHeader { header }
             NodeView(node: app.screen.body)
         }
         .padding(pad)
@@ -488,7 +622,7 @@ private struct ToolbarButton: View {
     @Environment(\.axSend) private var send
 
     var body: some View {
-        Button {
+        Button(role: node.variant == .destructive ? .destructive : nil) {
             send(.press(id: node.id))
         } label: {
             if let icon = node.icon {
@@ -497,26 +631,36 @@ private struct ToolbarButton: View {
                 Text(node.label)
             }
         }
+        .help(node.label)
         .disabled(node.disabled ?? false)
         .tint(node.variant == .destructive ? ax.danger : ax.accent)
     }
 }
 
-/// The toast: a dark pill with the core's words and its action. It dismisses itself after
-/// about four seconds by sending `dismissToast`.
+/// The toast: a dark pill with the core's words and its action. It is announced to VoiceOver
+/// when it appears. With an action (Undo) it stays until it is used or closed; without one it
+/// dismisses itself after a few seconds (longer with VoiceOver on) by sending `dismissToast`.
 struct ToastView: View {
     let toast: ToastInfo
     @Environment(\.ax) private var ax
     @Environment(\.axSend) private var send
+    @Environment(\.accessibilityVoiceOverEnabled) private var voiceOver
+
+    /// What is said: the tone in a word, since the dot is only a color, then the text.
+    private var spoken: String {
+        [toast.toneLabel, toast.text].compactMap { $0 }.joined(separator: ". ")
+    }
 
     var body: some View {
         HStack(spacing: ax.space(3)) {
             Circle()
                 .fill(ax.tone(toast.tone == .neutral ? .accent : toast.tone).solid)
                 .frame(width: 8, height: 8)
+                .accessibilityHidden(true)
             Text(toast.text)
                 .font(ax.fontBase)
                 .foregroundStyle(ax.page)
+                .accessibilityLabel(spoken)
             if let action = toast.action {
                 Button {
                     send(.press(id: action.id))
@@ -525,21 +669,50 @@ struct ToastView: View {
                         .font(ax.fontStrong)
                         .foregroundStyle(ax.page)
                         .underline()
+                        .frame(minWidth: chromeTarget, minHeight: chromeTarget)
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
+                if let dismiss = toast.dismissLabel {
+                    Button {
+                        send(.dismissToast)
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(ax.fontSmall)
+                            .foregroundStyle(ax.page)
+                            .frame(minWidth: chromeTarget, minHeight: chromeTarget)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(dismiss)
+                }
             }
         }
-        .padding(.horizontal, ax.space(4))
-        .padding(.vertical, ax.space(3))
+        .padding(.leading, ax.space(4))
+        .padding(.trailing, toast.action == nil ? ax.space(4) : ax.space(2))
+        .padding(.vertical, toast.action == nil ? ax.space(3) : ax.space(1))
         .background(
             RoundedRectangle(cornerRadius: ax.radiusContainer, style: .continuous)
                 .fill(ax.color("color-background-inverted"))
                 .shadow(color: ax.shadow, radius: 12, y: 4)
         )
-        .accessibilityElement(children: .combine)
+        .accessibilityElement(children: .contain)
         .task(id: toast.id) {
-            try? await Task.sleep(for: .seconds(4))
+            AccessibilityNotification.Announcement(spoken).post()
+            // A toast with an action stays: a timer would take the action away from anyone
+            // who needs longer to reach it.
+            guard toast.action == nil else { return }
+            try? await Task.sleep(for: .seconds(voiceOver ? 10 : 4))
             if !Task.isCancelled { await MainActor.run { send(.dismissToast) } }
         }
     }
+}
+
+/// The smallest tappable side the platform's guidelines ask for: 44 points on a touch screen.
+var chromeTarget: CGFloat {
+    #if os(iOS)
+    44
+    #else
+    28
+    #endif
 }
