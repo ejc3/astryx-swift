@@ -1,7 +1,7 @@
 /**
  * The client: one state, two stores ("app" and "theme"), one way in (`dispatch`), and
  * snapshots out. A host gives it a clock; it gives the host JSON to draw. The bridge to
- * native hosts (connectBridge) speaks the same protocol as dolphin-labs' apps/native.
+ * native hosts (connectBridge): connected/changed out, getSnapshot/dispatch in.
  */
 import type { Now } from "./format.ts";
 import { calendar, chat, checkout, profile, settings } from "./screens/life.ts";

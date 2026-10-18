@@ -8,3 +8,4 @@ main.jsbundle
 .xcode.env.local
 web-parity-tmp/
 web/scripts/_tmp_*
+.scratch/
