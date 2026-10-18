@@ -434,7 +434,7 @@ struct ScreenView: View {
         if scrolls {
             ScrollView { content }
         } else {
-            content.frame(maxHeight: .infinity, alignment: .top)
+            content.fixedSize(horizontal: false, vertical: true).frame(maxHeight: .infinity, alignment: .top)
         }
     }
 

@@ -15,21 +15,33 @@ struct AXStack: View {
                 NodeChildren(nodes: node.children)
             }
         case .horizontal:
-            if node.align == .spread, node.wrap != true {
+            if node.wrap != true, !flows {
+                // Children that can shrink (stacks, inputs, cards) share the row, as in a flex row.
                 HStack(alignment: verticalAlignment, spacing: spacing) {
-                    ForEach(Array(node.children.enumerated()), id: \.offset) { index, child in
-                        if index > 0 { Spacer(minLength: 0) }
-                        NodeView(node: child)
+                    if node.align == .spread {
+                        ForEach(Array(node.children.enumerated()), id: \.offset) { index, child in
+                            if index > 0 { Spacer(minLength: 0) }
+                            NodeView(node: child)
+                        }
+                    } else {
+                        NodeChildren(nodes: node.children)
                     }
                 }
             } else {
-                // Like the web's flex row: children at their natural width, the spare room
-                // shared by those that can grow, and onto more lines when they do not fit.
-                FlowLayout(spacing: spacing, crossAlignment: crossFactor) {
+                // A row of controls keeps each at its own width and flows onto more lines when
+                // they do not fit, as the web's wrapping row does; `spread` puts the room between.
+                FlowLayout(spacing: spacing, crossAlignment: crossFactor, spread: node.align == .spread) {
                     NodeChildren(nodes: node.children)
                 }
             }
         }
+    }
+
+    /// Whether the row flows (wraps) instead of squeezing: its children are controls, marks or
+    /// text, and with `spread` none of them is text that could shrink beside the others.
+    private var flows: Bool {
+        if node.align == .spread { return node.children.allSatisfy(\.isControl) }
+        return node.children.allSatisfy(\.isAtomic)
     }
 
     /// 0 for top, 0.5 for center, 1 for bottom.
@@ -58,7 +70,8 @@ struct AXStack: View {
     }
 }
 
-/// `grid`: an adaptive LazyVGrid whose columns are at least `minColumnWidth` wide.
+/// `grid`: a LazyVGrid with as many columns as fit at `minColumnWidth` (adaptive, and auto-fit:
+/// never more columns than children, so two fields fill the row).
 struct AXGrid: View {
     let node: GridNode
     @Environment(\.ax) private var ax
@@ -68,10 +81,12 @@ struct AXGrid: View {
         let gap = ax.space(node.gap)
         // A column never asks for more than the width there is.
         let minimum = max(1, min(CGFloat(node.minColumnWidth), width))
-        let columns = max(1, Int(((width + gap) / (minimum + gap)).rounded(.down)))
+        // Like CSS auto-fit: as many columns as fit, but never more than there are children.
+        let fitting = max(1, Int(((width + gap) / (minimum + gap)).rounded(.down)))
+        let columns = max(1, min(fitting, node.children.count))
         let columnWidth = (width - gap * CGFloat(columns - 1)) / CGFloat(columns)
         LazyVGrid(
-            columns: [GridItem(.adaptive(minimum: minimum, maximum: .infinity), spacing: gap, alignment: .top)],
+            columns: Array(repeating: GridItem(.flexible(minimum: 0), spacing: gap, alignment: .top), count: columns),
             alignment: .leading,
             spacing: gap
         ) {
@@ -216,6 +231,8 @@ struct FlowLayout: Layout {
     var spacing: CGFloat
     /// 0 top, 0.5 center, 1 bottom: where a child sits on a line taller than it.
     var crossAlignment: CGFloat = 0.5
+    /// Put the spare room of a line between its children (when none of them grows).
+    var spread = false
 
     private struct Item { var index: Int; var width: CGFloat; var height: CGFloat; var grows: Bool }
     private struct Line { var items: [Item] = []; var width: CGFloat = 0; var height: CGFloat = 0 }
@@ -225,7 +242,8 @@ struct FlowLayout: Layout {
         let lines = arrange(limit: limit, subviews: subviews)
         let widest = lines.map(\.width).max() ?? 0
         let grows = lines.contains { $0.items.contains { $0.grows } }
-        let width = limit.isFinite && grows ? limit : widest
+        let spreads = spread && lines.contains { $0.items.count > 1 }
+        let width = limit.isFinite && (grows || spreads) ? limit : widest
         let height = lines.reduce(0) { $0 + $1.height } + spacing * CGFloat(max(lines.count - 1, 0))
         return CGSize(width: width, height: height)
     }
@@ -237,6 +255,8 @@ struct FlowLayout: Layout {
             let growers = line.items.filter(\.grows).count
             let spare = max(bounds.width - line.width, 0)
             var x = bounds.minX
+            let between = spread && growers == 0 && line.items.count > 1
+                ? spacing + spare / CGFloat(line.items.count - 1) : spacing
             for item in line.items {
                 var width = item.width
                 var height = item.height
@@ -246,7 +266,7 @@ struct FlowLayout: Layout {
                 }
                 let top = y + (line.height - height) * crossAlignment
                 subviews[item.index].place(at: CGPoint(x: x, y: top), proposal: ProposedViewSize(width: width, height: height))
-                x += width + spacing
+                x += width + between
             }
             y += line.height + spacing
         }
@@ -275,5 +295,31 @@ struct FlowLayout: Layout {
         }
         if !line.items.isEmpty { lines.append(line) }
         return lines
+    }
+}
+
+extension Node {
+    /// A small control or mark that is a good flow item: it has a width of its own and does not
+    /// shrink, so a row of them wraps rather than squeezes.
+    /// A control that keeps a width of its own: a good item of a spread, wrapping row.
+    var isControl: Bool {
+        switch self {
+        case .segmented, .select, .progress, .slider, .tabs, .toggle: true
+        default: isAtomic && !isText
+        }
+    }
+
+    var isText: Bool {
+        switch self {
+        case .text, .heading: true
+        default: false
+        }
+    }
+
+    var isAtomic: Bool {
+        switch self {
+        case .button, .iconButton, .badge, .token, .statusDot, .kbd, .avatar, .avatarGroup, .text, .heading: true
+        default: false
+        }
     }
 }

@@ -65,10 +65,14 @@ struct StaticSlider: View {
 struct AXHScroll<Content: View>: View {
     @ViewBuilder var content: Content
     @Environment(\.axStatic) private var isStatic
+    @Environment(\.axWidth) private var width
 
     var body: some View {
         if isStatic {
-            content.frame(maxWidth: .infinity, alignment: .leading).clipped()
+            // Laid out at its own width, as in a scroller, and cut to the room there is.
+            content.fixedSize(horizontal: true, vertical: false)
+                .frame(width: width, alignment: .leading)
+                .clipped()
         } else {
             ScrollView(.horizontal, showsIndicators: false) { content }
         }
