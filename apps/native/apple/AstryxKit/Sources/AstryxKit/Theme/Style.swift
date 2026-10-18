@@ -40,7 +40,10 @@ struct AXStyle: Sendable {
     let mode: ResolvedMode
     let isDark: Bool
     /// Dynamic Type's multiplier for the token font sizes.
+    /// Dynamic Type's growth for body-sized text (17 pt and smaller)...
     let scale: CGFloat
+    /// ...and for large-title-sized text (34 pt and larger); sizes between interpolate.
+    var largeScale: CGFloat = 1
 
     /// A neutral stand-in used before the first theme snapshot arrives.
     static let fallback = AXStyle(
@@ -101,7 +104,15 @@ struct AXStyle: Sendable {
     }
 
     // Type
-    func fontSize(_ key: String, _ fallback: CGFloat) -> CGFloat { size(key, fallback) * scale }
+    func fontSize(_ key: String, _ fallback: CGFloat) -> CGFloat { scaled(size(key, fallback)) }
+
+    /// A token size grown as Dynamic Type grows Apple's own text styles: small text by the body
+    /// factor, large text by the large-title factor (at the largest accessibility size, body
+    /// grows 3.1× but a large title only 1.76×), and sizes in between by a blend of the two.
+    func scaled(_ points: CGFloat) -> CGFloat {
+        let t = Swift.min(Swift.max((points - 17) / (34 - 17), 0), 1)
+        return points * (scale + (largeScale - scale) * t)
+    }
     func weight(_ value: Int) -> Font.Weight {
         switch value {
         case ..<350: .light
@@ -156,7 +167,26 @@ struct AXStyle: Sendable {
     }
 }
 
-/// Dynamic Type's multiplier for token sizes (Apple's body text scale, relative to Large).
+/// Dynamic Type's multiplier for a large title (Apple's Large Title, 34 pt at Large).
+func axLargeScale(for size: DynamicTypeSize) -> CGFloat {
+    switch size {
+    case .xSmall: 0.91
+    case .small: 0.94
+    case .medium: 0.97
+    case .large: 1
+    case .xLarge: 1.06
+    case .xxLarge: 1.12
+    case .xxxLarge: 1.18
+    case .accessibility1: 1.29
+    case .accessibility2: 1.41
+    case .accessibility3: 1.53
+    case .accessibility4: 1.65
+    case .accessibility5: 1.76
+    @unknown default: 1
+    }
+}
+
+/// Dynamic Type's multiplier for body-sized token text (Apple's Body, 17 pt at Large).
 func axScale(for size: DynamicTypeSize) -> CGFloat {
     switch size {
     case .xSmall: 0.82
@@ -214,7 +244,7 @@ extension View {
     func axTheme(_ theme: ResolvedTheme?, scheme: ColorScheme, typeSize: DynamicTypeSize) -> some View {
         let style: AXStyle
         if let theme {
-            style = AXStyle(mode: scheme == .dark ? theme.dark : theme.light, isDark: scheme == .dark, scale: axScale(for: typeSize))
+            style = AXStyle(mode: scheme == .dark ? theme.dark : theme.light, isDark: scheme == .dark, scale: axScale(for: typeSize), largeScale: axLargeScale(for: typeSize))
         } else {
             style = .fallback
         }
