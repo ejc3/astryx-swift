@@ -41,6 +41,8 @@ public indirect enum Node: Decodable, Sendable {
     case calendar(CalendarNode)
     case chat(ChatNode)
     case board(BoardNode)
+    /// A refactored Astryx template; drawn as a named placeholder until its own view exists.
+    case template(TemplateNode)
     /// A kind this kit cannot draw; the associated value says which and why.
     case unknown(String)
 
@@ -87,6 +89,7 @@ public indirect enum Node: Decodable, Sendable {
             case "calendar": self = .calendar(try CalendarNode(from: decoder))
             case "chat": self = .chat(try ChatNode(from: decoder))
             case "board": self = .board(try BoardNode(from: decoder))
+            case "template": self = .template(try TemplateNode(from: decoder))
             default: self = .unknown(kind)
             }
         } catch {
@@ -134,6 +137,7 @@ public indirect enum Node: Decodable, Sendable {
         case .calendar: "calendar"
         case .chat: "chat"
         case .board: "board"
+        case .template: "template"
         case .unknown(let why): why
         }
     }
@@ -570,4 +574,10 @@ public struct BoardColumn: Decodable, Sendable {
 
 public struct BoardNode: Decodable, Sendable {
     public let columns: [BoardColumn]
+}
+
+/// `template`: a screen the core hands over as a typed view model for one Astryx template.
+/// Only the template's id is kept for now; its view model is not read.
+public struct TemplateNode: Decodable, Sendable {
+    public let template: String
 }

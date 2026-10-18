@@ -4,11 +4,12 @@ import SwiftUI
 /// On a phone the split view collapses to a navigation stack.
 ///
 /// With `web` and `stock` views (owned by the host), the toolbar also offers the core's
-/// `surface` choice: the SwiftUI drawing, the web drawing, Astryx as it is today, or those
-/// side by side when the window is wide enough.
+/// `surface` choice: the SwiftUI drawing, either web drawing, Astryx as it is today, or
+/// several side by side when the window is large enough.
 public struct RootView: View {
     @ObservedObject private var model: AppModel
     private let web: AnyView?
+    private let webOwn: AnyView?
     private let stock: AnyView?
     @Environment(\.colorScheme) private var scheme
     @Environment(\.dynamicTypeSize) private var typeSize
@@ -18,22 +19,25 @@ public struct RootView: View {
     public init(model: AppModel) {
         self.model = model
         self.web = nil
+        self.webOwn = nil
         self.stock = nil
     }
 
-    /// The SwiftUI drawing, with the host's web view of the same core and its stock Astryx view.
-    public init(model: AppModel, web: AnyView, stock: AnyView) {
+    /// The SwiftUI drawing, with the host's views of the other drawings: the web page on the
+    /// shared core, the web page on a core of its own, and Astryx as it is today.
+    public init(model: AppModel, web: AnyView, webOwn: AnyView, stock: AnyView) {
         self.model = model
         self.web = web
+        self.webOwn = webOwn
         self.stock = stock
     }
 
     public var body: some View {
         Group {
             if let app = model.app {
-                if let web, let stock {
+                if let web, let webOwn, let stock {
                     GeometryReader { geo in
-                        SurfaceRoot(app: app, width: geo.size.width, web: web, stock: stock)
+                        SurfaceRoot(app: app, size: geo.size, web: web, webOwn: webOwn, stock: stock)
                     }
                 } else {
                     AppShell(app: app, picker: nil)
@@ -68,40 +72,41 @@ public struct RootView: View {
 
 /// Which drawing, or drawings, of the screens are on display.
 enum SurfaceMode: String {
-    case native, web, stock, compare, all
+    case native, web, webOwn, stock, compare, all
 
-    /// Windows at least this wide (points) can show the side-by-side choices.
+    /// Windows at least this wide (points) can show native and web side by side.
     static let compareFrom: CGFloat = 1100
-    static let allFrom: CGFloat = 1600
+    /// Windows at least this big can show all four drawings as a grid.
+    static let allFrom = CGSize(width: 1400, height: 800)
 
     init(_ value: String?) { self = SurfaceMode(rawValue: value ?? "") ?? .native }
 
-    func fits(width: CGFloat) -> Bool {
+    func fits(_ size: CGSize) -> Bool {
         switch self {
-        case .compare: width >= SurfaceMode.compareFrom
-        case .all: width >= SurfaceMode.allFrom
+        case .compare: size.width >= SurfaceMode.compareFrom
+        case .all: size.width >= SurfaceMode.allFrom.width && size.height >= SurfaceMode.allFrom.height
         default: true
         }
     }
 
-    /// A side-by-side choice in a window too narrow for it draws as the SwiftUI drawing.
-    func effective(width: CGFloat) -> SurfaceMode { fits(width: width) ? self : .native }
+    /// A side-by-side choice in a window too small for it draws as the SwiftUI drawing.
+    func effective(_ size: CGSize) -> SurfaceMode { fits(size) ? self : .native }
 }
 
 /// The surface choice as a segmented control in the toolbar. Choosing sends `set` with the
 /// snapshot's `surface.id`; options that do not fit the window are left out.
 struct SurfacePicker: View {
     let surface: AppSnapshot.SurfaceChoice
-    let width: CGFloat
+    let size: CGSize
     @Environment(\.ax) private var ax
     @Environment(\.axSend) private var send
     @Environment(\.axStatic) private var isStatic
 
     private var visible: [Option] {
-        surface.options.filter { SurfaceMode($0.value).fits(width: width) }
+        surface.options.filter { SurfaceMode($0.value).fits(size) }
     }
     private var selection: String {
-        SurfaceMode(surface.value).effective(width: width).rawValue
+        SurfaceMode(surface.value).effective(size).rawValue
     }
 
     var body: some View {
@@ -125,19 +130,20 @@ struct SurfacePicker: View {
 /// Chooses the layout for the surface, native included, and puts the picker in its toolbar.
 private struct SurfaceRoot: View {
     let app: AppSnapshot
-    let width: CGFloat
+    let size: CGSize
     let web: AnyView
+    let webOwn: AnyView
     let stock: AnyView
 
     var body: some View {
         if let surface = app.surface {
-            let mode = SurfaceMode(surface.value).effective(width: width)
-            let picker = SurfacePicker(surface: surface, width: width)
+            let mode = SurfaceMode(surface.value).effective(size)
+            let picker = SurfacePicker(surface: surface, size: size)
             if mode == .native {
                 AppShell(app: app, picker: AnyView(picker))
             } else {
                 NavigationStack {
-                    SurfaceLayout(app: app, mode: mode, web: web, stock: stock)
+                    SurfaceLayout(app: app, mode: mode, web: web, webOwn: webOwn, stock: stock)
                         .toolbar {
                             ToolbarItem(placement: .primaryAction) { picker }
                         }
@@ -152,64 +158,86 @@ private struct SurfaceRoot: View {
     }
 }
 
-/// The non-native layouts: the web view or stock view filling the window, or columns of
-/// drawings side by side, each under a small caption from the snapshot's option labels.
+/// The non-native layouts: one drawing filling the window, or several side by side (two
+/// columns, or a 2 by 2 grid), each under a caption of its option's label and description.
 struct SurfaceLayout: View {
     let app: AppSnapshot
     let mode: SurfaceMode
     let web: AnyView
+    let webOwn: AnyView
     let stock: AnyView
     @Environment(\.ax) private var ax
 
     var body: some View {
         switch mode {
-        case .native:
-            NativeColumn(app: app)
-        case .web:
-            web.frame(maxWidth: .infinity, maxHeight: .infinity)
-        case .stock:
-            VStack(spacing: 0) {
-                caption(app.surface?.stockLabel ?? label(for: .stock))
-                stock.frame(maxWidth: .infinity, maxHeight: .infinity)
-            }
+        case .native: cell(.native)
+        case .web, .webOwn, .stock: cell(mode)
         case .compare:
-            columns([.native, .web])
+            HStack(spacing: 0) {
+                cell(.native)
+                divider(vertical: true)
+                cell(.web)
+            }
         case .all:
-            columns([.native, .web, .stock])
-        }
-    }
-
-    private func columns(_ modes: [SurfaceMode]) -> some View {
-        HStack(spacing: 0) {
-            ForEach(Array(modes.enumerated()), id: \.offset) { index, column in
-                if index > 0 { Rectangle().fill(ax.borderStrong).frame(width: 1) }
-                VStack(spacing: 0) {
-                    caption(label(for: column))
-                    switch column {
-                    case .web: web.frame(maxWidth: .infinity, maxHeight: .infinity)
-                    case .stock: stock.frame(maxWidth: .infinity, maxHeight: .infinity)
-                    default: NativeColumn(app: app)
-                    }
+            VStack(spacing: 0) {
+                HStack(spacing: 0) {
+                    cell(.native)
+                    divider(vertical: true)
+                    cell(.web)
                 }
-                .frame(maxWidth: .infinity)
+                divider(vertical: false)
+                HStack(spacing: 0) {
+                    cell(.webOwn)
+                    divider(vertical: true)
+                    cell(.stock)
+                }
             }
         }
     }
 
-    private func label(for mode: SurfaceMode) -> String {
-        app.surface?.options.first { $0.value == mode.rawValue }?.label ?? ""
+    private func divider(vertical: Bool) -> some View {
+        Rectangle().fill(ax.borderStrong)
+            .frame(width: vertical ? 1 : nil, height: vertical ? nil : 1)
     }
 
-    private func caption(_ text: String) -> some View {
-        Text(text)
-            .font(ax.font("font-size-sm", 12, weight: "font-weight-semibold"))
-            .foregroundStyle(ax.textSecondary)
-            .lineLimit(1)
-            .padding(.horizontal, ax.space(3))
-            .padding(.vertical, ax.space(1))
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(ax.surface)
-            .overlay(alignment: .bottom) { Rectangle().fill(ax.border).frame(height: 1) }
+    /// One drawing under its caption.
+    private func cell(_ drawing: SurfaceMode) -> some View {
+        VStack(spacing: 0) {
+            caption(drawing)
+            Group {
+                switch drawing {
+                case .web: web
+                case .webOwn: webOwn
+                case .stock: stock
+                default: NativeColumn(app: app)
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .clipped()
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private func caption(_ drawing: SurfaceMode) -> some View {
+        let option = app.surface?.options.first { $0.value == drawing.rawValue }
+        return HStack(spacing: ax.space(2)) {
+            Text(option?.label ?? "")
+                .font(ax.font("font-size-sm", 12, weight: "font-weight-semibold"))
+                .foregroundStyle(ax.text)
+            if let description = drawing == .stock ? (app.surface?.stockLabel ?? option?.description) : option?.description {
+                Text(description)
+                    .font(ax.fontSmall)
+                    .foregroundStyle(ax.textSecondary)
+                    .lineLimit(1)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, ax.space(3))
+        .padding(.vertical, ax.space(1))
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(ax.surface)
+        .overlay(alignment: .bottom) { Rectangle().fill(ax.border).frame(height: 1) }
+        .accessibilityElement(children: .combine)
     }
 }
 

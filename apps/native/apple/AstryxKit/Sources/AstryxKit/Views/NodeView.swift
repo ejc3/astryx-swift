@@ -43,6 +43,7 @@ struct NodeView: View {
         case .calendar(let n): AXCalendar(node: n)
         case .chat(let n): AXChat(node: n)
         case .board(let n): AXBoard(node: n)
+        case .template(let n): AXTemplatePlaceholder(template: n.template)
         case .unknown(let kind): AXPlaceholder(kind: kind)
         }
     }
@@ -76,5 +77,27 @@ struct NodeChildren: View {
         ForEach(Array(nodes.enumerated()), id: \.offset) { _, node in
             NodeView(node: node)
         }
+    }
+}
+
+/// A refactored template's screen, until its own SwiftUI view exists: a card naming it.
+struct AXTemplatePlaceholder: View {
+    let template: String
+    @Environment(\.ax) private var ax
+
+    var body: some View {
+        VStack(spacing: ax.space(2)) {
+            Image(systemName: "square.dashed")
+                .font(.system(size: ax.fontSize("font-size-2xl", 24)))
+                .foregroundStyle(ax.iconSecondary)
+            Text(template)
+                .font(ax.font("font-size-base", 14, weight: "font-weight-semibold", design: .monospaced))
+                .foregroundStyle(ax.text)
+        }
+        .padding(ax.space(8))
+        .frame(maxWidth: .infinity)
+        .axSurface(fill: ax.card, radius: ax.radiusContainer)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(template)
     }
 }

@@ -87,7 +87,7 @@ final class ProtocolTests: XCTestCase {
         XCTAssertEqual(dashboard.theme.label, "Theme")
         let surface = try XCTUnwrap(dashboard.surface)
         XCTAssertEqual(surface.id, "app.surface")
-        XCTAssertEqual(surface.options.map(\.value), ["native", "web", "stock", "compare", "all"])
+        XCTAssertEqual(surface.options.map(\.value), ["native", "web", "webOwn", "stock", "compare", "all"])
         XCTAssertNotNil(surface.stockLabel)
         // An avatar's status words reach the node.
         let overview = try Library.app("app-overview")
@@ -102,13 +102,23 @@ final class ProtocolTests: XCTestCase {
         XCTAssertEqual(stepper.steps.map(\.selectId), ["x.step:0", nil])
     }
 
-    func testSurfaceModesFallBackWhenTooNarrow() {
-        XCTAssertEqual(SurfaceMode("compare").effective(width: 1099), .native)
-        XCTAssertEqual(SurfaceMode("compare").effective(width: 1100), .compare)
-        XCTAssertEqual(SurfaceMode("all").effective(width: 1599), .native)
-        XCTAssertEqual(SurfaceMode("all").effective(width: 1600), .all)
-        XCTAssertEqual(SurfaceMode("web").effective(width: 390), .web)
-        XCTAssertEqual(SurfaceMode("nonsense").effective(width: 390), .native)
+    func testSurfaceModesFallBackWhenTooSmall() {
+        func mode(_ v: String, _ w: CGFloat, _ h: CGFloat = 900) -> SurfaceMode { SurfaceMode(v).effective(CGSize(width: w, height: h)) }
+        XCTAssertEqual(mode("compare", 1099), .native)
+        XCTAssertEqual(mode("compare", 1100), .compare)
+        XCTAssertEqual(mode("all", 1399), .native)
+        XCTAssertEqual(mode("all", 1400, 799), .native)
+        XCTAssertEqual(mode("all", 1400, 800), .all)
+        XCTAssertEqual(mode("web", 390), .web)
+        XCTAssertEqual(mode("webOwn", 390), .webOwn)
+        XCTAssertEqual(mode("stock", 390), .stock)
+        XCTAssertEqual(mode("nonsense", 390), .native)
+    }
+
+    func testATemplateNodeDecodesToItsOwnPlaceholder() throws {
+        let json = #"{"kind":"template","template":"t.dashboard","view":{"anything":[1,2]}}"#
+        guard case .template(let node) = try JSONDecoder().decode(Node.self, from: Data(json.utf8)) else { return XCTFail() }
+        XCTAssertEqual(node.template, "t.dashboard")
     }
 
     func testHexColors() {

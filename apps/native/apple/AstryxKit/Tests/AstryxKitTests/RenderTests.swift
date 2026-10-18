@@ -53,20 +53,25 @@ final class RenderTests: XCTestCase {
         .environment(\.axStatic, true)
     }
 
-    /// The side-by-side layouts, with colored placeholders for the host's web views.
+    /// The side-by-side layouts, with a differently colored placeholder for each web view.
     private func surfaces(_ app: AppSnapshot, _ theme: ResolvedTheme, mode: SurfaceMode, width: CGFloat, height: CGFloat) -> some View {
-        VStack(spacing: 0) {
+        func placeholder(_ name: String, _ color: Color) -> AnyView {
+            AnyView(color.opacity(0.2).overlay(Text(name).foregroundStyle(.secondary)))
+        }
+        let size = CGSize(width: width, height: height)
+        return VStack(spacing: 0) {
             HStack {
                 Spacer()
-                SurfacePicker(surface: app.surface!, width: width)
+                SurfacePicker(surface: app.surface!, size: size)
             }
             .padding(8)
             .background(Color.gray.opacity(0.15))
             SurfaceLayout(
                 app: app,
                 mode: mode,
-                web: AnyView(Color.blue.opacity(0.18).overlay(Text("web view").foregroundStyle(.secondary))),
-                stock: AnyView(Color.orange.opacity(0.18).overlay(Text("stock view").foregroundStyle(.secondary)))
+                web: placeholder("web on Hermes", .blue),
+                webOwn: placeholder("web, own core", .green),
+                stock: placeholder("stock Astryx", .orange)
             )
         }
         .frame(width: width, height: height)
@@ -80,7 +85,11 @@ final class RenderTests: XCTestCase {
         guard let directory else { throw XCTSkip("AX_SHOTS is not set") }
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         var written = 0
-        func write(_ data: Data, _ name: String) throws {
+        // AX_ONLY narrows a run to the pictures whose name contains it, for quick iteration.
+        let only = ProcessInfo.processInfo.environment["AX_ONLY"] ?? ""
+        func write(_ make: @autoclosure () throws -> Data, _ name: String) throws {
+            guard only.isEmpty || name.contains(only) else { return }
+            let data = try make()
             try data.write(to: directory.appendingPathComponent(name + ".png"))
             XCTAssertGreaterThan(data.count, 2_000, name)
             written += 1
@@ -104,11 +113,10 @@ final class RenderTests: XCTestCase {
                 }
             }
         }
-        for (mode, width, height) in [("compare", 1600.0, 900.0), ("all", 2000.0, 900.0)] {
+        for (mode, width, height) in [("compare", 1600.0, 900.0), ("all", 1600.0, 1000.0)] {
             let app = try Library.app("app-dashboard", surface: mode)
-            let image = try png(surfaces(app, astryx, mode: SurfaceMode(mode), width: width, height: height), width: width, height: height)
-            try write(image, "dashboard.astryx.\(mode)")
+            try write(try png(surfaces(app, astryx, mode: SurfaceMode(mode), width: width, height: height), width: width, height: height), "dashboard.astryx.\(mode)")
         }
-        XCTAssertEqual(written, 14 * 4 + 2 * 2 * 4 + 2)
+        if only.isEmpty { XCTAssertEqual(written, 14 * 4 + 2 * 2 * 4 + 2) }
     }
 }
