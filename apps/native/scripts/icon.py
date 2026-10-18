@@ -1,6 +1,8 @@
 # Draws the app icon: Astryx's accent blue, a white "A" made of two strokes and a bar.
 # 1024 px, no alpha (iOS rounds the corners itself).
-# Run: python3 apps/native/scripts/icon.py <output.png>
+# Run: python3 apps/native/scripts/icon.py <output.png>. The iPhone takes the 1024 px image; the
+# Mac's asset catalog needs every size from 16 to 512 pt at 1x and 2x (App Store Connect refuses
+# a Mac build whose icon lacks 512 pt @2x), resized from it.
 import sys
 from PIL import Image, ImageDraw
 
