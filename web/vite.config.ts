@@ -23,11 +23,30 @@ const stockOnly = (plugin: Plugin): Plugin => {
   return { ...plugin, transform(code, id, ...rest) { return id.includes("/src/stock/") || id.includes("/src/templates/") ? transform.call(this, code, id, ...rest) : null; } };
 };
 
+// The StyleX plugin appends the compiled CSS to one stylesheet only (the app page's). The stock
+// page's Astryx CSS sits in a chunk shared with the app page, so it would draw Astryx's
+// templates without their StyleX rules: give stock.html the same CSS as a file of its own.
+const stylexPlugins = [stylex.vite({ unstable_moduleResolution: { type: "commonJS" } })].flat() as (Plugin & { __stylexCollectCss?: () => string })[];
+const stylexForStock: Plugin = {
+  name: "stylex-for-stock",
+  enforce: "post",
+  generateBundle(_options, bundle) {
+    const css = stylexPlugins.map((p) => p.__stylexCollectCss?.() ?? "").join("\n").trim();
+    const html = bundle["stock.html"];
+    if (!css || !html || html.type !== "asset") return;
+    const fileName = "assets/stylex-stock.css";
+    this.emitFile({ type: "asset", fileName, source: css });
+    const page = typeof html.source === "string" ? html.source : new TextDecoder().decode(html.source);
+    html.source = page.replace("</head>", `  <link rel="stylesheet" href="./${fileName}">\n  </head>`);
+  },
+};
+
 export default defineConfig({
   base: "./",
   plugins: [
     react(),
-    ...[stylex.vite({ unstable_moduleResolution: { type: "commonJS" } })].flat().map((p: Plugin) => stockOnly(p)),
+    ...stylexPlugins.map((p: Plugin) => stockOnly(p)),
+    stylexForStock,
     plainScripts,
   ],
   build: {
