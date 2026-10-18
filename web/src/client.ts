@@ -47,7 +47,7 @@ function standalone(): Client {
   // The native app shows this page on its own core as a fourth drawing ("Web, own core") and
   // keeps it on the same screen as the others; nothing else of its state is shared.
   window.__astryxOwn = { navigate: (screen) => client.dispatch({ type: "navigate", screen: screen as ScreenId }) };
-  return client;
+  return { ...client, dispatch: (action) => { const log = (window as unknown as { __astryxRecord?: unknown }).__astryxRecord; if (Array.isArray(log)) log.push(action); client.dispatch(action); } }; // scripts/record-scenarios.mjs sets window.__astryxRecord to collect actions
 }
 
 declare global {

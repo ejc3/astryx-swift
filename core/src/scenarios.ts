@@ -10,7 +10,12 @@
  */
 import type { Action } from "./ui.ts";
 
-/** One link of a locator chain, as Playwright names it; a web driver resolves it in the page. */
+/**
+ * One link of a locator chain, as Playwright names it; a web driver resolves it in the page
+ * (web/public/astryx-drive.js). A `name` or `text` written "/source/flags" is a regular
+ * expression; any other string matches as Playwright does (case-insensitive substring, or
+ * equal when `exact`).
+ */
 export type LocatorOp =
   | { by: "role"; role: string; name?: string; exact?: boolean }
   | { by: "label"; text: string; exact?: boolean }
@@ -27,7 +32,9 @@ export type Gesture =
   | { kind: "uncheck" }
   | { kind: "select"; value: string }
   | { kind: "press"; key: string }
-  | { kind: "hover" };
+  | { kind: "hover" }
+  /** Press on the target, move to `to`, release just above or below it (a card dragged between cards). */
+  | { kind: "drag"; to: LocatorOp[]; edge: "above" | "below" | "center" };
 
 export type ScenarioStep = {
   caption: string;

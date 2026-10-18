@@ -11,7 +11,9 @@
     "shots": "node scripts/shots.mjs",
     "interact": "node scripts/interact.mjs",
     "embedded": "node scripts/embedded.mjs",
-    "parity": "node scripts/parity.mjs"
+    "parity": "node scripts/parity.mjs",
+    "record": "node scripts/record-scenarios.mjs",
+    "replay": "node scripts/record-scenarios.mjs --replay"
   },
   "dependencies": {
     "@astryx-native/core": "0.1.0",
