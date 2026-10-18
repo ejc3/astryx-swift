@@ -8,6 +8,8 @@ import { CHAT, MESSAGES, REPLIES, TASKS, type ChatLine, type Column, type Messag
 import { SCREENS, SURFACES, type Action, type ScreenId, type Surface, type Tone } from "./ui.ts";
 import { THEME_INPUTS } from "./themes.ts";
 import { TEMPLATES, templateById } from "./templates/index.ts";
+import { SCENARIOS } from "./scenarios.generated.ts";
+import type { Driver, Playback } from "./scenarios.ts";
 
 /** Whether `id` names a screen: a demo, or a registered template's "t.<id>". */
 export function isScreen(id: string): id is ScreenId {
@@ -20,6 +22,8 @@ export type State = {
   screen: ScreenId;
   /** Each refactored template's own state, by template id. */
   templates: Record<string, unknown>;
+  /** The scenario playing, if one is. */
+  playback: Playback | null;
   surface: Surface;
   theme: string;
   today: Civil;
@@ -47,6 +51,7 @@ export function initialState(now: Now): State {
   return {
     screen: "t.dashboard",
     templates: Object.fromEntries(TEMPLATES.map((t) => [t.id, t.initial(now)])),
+    playback: null,
     surface: "native",
     theme: "astryx",
     today,
@@ -233,6 +238,25 @@ function press(s: State, id: string): State {
   const [key, arg] = parse(id);
   const inbox = s.inbox, tasks = s.tasks, c = s.checkout;
   switch (key) {
+    case "scenario.start": {
+      // "scenario.start:<id>:<driver>": its template's screen, from the template's first state.
+      const [id, driver] = arg.split(":");
+      const scenario = SCENARIOS.find((x) => x.id === id);
+      const t = scenario ? templateById(scenario.template) : undefined;
+      if (!scenario || !t || (driver !== "native" && driver !== "web")) return s;
+      return { ...s, screen: `t.${t.id}`, dialog: null, toast: null, templates: { ...s.templates, [t.id]: t.initial({ epochMs: dayNumber(s.today) * 86_400_000 + s.minute * 60_000, utcOffsetMinutes: 0 }) }, playback: { scenario: scenario.id, driver: driver as Driver, step: 0, status: "playing" } };
+    }
+    case "scenario.done": {
+      // The host performed step <n>; a report for any other step (late, or doubled) is ignored.
+      const p = s.playback;
+      const scenario = p && SCENARIOS.find((x) => x.id === p.scenario);
+      if (!p || !scenario || p.status !== "playing" || Number(arg) !== p.step) return s;
+      const step = p.step + 1;
+      return { ...s, playback: { ...p, step, status: step >= scenario.steps.length ? "done" : "playing" } };
+    }
+    case "scenario.pause": return s.playback?.status === "playing" ? { ...s, playback: { ...s.playback, status: "paused" } } : s;
+    case "scenario.resume": return s.playback?.status === "paused" ? { ...s, playback: { ...s.playback, status: "playing" } } : s;
+    case "scenario.stop": return s.playback ? { ...s, playback: null } : s;
     case "navigate":
       return isScreen(arg) ? { ...s, screen: arg, dialog: null } : s;
     case "toast.undo": {

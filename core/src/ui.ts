@@ -10,6 +10,8 @@
  * PROTOCOL when a field changes meaning.
  */
 
+import type { ScenariosSnapshot } from "./scenarios.ts";
+
 export const PROTOCOL = 1;
 
 /** The color roles Astryx's components take. */
@@ -161,6 +163,8 @@ export type AppSnapshot = {
    * A web page ignores it. A host too small for a side-by-side choice shows "native".
    */
   surface: { id: string; label: string; value: Surface; options: Option[]; stockTemplate: string; stockLabel: string };
+  /** The shipped scenarios and the one playing (core/src/scenarios.ts). */
+  scenarios: ScenariosSnapshot;
 };
 
 export const SURFACES = ["native", "web", "webOwn", "stock", "compare", "all"] as const;

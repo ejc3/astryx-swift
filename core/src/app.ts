@@ -9,6 +9,8 @@ import { dashboard, overview } from "./screens/overview.ts";
 import { inbox, people, tasks } from "./screens/work.ts";
 import { initialState, isScreen, reduce, type State } from "./state.ts";
 import { TEMPLATES, templateById } from "./templates/index.ts";
+import { SCENARIOS } from "./scenarios.generated.ts";
+import type { ScenariosSnapshot } from "./scenarios.ts";
 import { THEMES } from "./themes.generated.ts";
 import { THEME_INPUTS, type ResolvedTheme } from "./themes.ts";
 import { PROTOCOL, type Action, type AppSnapshot, type DemoScreenId, type Dialog, type Icon, type NavItem, type Screen, type TemplateScreenId } from "./ui.ts";
@@ -63,6 +65,27 @@ function dialog(s: State): Dialog | null {
   return null;
 }
 
+export function scenariosSnapshot(s: State): ScenariosSnapshot {
+  const p = s.playback;
+  const scenario = p ? SCENARIOS.find((x) => x.id === p.scenario) : undefined;
+  const steps = scenario?.steps.length ?? 0;
+  return {
+    label: "Scenarios",
+    list: SCENARIOS.map((x) => ({ id: x.id, title: x.title, template: templateById(x.template)?.title ?? x.template, steps: x.steps.length === 1 ? "1 step" : `${x.steps.length} steps` })),
+    drivers: [
+      { value: "native", label: "Drive from native", description: "Each step taps the SwiftUI side; the web drawings follow" },
+      { value: "web", label: "Drive from web", description: "Each step clicks the web page on Hermes; the native side follows" },
+    ],
+    playing: !p || !scenario ? null : {
+      id: scenario.id, title: scenario.title, driver: p.driver, status: p.status,
+      progress: p.status === "done" ? `Done: ${steps} of ${steps} steps` : `Step ${p.step + 1} of ${steps}`,
+      caption: p.status === "done" ? "Finished" : scenario.steps[p.step]?.caption ?? "",
+      step: p.status === "playing" && scenario.steps[p.step] ? { index: p.step, ...scenario.steps[p.step]! } : null,
+      controls: { pauseId: "scenario.pause", resumeId: "scenario.resume", stopId: "scenario.stop", pauseLabel: "Pause", resumeLabel: "Resume", stopLabel: p.status === "done" ? "Close" : "Stop" },
+    },
+  };
+}
+
 export function appSnapshot(s: State, now: Now): AppSnapshot {
   return {
     protocol: PROTOCOL,
@@ -73,6 +96,7 @@ export function appSnapshot(s: State, now: Now): AppSnapshot {
     toast: s.toast ? { id: s.toastSeq, tone: s.toast.tone, text: s.toast.text, ...(s.toast.undo ? { action: { id: "toast.undo", label: "Undo" } } : {}) } : null,
     dialog: dialog(s),
     theme: { id: s.theme, label: "Theme", setId: "settings.theme", options: THEME_INPUTS.map((t) => ({ value: t.id, label: t.label })) },
+    scenarios: scenariosSnapshot(s),
     surface: {
       id: "app.surface", label: "Show", value: s.surface,
       options: [

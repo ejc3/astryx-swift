@@ -4,3 +4,5 @@ export { THEME_INPUTS, type ThemeInput } from "./themes.ts";
 export * from "./ui.ts";
 export { TEMPLATES, TEMPLATE_IDS, templateById } from "./templates/index.ts";
 export type { TemplateModule, TemplateAction } from "./templates/types.ts";
+export type { Scenario, ScenarioStep, LocatorOp, Gesture, Driver, Playback, ScenariosSnapshot } from "./scenarios.ts";
+export { SCENARIOS } from "./scenarios.generated.ts";
