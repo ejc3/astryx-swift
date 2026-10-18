@@ -5,6 +5,8 @@ import SwiftUI
 struct ShowChat: View {
     let chat: ShowModel.Chat
     @Environment(\.ax) private var ax
+    @Environment(\.showInert) private var inert
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -16,7 +18,7 @@ struct ShowChat: View {
                 Spacer(minLength: ax.space(2))
                 HStack(spacing: ax.space(1)) {
                     ForEach(Array(chat.actions.enumerated()), id: \.offset) { _, action in
-                        ShowIconButton(symbol: ShowModel.symbol(action.icon), label: action.label)
+                        ShowIconButton(symbol: ShowModel.symbol(action.icon), label: action.label, inert: "chatActions")
                     }
                 }
             }
@@ -35,14 +37,17 @@ struct ShowChat: View {
                         Text(question)
                             .font(ax.fontSmall)
                             .foregroundStyle(ax.text)
-                            .lineLimit(1)
+                            .lineLimit(typeSize.isAccessibilitySize ? nil : 1)
+                            .multilineTextAlignment(.leading)
                             .padding(.horizontal, ax.space(3))
                             .frame(minHeight: 28 * min(ax.scale, 1.4))
                             .background(RoundedRectangle(cornerRadius: ax.radiusElement, style: .continuous).fill(ax.surface))
                             .overlay(RoundedRectangle(cornerRadius: ax.radiusElement, style: .continuous).strokeBorder(ax.borderStrong, lineWidth: 1))
                             .contentShape(Rectangle())
+                            .axTapTarget(keepLayout: true)
                     }
                     .buttonStyle(.plain)
+                    .disabled(inert.contains("suggestions"))
                 }
             }
             .padding(.horizontal, ax.space(4))
@@ -107,6 +112,7 @@ private struct ShowChatLine: View {
 private struct ShowDetailRow: View {
     let detail: ShowModel.Chat.Detail
     @Environment(\.ax) private var ax
+    @Environment(\.showInert) private var inert
 
     var body: some View {
         HStack(alignment: .center, spacing: ax.space(3)) {
@@ -122,8 +128,9 @@ private struct ShowDetailRow: View {
             case .badge(let text, let variant):
                 ShowBadge(text: text, variant: variant)
             case .link(let text):
-                Button {} label: { Text(text).font(ax.fontLabel).foregroundStyle(ax.accent) }
+                Button {} label: { Text(text).font(ax.fontLabel).foregroundStyle(ax.accent).axTapTarget(keepLayout: true) }
                     .buttonStyle(.plain)
+                    .disabled(inert.contains("chatLink"))
             }
         }
         .padding(.vertical, ax.space(1))
@@ -148,7 +155,7 @@ private struct ShowChatComposer: View {
     var body: some View {
         let shape = RoundedRectangle(cornerRadius: ax.radiusContainer + 6, style: .continuous)
         HStack(spacing: ax.space(1)) {
-            ShowIconButton(symbol: "plus", label: composer.attachLabel)
+            ShowIconButton(symbol: "plus", label: composer.attachLabel, inert: "attach")
             if isStatic {
                 Text(text.isEmpty ? composer.placeholder : text)
                     .font(ax.fontBase)
@@ -163,7 +170,7 @@ private struct ShowChatComposer: View {
                     .onSubmit(submit)
                     .accessibilityLabel(composer.placeholder)
             }
-            ShowIconButton(symbol: "mic", label: composer.voiceLabel)
+            ShowIconButton(symbol: "mic", label: composer.voiceLabel, inert: "voice")
         }
         .padding(.horizontal, ax.space(2))
         .padding(.vertical, ax.space(1))

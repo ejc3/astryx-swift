@@ -37,13 +37,23 @@ struct ToneColors {
 /// The tokens of one mode of the theme, with the Dynamic Type scale. Every view reads its
 /// colors, radii, spacing and type sizes from here, never from a constant of its own.
 struct AXStyle: Sendable {
+    /// The theme's tokens with the native drawing's contrast floors applied (see `AXPalette`).
     let mode: ResolvedMode
     let isDark: Bool
-    /// Dynamic Type's multiplier for the token font sizes.
     /// Dynamic Type's growth for body-sized text (17 pt and smaller)...
     let scale: CGFloat
     /// ...and for large-title-sized text (34 pt and larger); sizes between interpolate.
     var largeScale: CGFloat = 1
+    /// True under Settings > Accessibility > Increase Contrast.
+    var increasedContrast = false
+
+    init(mode: ResolvedMode, isDark: Bool, scale: CGFloat, largeScale: CGFloat = 1, increasedContrast: Bool = false) {
+        self.mode = AXPalette.strengthened(mode, increased: increasedContrast)
+        self.isDark = isDark
+        self.scale = scale
+        self.largeScale = largeScale
+        self.increasedContrast = increasedContrast
+    }
 
     /// A neutral stand-in used before the first theme snapshot arrives.
     static let fallback = AXStyle(
@@ -70,6 +80,8 @@ struct AXStyle: Sendable {
     // Text and strokes
     var text: Color { color("color-text-primary") }
     var textSecondary: Color { color("color-text-secondary") }
+    /// Placeholders and text that is dimmed but still works (an out-of-month date). The theme's own
+    /// disabled gray is 2:1 on white; this is raised to 4.5:1 (see `AXPalette`).
     var textDisabled: Color { color("color-text-disabled") }
     var border: Color { color("color-border") }
     var borderStrong: Color { color("color-border-emphasized") }
@@ -239,15 +251,34 @@ extension EnvironmentValues {
     }
 }
 
-extension View {
-    /// Paints the subtree with a theme's tokens for the current color scheme and text size.
-    func axTheme(_ theme: ResolvedTheme?, scheme: ColorScheme, typeSize: DynamicTypeSize) -> some View {
+/// Applies the theme as the `ax` environment value; it reads Increase Contrast itself, which a
+/// plain View method cannot.
+private struct AXThemeModifier: ViewModifier {
+    let theme: ResolvedTheme?
+    let scheme: ColorScheme
+    let typeSize: DynamicTypeSize
+    @Environment(\.colorSchemeContrast) private var contrast
+
+    func body(content: Content) -> some View {
         let style: AXStyle
         if let theme {
-            style = AXStyle(mode: scheme == .dark ? theme.dark : theme.light, isDark: scheme == .dark, scale: axScale(for: typeSize), largeScale: axLargeScale(for: typeSize))
+            style = AXStyle(
+                mode: scheme == .dark ? theme.dark : theme.light,
+                isDark: scheme == .dark,
+                scale: axScale(for: typeSize),
+                largeScale: axLargeScale(for: typeSize),
+                increasedContrast: contrast == .increased
+            )
         } else {
             style = .fallback
         }
-        return environment(\.ax, style)
+        return content.environment(\.ax, style)
+    }
+}
+
+extension View {
+    /// Paints the subtree with a theme's tokens for the current color scheme and text size.
+    func axTheme(_ theme: ResolvedTheme?, scheme: ColorScheme, typeSize: DynamicTypeSize) -> some View {
+        modifier(AXThemeModifier(theme: theme, scheme: scheme, typeSize: typeSize))
     }
 }

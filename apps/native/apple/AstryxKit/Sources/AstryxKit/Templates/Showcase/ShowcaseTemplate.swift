@@ -10,17 +10,24 @@ import SwiftUI
 /// - `set` shipping, payment, country: the option's value
 /// - `set` saveInfo: a Bool; `set` select.<row id>: a Bool; `set` filter.<label>: the option
 /// - `press` chatSend: Return in the chat composer
-/// Buttons the web gives no handler (Add to cart, Pay now, Sign in, View all...) send nothing.
+/// Buttons the web gives no handler (Add to cart, Pay now, Sign in, View all...) send nothing; the
+/// core lists them in `inert` and they are drawn disabled.
 struct ShowcaseTemplate: View {
     let view: JSONValue
 
     var body: some View {
         if let model = try? view.decode(ShowModel.self) {
             ShowContent(model: model)
+                .environment(\.showInert, (try? view.decode(ShowInert.self))?.inert ?? [])
         } else {
             AXTemplatePlaceholder(template: "showcase")
         }
     }
+}
+
+/// `view.inert`: the controls the core keeps inert.
+private struct ShowInert: Decodable {
+    let inert: Set<String>
 }
 
 private struct ShowContent: View {
@@ -117,39 +124,63 @@ private struct ShowNav: View {
     let nav: ShowModel.Nav
     @Environment(\.ax) private var ax
     @Environment(\.axWidth) private var width
+    @Environment(\.showInert) private var inert
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
-        let wide = width >= 640
+        let wide = width >= 640 && !typeSize.isAccessibilitySize
         VStack(alignment: .leading, spacing: ax.space(2)) {
-            HStack(spacing: ax.space(3)) {
+            if typeSize.isAccessibilitySize {
+                // One row cannot hold the name, three icons and Sign in at this size: each group
+                // gets as many rows as it needs.
                 Text(nav.heading)
                     .font(ax.heading(2))
                     .foregroundStyle(ax.text)
                     .accessibilityAddTraits(.isHeader)
-                if wide {
-                    Spacer(minLength: ax.space(4))
-                    items
-                    Spacer(minLength: ax.space(4))
-                } else {
-                    Spacer(minLength: ax.space(2))
+                FlowLayout(spacing: ax.hair) {
+                    actions
+                    signIn
                 }
-                HStack(spacing: ax.hair) {
-                    ForEach(Array(nav.actions.enumerated()), id: \.offset) { _, action in
-                        ShowIconButton(symbol: ShowModel.symbol(action.icon), label: action.label)
+                items
+            } else {
+                HStack(spacing: ax.space(3)) {
+                    Text(nav.heading)
+                        .font(ax.heading(2))
+                        .foregroundStyle(ax.text)
+                        .accessibilityAddTraits(.isHeader)
+                    if wide {
+                        Spacer(minLength: ax.space(4))
+                        items
+                        Spacer(minLength: ax.space(4))
+                    } else {
+                        Spacer(minLength: ax.space(2))
                     }
+                    HStack(spacing: ax.hair) { actions }
+                    signIn
                 }
-                Button {} label: { Text(nav.signIn).lineLimit(1) }
-                    .buttonStyle(AXButtonStyle(variant: .primary, ax: ax))
+                if !wide { items }
             }
-            if !wide { items }
             Rectangle().fill(ax.border).frame(height: 1).padding(.top, ax.space(2))
         }
         .accessibilityElement(children: .contain)
         .accessibilityLabel(nav.label)
     }
 
+    @ViewBuilder
+    private var actions: some View {
+        ForEach(Array(nav.actions.enumerated()), id: \.offset) { _, action in
+            ShowIconButton(symbol: ShowModel.symbol(action.icon), label: action.label, inert: "navActions")
+        }
+    }
+
+    private var signIn: some View {
+        Button {} label: { Text(nav.signIn).lineLimit(typeSize.isAccessibilitySize ? nil : 1) }
+            .buttonStyle(AXButtonStyle(variant: .primary, ax: ax))
+            .disabled(inert.contains("signIn"))
+    }
+
     private var items: some View {
-        HStack(spacing: ax.space(1)) {
+        FlowLayout(spacing: ax.space(1)) {
             ForEach(Array(nav.items.enumerated()), id: \.offset) { _, item in
                 Button {} label: {
                     Text(item.label)
@@ -159,8 +190,10 @@ private struct ShowNav: View {
                         .padding(.vertical, ax.space(2))
                         .background(RoundedRectangle(cornerRadius: ax.radiusElement, style: .continuous).fill(item.isSelected ? ax.accentMuted : .clear))
                         .contentShape(Rectangle())
+                        .axTapTarget(keepLayout: true)
                 }
                 .buttonStyle(.plain)
+                .disabled(inert.contains("navItems"))
                 .accessibilityAddTraits(item.isSelected ? [.isSelected, .isButton] : .isButton)
             }
         }
@@ -216,11 +249,21 @@ private struct ShowProductCard: View {
     let photoHeight: CGFloat
     @State private var quantity: Int
     @Environment(\.ax) private var ax
+    @Environment(\.showInert) private var inert
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     init(product: ShowModel.Product, photoHeight: CGFloat) {
         self.product = product
         self.photoHeight = photoHeight
         _quantity = State(initialValue: Int(product.quantity.value))
+    }
+
+    private func addButton(lines: Int?) -> some View {
+        Button {} label: {
+            Text(product.addLabel).lineLimit(lines).minimumScaleFactor(lines == nil ? 1 : 0.8).frame(maxWidth: .infinity)
+        }
+        .buttonStyle(AXButtonStyle(variant: .secondary, ax: ax))
+        .disabled(inert.contains("addToCart"))
     }
 
     var body: some View {
@@ -239,14 +282,20 @@ private struct ShowProductCard: View {
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(maxHeight: .infinity, alignment: .top)
-                HStack(spacing: ax.space(2)) {
-                    ShowQuantity(label: product.quantity.label, value: $quantity, range: Int(product.quantity.min)...Int(product.quantity.max))
-                    Button {} label: {
-                        Text(product.addLabel).lineLimit(1).minimumScaleFactor(0.8).frame(maxWidth: .infinity)
+                // Side by side, or one over the other at the text sizes where they cannot share a line.
+                if typeSize.isAccessibilitySize {
+                    VStack(spacing: ax.space(2)) {
+                        ShowQuantity(label: product.quantity.label, value: $quantity, range: Int(product.quantity.min)...Int(product.quantity.max))
+                        addButton(lines: nil)
                     }
-                    .buttonStyle(AXButtonStyle(variant: .secondary, ax: ax))
+                    .padding(.top, ax.space(1))
+                } else {
+                    HStack(spacing: ax.space(2)) {
+                        ShowQuantity(label: product.quantity.label, value: $quantity, range: Int(product.quantity.min)...Int(product.quantity.max))
+                        addButton(lines: 1)
+                    }
+                    .padding(.top, ax.space(1))
                 }
-                .padding(.top, ax.space(1))
             }
             .padding(ax.space(4))
             .frame(maxHeight: .infinity, alignment: .top)
@@ -296,6 +345,8 @@ private struct ShowQuantity: View {
                 .foregroundStyle(enabled ? ax.text : ax.textDisabled)
                 .frame(width: 30 * min(ax.scale, 1.4), height: 34 * min(ax.scale, 1.4))
                 .contentShape(Rectangle())
+                // Drawn 30 by 34 pt inside the stepper; 44 by 44 pt to tap.
+                .axTapTarget(keepLayout: true)
         }
         .buttonStyle(.plain)
         .disabled(!enabled)

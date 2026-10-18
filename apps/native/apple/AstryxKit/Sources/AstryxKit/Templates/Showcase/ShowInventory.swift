@@ -10,6 +10,8 @@ struct ShowInventory: View {
     @Environment(\.ax) private var ax
     @Environment(\.axSend) private var send
     @Environment(\.axWidth) private var width
+    @Environment(\.showInert) private var inert
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     init(inventory: ShowModel.Inventory) {
         self.inventory = inventory
@@ -20,9 +22,16 @@ struct ShowInventory: View {
         Dictionary(uniqueKeysWithValues: inventory.rows.map { ($0.id, $0.selected) })
     }
 
+    /// The table's fixed columns grow with the text, up to the point where a table is no longer
+    /// the right form (accessibility sizes), which is when the rows stack.
+    private var columnScale: CGFloat { min(max(ax.scale, 1), 1.35) }
+    private var availableColumn: CGFloat { 76 * columnScale }
+    private var locationColumn: CGFloat { 76 * columnScale }
+    private var tagsColumn: CGFloat { 104 * columnScale }
+
     var body: some View {
         let pad = ax.space(5)
-        let tabular = width - 2 * pad >= 560
+        let tabular = !typeSize.isAccessibilitySize && width - 2 * pad >= 560 + (availableColumn + locationColumn + tagsColumn - 256)
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: ax.space(3)) {
                 Text(inventory.heading)
@@ -37,6 +46,7 @@ struct ShowInventory: View {
                     }
                 }
                 .buttonStyle(AXButtonStyle(variant: .primary, ax: ax))
+                .disabled(inert.contains("addItem"))
             }
             .padding(pad)
             Rectangle().fill(ax.border).frame(height: 1)
@@ -113,6 +123,8 @@ struct ShowInventory: View {
             .labelsHidden()
         }
         .accessibilityLabel(filter.label)
+        // The label names the filter; what is chosen is its value.
+        .accessibilityValue(chosen ?? "")
     }
 
     /// On a narrow card the three filters fold into one "Filters" menu of submenus.
@@ -125,7 +137,7 @@ struct ShowInventory: View {
         .font(ax.fontLabel)
         .foregroundStyle(ax.text)
         .padding(.horizontal, ax.space(3))
-        .frame(minHeight: 32 * min(ax.scale, 1.4))
+        .frame(minHeight: max(axMinTarget, 32 * min(ax.scale, 1.4)))
         .background(RoundedRectangle(cornerRadius: ax.radiusElement, style: .continuous).fill(ax.surface))
         .overlay(RoundedRectangle(cornerRadius: ax.radiusElement, style: .continuous).strokeBorder(ax.borderStrong, lineWidth: 1))
         .contentShape(Rectangle())
@@ -166,9 +178,9 @@ struct ShowInventory: View {
         HStack(spacing: ax.space(3)) {
             Color.clear.frame(width: 28, height: 1)
             Text(inventory.columns.item).frame(maxWidth: .infinity, alignment: .leading)
-            Text(inventory.columns.available).frame(width: 76, alignment: .leading)
-            Text(inventory.columns.location).frame(width: 76, alignment: .leading)
-            Text(inventory.columns.tags).frame(width: 104, alignment: .trailing)
+            Text(inventory.columns.available).frame(width: availableColumn, alignment: .leading)
+            Text(inventory.columns.location).frame(width: locationColumn, alignment: .leading)
+            Text(inventory.columns.tags).frame(width: tagsColumn, alignment: .trailing)
             Color.clear.frame(width: 32, height: 1)
         }
         .font(ax.font("font-size-sm", 12, weight: "font-weight-medium"))
@@ -189,11 +201,11 @@ struct ShowInventory: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             Text(ShowCount.text(row.available)).font(ax.fontBase.monospacedDigit()).foregroundStyle(ax.text)
-                .frame(width: 76, alignment: .leading)
+                .frame(width: availableColumn, alignment: .leading)
             Text(row.location).font(ax.fontBase).foregroundStyle(ax.text).lineLimit(1)
-                .frame(width: 76, alignment: .leading)
+                .frame(width: locationColumn, alignment: .leading)
             FlowLayout(spacing: ax.space(1)) { tags(row) }
-                .frame(width: 104, alignment: .trailing)
+                .frame(width: tagsColumn, alignment: .trailing)
             rowMenu(row).frame(width: 32)
         }
         .padding(.vertical, ax.space(3))
@@ -235,11 +247,12 @@ struct ShowInventory: View {
             selected[row.id] = !on
             send(.set(id: "tpl.showcase.select.\(row.id)", value: .bool(!on)))
         } label: {
-            AXCheckmark(checked: on).padding(ax.space(1)).contentShape(Rectangle())
+            // A 26 pt box in a 28 pt column, with 44 x 44 pt to tap.
+            AXCheckmark(checked: on).padding(ax.space(1)).contentShape(Rectangle()).axTapTarget(keepLayout: true)
         }
         .buttonStyle(.plain)
         .accessibilityLabel(row.selectLabel)
-        .accessibilityAddTraits(on ? [.isSelected, .isButton] : .isButton)
+        .axToggleSemantics(isOn: on)
     }
 
     @ViewBuilder
@@ -301,6 +314,7 @@ private struct ShowRowMenu: View {
     let items: [ShowModel.Inventory.MenuItem]
     @Environment(\.ax) private var ax
     @Environment(\.axStatic) private var isStatic
+    @Environment(\.showInert) private var inert
 
     var body: some View {
         if isStatic {
@@ -318,6 +332,7 @@ private struct ShowRowMenu: View {
                 .buttonStyle(.plain)
                 .menuIndicator(.hidden)
                 .fixedSize()
+                .disabled(inert.contains("rowMenu"))
                 .accessibilityLabel(label)
         }
     }
@@ -328,6 +343,7 @@ private struct ShowRowMenu: View {
             .foregroundStyle(ax.iconSecondary)
             .frame(width: 32 * min(ax.scale, 1.4), height: 32 * min(ax.scale, 1.4))
             .contentShape(Rectangle())
+            .axTapTarget(keepLayout: true)
     }
 }
 

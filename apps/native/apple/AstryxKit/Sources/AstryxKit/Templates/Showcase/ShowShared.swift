@@ -72,24 +72,39 @@ struct ShowCard<Content: View>: View {
     }
 }
 
-/// A ghost icon-only button; its label is the VoiceOver label.
+/// Which of the showcase's controls the core keeps inert (view.inert): the stock page draws them
+/// and wires them to nothing, so they are drawn disabled and VoiceOver says so.
+private struct ShowInertKey: EnvironmentKey { static let defaultValue: Set<String> = [] }
+
+extension EnvironmentValues {
+    var showInert: Set<String> {
+        get { self[ShowInertKey.self] }
+        set { self[ShowInertKey.self] = newValue }
+    }
+}
+
+/// A ghost icon-only button; its label is the VoiceOver label. `inert` names the core's inert
+/// control it is (nil when it works).
 struct ShowIconButton: View {
     let symbol: String
     let label: String
     var selected = false
+    var inert: String? = nil
     var action: () -> Void = {}
     @Environment(\.ax) private var ax
+    @Environment(\.showInert) private var inertControls
 
     var body: some View {
         Button(action: action) {
             Image(systemName: symbol)
                 .font(.system(size: ax.fontSize("font-size-base", 14) * 1.1))
                 .foregroundStyle(selected ? ax.accent : ax.iconSecondary)
-                .frame(width: 34 * min(ax.scale, 1.4), height: 34 * min(ax.scale, 1.4))
+                .frame(width: max(axMinTarget, 34 * min(ax.scale, 1.4)), height: max(axMinTarget, 34 * min(ax.scale, 1.4)))
                 .background(RoundedRectangle(cornerRadius: ax.radiusElement, style: .continuous).fill(selected ? ax.accentMuted : .clear))
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .disabled(inert.map(inertControls.contains) ?? false)
         .accessibilityLabel(label)
         .accessibilityAddTraits(selected ? .isSelected : [])
     }
@@ -177,7 +192,7 @@ struct ShowTextField: View {
                 }
             }
             .padding(.horizontal, ax.space(3))
-            .frame(minHeight: 40 * min(ax.scale, 1.4))
+            .frame(minHeight: max(axMinTarget, 40 * min(ax.scale, 1.4)))
             .background(RoundedRectangle(cornerRadius: ax.radiusElement, style: .continuous).fill(ax.surface))
             .overlay(RoundedRectangle(cornerRadius: ax.radiusElement, style: .continuous).strokeBorder(ax.borderStrong, lineWidth: 1))
         }
@@ -195,6 +210,7 @@ struct ShowMenuField<Choices: View>: View {
     @ViewBuilder var choices: Choices
     @Environment(\.ax) private var ax
     @Environment(\.axStatic) private var isStatic
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
         if isStatic {
@@ -213,14 +229,14 @@ struct ShowMenuField<Choices: View>: View {
             Text(text)
                 .font(ax.fontBase)
                 .foregroundStyle(placeholder ? ax.textSecondary : ax.text)
-                .lineLimit(1)
+                .lineLimit(typeSize.isAccessibilitySize ? nil : 1)
             if !compact { Spacer(minLength: ax.space(2)) }
             Image(systemName: "chevron.up.chevron.down")
                 .font(.system(size: ax.fontSize("font-size-xs", 10), weight: .semibold))
                 .foregroundStyle(ax.iconSecondary)
         }
         .padding(.horizontal, ax.space(3))
-        .frame(minHeight: (compact ? 32 : 40) * min(ax.scale, 1.4))
+        .frame(minHeight: max(axMinTarget, (compact ? 32 : 40) * min(ax.scale, 1.4)))
         .frame(maxWidth: compact ? nil : .infinity, alignment: .leading)
         .background(RoundedRectangle(cornerRadius: ax.radiusElement, style: .continuous).fill(ax.surface))
         .overlay(RoundedRectangle(cornerRadius: ax.radiusElement, style: .continuous).strokeBorder(ax.borderStrong, lineWidth: 1))

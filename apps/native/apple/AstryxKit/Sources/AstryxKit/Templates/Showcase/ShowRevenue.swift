@@ -5,6 +5,7 @@ struct ShowRevenue: View {
     let revenue: ShowModel.Revenue
     @Environment(\.ax) private var ax
     @Environment(\.axWidth) private var width
+    @Environment(\.showInert) private var inert
 
     var body: some View {
         ShowCard(fill: { $0.surface }) {
@@ -24,8 +25,9 @@ struct ShowRevenue: View {
                         .foregroundStyle(ax.text)
                         .accessibilityAddTraits(.isHeader)
                     Spacer(minLength: ax.space(2))
-                    Button {} label: { Text(revenue.seeAll).font(ax.fontLabel).foregroundStyle(ax.accent) }
+                    Button {} label: { Text(revenue.seeAll).font(ax.fontLabel).foregroundStyle(ax.accent).axTapTarget(keepLayout: true) }
                         .buttonStyle(.plain)
+                        .disabled(inert.contains("seeAll"))
                 }
                 VStack(spacing: ax.space(1)) {
                     ForEach(revenue.items) { item in
@@ -58,6 +60,7 @@ struct ShowRevenue: View {
 private struct ShowActivityRow: View {
     let item: ShowModel.Revenue.Item
     @Environment(\.ax) private var ax
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
         HStack(spacing: ax.space(3)) {
@@ -68,8 +71,10 @@ private struct ShowActivityRow: View {
                 .background(Circle().fill(ax.muted))
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 0) {
-                Text(item.label).font(ax.fontLabel).foregroundStyle(ax.text).lineLimit(1)
-                Text(item.detail).font(ax.fontSmall).foregroundStyle(ax.textSecondary).lineLimit(1)
+                // An activity's name and detail are what the row is; they wrap at the sizes where one
+                // line would cut them to a few letters.
+                Text(item.label).font(ax.fontLabel).foregroundStyle(ax.text).lineLimit(typeSize.isAccessibilitySize ? nil : 1)
+                Text(item.detail).font(ax.fontSmall).foregroundStyle(ax.textSecondary).lineLimit(typeSize.isAccessibilitySize ? nil : 1)
             }
             Spacer(minLength: ax.space(2))
             Text(item.amount)

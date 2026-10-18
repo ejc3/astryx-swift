@@ -237,6 +237,7 @@ struct AXBanner: View {
                         .foregroundStyle(ax.iconSecondary)
                         .padding(ax.space(1))
                         .contentShape(Rectangle())
+                        .axTapTarget(keepLayout: true)
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(node.title)

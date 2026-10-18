@@ -11,6 +11,7 @@ struct ShowCheckout: View {
     @Environment(\.ax) private var ax
     @Environment(\.axSend) private var send
     @Environment(\.axWidth) private var width
+    @Environment(\.showInert) private var inert
 
     init(checkout: ShowModel.Checkout) {
         self.checkout = checkout
@@ -47,6 +48,7 @@ struct ShowCheckout: View {
                     .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(AXButtonStyle(variant: .primary, ax: ax))
+                .disabled(inert.contains("pay"))
                 .font(ax.fontStrong)
             }
         }
@@ -180,14 +182,14 @@ struct ShowCheckout: View {
                 }
                 Spacer(minLength: 0)
             }
+            .frame(minHeight: axMinTarget)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(checkout.saveInfo.label)
         .accessibilityHint(checkout.saveInfo.description)
-        .accessibilityValue(saveInfo ? "1" : "0")
-        .accessibilityAddTraits(saveInfo ? [.isSelected, .isButton] : .isButton)
+        .axToggleSemantics(isOn: saveInfo)
     }
 }
 

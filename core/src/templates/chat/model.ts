@@ -52,7 +52,32 @@ export type ChatItem =
   | { kind: "status"; text: string }
   | { kind: "message"; id: string; sender: "user" | "assistant"; /** Assistant's avatar name. */ avatar?: string; files: string[]; parts: ChatPart[] };
 
+/** Words only the native drawing speaks or shows (VoiceOver labels and values); the web ignores them. */
+export type ChatWords = {
+  mention: string;
+  attach: string;
+  send: string;
+  copy: string;
+  share: string;
+  closeDocument: string;
+  documentActions: string;
+  versions: string;
+  /** Names the person's own messages for VoiceOver. */
+  you: string;
+  expanded: string;
+  collapsed: string;
+  /** What activating a tool-call group does. */
+  showCalls: string;
+  status: { pending: string; running: string; complete: string; error: string };
+  /** After a diff count: "8 added", "2 removed". */
+  added: string;
+  removed: string;
+};
+
 export type ChatView = {
+  /** Controls the stock page draws but wires to nothing; a native host shows them disabled. */
+  inert: ("mention" | "attach" | "versions")[];
+  words: ChatWords;
   items: ChatItem[];
   composer: {
     draft: string;
@@ -359,6 +384,24 @@ const MODES: { id: ComposerMode; label: string }[] = [
   { id: "edit", label: "Edit" },
 ];
 
+const WORDS: ChatWords = {
+  mention: "Mention",
+  attach: "Attach",
+  send: "Send",
+  copy: "Copy",
+  share: "Share",
+  closeDocument: "Close document",
+  documentActions: "Document actions",
+  versions: "Versions",
+  you: "You",
+  expanded: "Expanded",
+  collapsed: "Collapsed",
+  showCalls: "Shows or hides the calls",
+  status: { pending: "Pending", running: "Running", complete: "Complete", error: "Failed" },
+  added: "added",
+  removed: "removed",
+};
+
 const isMode = (v: unknown): v is ComposerMode => v === "ask" || v === "edit";
 
 export const chat: TemplateModule<ChatState, ChatView> = {
@@ -393,6 +436,8 @@ export const chat: TemplateModule<ChatState, ChatView> = {
     }
   },
   view: (s) => ({
+    inert: ["mention", "attach", "versions"],
+    words: WORDS,
     items: ITEMS,
     composer: {
       draft: s.draft,

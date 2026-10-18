@@ -84,6 +84,7 @@ struct AXTable: View {
                 send(.press(id: sortId))
             } label: {
                 label.frame(maxWidth: .infinity, alignment: alignment).contentShape(Rectangle())
+                    .axTapTarget(keepLayout: true)
             }
             .buttonStyle(.plain)
             .accessibilityLabel(column.label)
@@ -105,11 +106,12 @@ struct AXTable: View {
         Button {
             send(.set(id: selectId, value: .bool(!row.selected)))
         } label: {
-            AXCheckmark(checked: row.selected).contentShape(Rectangle())
+            // An 18 pt box with a 44 x 44 pt target around it.
+            AXCheckmark(checked: row.selected).contentShape(Rectangle()).axTapTarget(keepLayout: true)
         }
         .buttonStyle(.plain)
         .accessibilityLabel(row.cells.first?.text ?? row.id)
-        .accessibilityAddTraits(row.selected ? [.isSelected, .isButton] : .isButton)
+        .axToggleSemantics(isOn: row.selected)
     }
 
     // MARK: Narrow
@@ -313,7 +315,7 @@ struct AXCalendar: View {
             Image(systemName: symbol)
                 .font(.system(size: ax.fontSize("font-size-base", 14), weight: .semibold))
                 .foregroundStyle(ax.iconSecondary)
-                .frame(width: 36, height: 36)
+                .frame(width: axMinTarget, height: axMinTarget)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -326,12 +328,14 @@ struct AXCalendar: View {
             Text(day.label)
                 .font(ax.fontBase.monospacedDigit().weight(day.today || day.selected ? .semibold : .regular))
                 .foregroundStyle(day.selected ? ax.onAccent : day.inMonth ? ax.text : ax.textDisabled)
+                .lineLimit(1)
+                .minimumScaleFactor(0.5)
                 .frame(width: 32 * min(ax.scale, 1.4), height: 32 * min(ax.scale, 1.4))
                 .background(Circle().fill(day.selected ? ax.accent : .clear))
                 .overlay(Circle().strokeBorder(day.today && !day.selected ? ax.accent : .clear, lineWidth: 1.5))
             HStack(spacing: 2) {
                 ForEach(Array(day.dots.prefix(3).enumerated()), id: \.offset) { _, tone in
-                    Circle().fill(ax.tone(tone).solid).frame(width: 5, height: 5)
+                    AXToneDot(tone: tone, diameter: 5)
                 }
             }
             .frame(height: 5)

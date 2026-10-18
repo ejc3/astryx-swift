@@ -20,14 +20,25 @@ export type CalendarState = {
   focusDate: IsoDate;
 };
 
+/** Words only the native drawing speaks (VoiceOver); the web ignores them. */
+export type CalendarWords = {
+  today: string;
+  selected: string;
+  previousMonth: string;
+  nextMonth: string;
+};
+
 export type View = {
   value: IsoDate | null;
   focusDate: IsoDate;
+  words: CalendarWords;
 };
 
 export type CalendarView = View;
 
 const ISO = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
+
+const WORDS: CalendarWords = { today: "Today", selected: "Selected", previousMonth: "Previous month", nextMonth: "Next month" };
 
 export const calendar: TemplateModule<CalendarState, View> = {
   id: "calendar",
@@ -41,5 +52,5 @@ export const calendar: TemplateModule<CalendarState, View> = {
     if (action.id === "focus") return action.value === state.focusDate ? state : { ...state, focusDate: action.value };
     return state;
   },
-  view: (state) => ({ value: state.value, focusDate: state.focusDate }),
+  view: (state) => ({ value: state.value, focusDate: state.focusDate, words: WORDS }),
 };

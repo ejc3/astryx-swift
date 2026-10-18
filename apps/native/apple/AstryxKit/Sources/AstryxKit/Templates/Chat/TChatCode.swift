@@ -22,6 +22,8 @@ struct TChatCodeBlock: View {
     let code: String
     @Environment(\.ax) private var ax
     @Environment(\.axStatic) private var isStatic
+    @Environment(\.tChatWords) private var words
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -29,7 +31,7 @@ struct TChatCodeBlock: View {
                 Text(title)
                     .font(ax.font("font-size-sm", 12, weight: "font-weight-medium", design: .monospaced))
                     .foregroundStyle(ax.text)
-                    .lineLimit(1)
+                    .lineLimit(typeSize.isAccessibilitySize ? nil : 1)
                 Text(language)
                     .font(ax.fontXSmall)
                     .foregroundStyle(ax.textSecondary)
@@ -42,9 +44,11 @@ struct TChatCodeBlock: View {
                         .foregroundStyle(ax.iconSecondary)
                         .padding(ax.space(1))
                         .contentShape(Rectangle())
+                        // A 20 pt glyph in a header bar, with 44 x 44 pt to tap.
+                        .axTapTarget(keepLayout: true)
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel("Copy \(title)")
+                .accessibilityLabel("\(words.copy) \(title)")
             }
             .padding(.horizontal, ax.space(3))
             .padding(.vertical, ax.space(2))

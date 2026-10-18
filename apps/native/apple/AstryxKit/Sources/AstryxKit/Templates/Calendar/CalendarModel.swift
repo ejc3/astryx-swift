@@ -3,10 +3,29 @@ import Foundation
 /// The calendar template's view model: a Swift mirror of `View` in
 /// core/src/templates/calendar/model.ts. Dates are plain ISO "YYYY-MM-DD" strings.
 struct TCalModel: Decodable {
+    /// The words VoiceOver speaks for the grid (view.words in the core). A model from an older
+    /// core has none; they are then empty rather than invented here.
+    struct Words: Decodable {
+        var today = ""
+        var selected = ""
+        var previousMonth = ""
+        var nextMonth = ""
+    }
+
     /// The selected day, or nil when none is.
     let value: String?
     /// A day in the visible month.
     let focusDate: String
+    let words: Words
+
+    private enum Keys: String, CodingKey { case value, focusDate, words }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: Keys.self)
+        value = try c.decodeIfPresent(String.self, forKey: .value)
+        focusDate = try c.decode(String.self, forKey: .focusDate)
+        words = try c.decodeIfPresent(Words.self, forKey: .words) ?? Words()
+    }
 }
 
 /// A calendar date with no time zone: year, month and day, read from and written as ISO.

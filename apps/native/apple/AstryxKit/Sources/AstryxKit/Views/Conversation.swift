@@ -92,6 +92,7 @@ private struct AXComposer: View {
                     .frame(width: 32 * min(ax.scale, 1.4), height: 32 * min(ax.scale, 1.4))
                     .background(Circle().fill(composer.canSend ? ax.accent : ax.muted))
                     .contentShape(Circle())
+                    .axTapTarget(keepLayout: true)
             }
             .buttonStyle(.plain)
             .disabled(!composer.canSend)
@@ -197,6 +198,7 @@ private struct AXBoardCard: View {
                     .frame(width: 30, height: 30)
                     .background(RoundedRectangle(cornerRadius: ax.radiusInner + 2, style: .continuous).fill(ax.muted))
                     .contentShape(Rectangle())
+                    .axTapTarget(keepLayout: true)
             }
             .buttonStyle(.plain)
             .accessibilityLabel(label)

@@ -131,7 +131,7 @@ struct AXSplit: View {
                         }
                         .font(ax.fontLabel)
                         .foregroundStyle(ax.accent)
-                        .frame(minHeight: 36)
+                        .frame(minHeight: axMinTarget)
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)

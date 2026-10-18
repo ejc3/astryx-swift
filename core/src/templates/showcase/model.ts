@@ -133,7 +133,11 @@ const CHAT: ChatLine[] = [
   },
 ];
 
+/** The showcase's controls that the stock page wires to nothing; a native host shows them disabled. */
+export type InertControl = "navItems" | "navActions" | "signIn" | "addToCart" | "pay" | "suggestions" | "chatActions" | "chatLink" | "attach" | "voice" | "seeAll" | "addItem" | "rowMenu";
+
 export type View = {
+  inert: InertControl[];
   nav: {
     label: string;
     heading: string;
@@ -230,6 +234,7 @@ export const showcase: TemplateModule<ShowcaseState, View> = {
   view(s) {
     const lowStock = s.inventory.filter((row) => row.available < LOW_STOCK_THRESHOLD).length;
     return {
+      inert: ["navItems", "navActions", "signIn", "addToCart", "pay", "suggestions", "chatActions", "chatLink", "attach", "voice", "seeAll", "addItem", "rowMenu"],
       nav: {
         label: "Theme preview navigation",
         heading: "Studio",

@@ -88,7 +88,7 @@ struct AXTextInput: View {
             }
             .padding(.horizontal, ax.space(3))
             .padding(.vertical, node.multiline == true ? ax.space(2) : ax.space(2) + 2)
-            .frame(minHeight: 36 * min(ax.scale, 1.4))
+            .frame(minHeight: max(axMinTarget, 36 * min(ax.scale, 1.4)))
             .background(RoundedRectangle(cornerRadius: radius, style: .continuous).fill(ax.surface))
             .overlay(
                 RoundedRectangle(cornerRadius: radius, style: .continuous)
@@ -222,12 +222,12 @@ struct AXCheckbox: View {
                 Text(node.label).font(ax.fontBase).foregroundStyle(ax.text)
                 Spacer(minLength: 0)
             }
-            .frame(minHeight: 32)
+            .frame(minHeight: axMinTarget)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityElement(children: .combine)
-        .accessibilityAddTraits(node.checked ? [.isSelected, .isButton] : .isButton)
+        .axToggleSemantics(isOn: node.checked)
     }
 }
 
@@ -261,7 +261,7 @@ struct AXRadio: View {
                             Spacer(minLength: 0)
                         }
                         .padding(.vertical, ax.space(1))
-                        .frame(minHeight: 32)
+                        .frame(minHeight: axMinTarget)
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
@@ -332,7 +332,7 @@ struct AXSelect: View {
                         .foregroundStyle(ax.iconSecondary)
                 }
                 .padding(.horizontal, ax.space(3))
-                .frame(minHeight: 36 * min(ax.scale, 1.4))
+                .frame(minHeight: max(axMinTarget, 36 * min(ax.scale, 1.4)))
                 .background(RoundedRectangle(cornerRadius: ax.radiusElement, style: .continuous).fill(ax.surface))
                 .overlay(RoundedRectangle(cornerRadius: ax.radiusElement, style: .continuous).strokeBorder(ax.borderStrong, lineWidth: 1))
                 .contentShape(Rectangle())
@@ -340,7 +340,9 @@ struct AXSelect: View {
             .menuStyle(.button)
             .buttonStyle(.plain)
             .menuIndicator(.hidden)
+            // The label names the field; what is chosen is its value, so VoiceOver reads both.
             .accessibilityLabel(node.label)
+            .accessibilityValue(node.options.first { $0.value == node.value }?.label ?? node.value)
         }
     }
 }
@@ -416,7 +418,7 @@ struct AXTabs: View {
                             }
                         }
                         .padding(.horizontal, ax.space(3))
-                        .frame(minHeight: 36)
+                        .frame(minHeight: axMinTarget)
                         .overlay(alignment: .bottom) {
                             Rectangle().fill(selected ? ax.accent : .clear).frame(height: 2)
                         }

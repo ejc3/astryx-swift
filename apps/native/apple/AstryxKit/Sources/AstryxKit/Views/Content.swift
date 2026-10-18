@@ -81,6 +81,8 @@ struct AXToken: View {
                         .font(.system(size: ax.fontSize("font-size-2xs", 8), weight: .bold))
                         .padding(ax.space(1))
                         .contentShape(Rectangle())
+                        // The glyph is 8 pt in a chip; the tap still gets 44 x 44 pt around it.
+                        .axTapTarget(keepLayout: true)
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(node.text)
@@ -102,7 +104,7 @@ struct AXStatusDot: View {
 
     var body: some View {
         HStack(spacing: ax.space(2)) {
-            Circle().fill(ax.tone(node.tone).solid).frame(width: 8, height: 8)
+            AXToneMark(tone: node.tone)
             Text(node.label).font(ax.fontBase).foregroundStyle(ax.text)
         }
         .accessibilityElement(children: .combine)

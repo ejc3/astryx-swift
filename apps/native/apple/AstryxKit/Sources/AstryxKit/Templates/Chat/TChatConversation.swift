@@ -57,20 +57,35 @@ private struct TChatMessageView: View {
     let openArtifact: () -> Void
     @Environment(\.ax) private var ax
     @Environment(\.axWidth) private var width
+    @Environment(\.tChatWords) private var words
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
         let mine = message.sender == .user
         let avatarSide: CGFloat = 28 * min(ax.scale, 1.5)
         HStack(alignment: .top, spacing: ax.space(2)) {
-            if mine { Spacer(minLength: width * 0.12) }
+            // At accessibility sizes a message takes the whole line; the margins that tell the two
+            // sides apart cost the text a third of its room.
+            if mine { Spacer(minLength: typeSize.isAccessibilitySize ? 0 : width * 0.12) }
             if !mine, let avatar = message.avatar {
                 TChatAvatar(name: avatar, side: avatarSide)
             }
             VStack(alignment: mine ? .trailing : .leading, spacing: ax.space(2)) {
                 if !message.files.isEmpty {
-                    FlowLayout(spacing: ax.space(1)) {
-                        ForEach(Array(message.files.enumerated()), id: \.offset) { _, file in
-                            TChatFileToken(name: file)
+                    // A wrapping row measures its height at the width it is offered; in a column
+                    // whose width is still being settled (large text) that comes out a row short,
+                    // so there the files are simply stacked.
+                    if typeSize.isAccessibilitySize {
+                        VStack(alignment: mine ? .trailing : .leading, spacing: ax.space(1)) {
+                            ForEach(Array(message.files.enumerated()), id: \.offset) { _, file in
+                                TChatFileToken(name: file)
+                            }
+                        }
+                    } else {
+                        FlowLayout(spacing: ax.space(1)) {
+                            ForEach(Array(message.files.enumerated()), id: \.offset) { _, file in
+                                TChatFileToken(name: file)
+                            }
                         }
                     }
                 }
@@ -82,7 +97,9 @@ private struct TChatMessageView: View {
             if !mine { Spacer(minLength: 0) }
         }
         .frame(maxWidth: .infinity, alignment: mine ? .trailing : .leading)
+        // Who said it: the only difference between the two sides is alignment and fill.
         .accessibilityElement(children: .contain)
+        .accessibilityLabel(mine ? words.you : (message.avatar ?? ""))
     }
 
     private func isBubble(_ part: TChatPart) -> Bool {
@@ -105,18 +122,19 @@ private struct TChatAvatar: View {
             .foregroundStyle(tint.mark)
             .frame(width: side, height: side)
             .background(Circle().fill(tint.ground))
-            .accessibilityLabel(name)
+            .accessibilityHidden(true)
     }
 }
 
 private struct TChatFileToken: View {
     let name: String
     @Environment(\.ax) private var ax
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
         HStack(spacing: ax.space(1)) {
             Image(systemName: "paperclip").font(.system(size: ax.fontSize("font-size-xs", 10)))
-            Text(name).font(ax.fontSmall).lineLimit(1)
+            Text(name).font(ax.fontSmall).lineLimit(typeSize.isAccessibilitySize ? nil : 1)
         }
         .foregroundStyle(ax.text)
         .padding(.horizontal, ax.space(2))
@@ -160,6 +178,7 @@ private struct TChatBubbleView: View {
     let openArtifact: () -> Void
     @Environment(\.ax) private var ax
     @Environment(\.axWidth) private var width
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
         VStack(alignment: mine ? .trailing : .leading, spacing: ax.hair) {
@@ -178,6 +197,19 @@ private struct TChatBubbleView: View {
             }
         }
         .frame(maxWidth: bubble.width == nil && !mine ? .infinity : nil, alignment: mine ? .trailing : .leading)
+        // The bubble is as tall as its wrapped text and time; without this a long message at large
+        // text is measured a line short and its time lands on the next message.
+        .fixedSize(horizontal: false, vertical: true)
+        .accessibilityElement(children: readsAsOne ? .combine : .contain)
+    }
+
+    /// A plain message and its time are one thing to hear; code, the document card and rich
+    /// text keep their own parts.
+    private var readsAsOne: Bool {
+        switch bubble.content {
+        case .text, .mention: true
+        default: false
+        }
     }
 
     @ViewBuilder
@@ -237,7 +269,7 @@ private struct TChatBubbleView: View {
                 .padding(.horizontal, ax.space(3) + 2)
                 .padding(.vertical, ax.space(2) + 2)
                 .background(shape.fill(ax.color("color-neutral")))
-                .frame(maxWidth: width * 0.82, alignment: .trailing)
+                .frame(maxWidth: typeSize.isAccessibilitySize ? .infinity : width * 0.82, alignment: .trailing)
         }
     }
 
@@ -262,6 +294,9 @@ private struct TChatTools: View {
     let calls: [TChatToolCall]
     @State private var open: Bool
     @Environment(\.ax) private var ax
+    @Environment(\.tChatWords) private var words
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     init(expanded: Bool, calls: [TChatToolCall]) {
         self.calls = calls
@@ -271,19 +306,20 @@ private struct TChatTools: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             Button {
-                withAnimation(.snappy(duration: 0.2)) { open.toggle() }
+                // Reduce Motion: no sliding and no turning chevron, the rows just appear.
+                if reduceMotion { open.toggle() } else { withAnimation(.snappy(duration: 0.2)) { open.toggle() } }
             } label: {
                 HStack(spacing: ax.space(2)) {
-                    Image(systemName: "chevron.right")
+                    Image(systemName: reduceMotion && open ? "chevron.down" : "chevron.right")
                         .font(.system(size: ax.fontSize("font-size-xs", 10), weight: .semibold))
-                        .rotationEffect(.degrees(open ? 90 : 0))
+                        .rotationEffect(.degrees(open && !reduceMotion ? 90 : 0))
                         .foregroundStyle(ax.textSecondary)
                         .frame(width: 12)
                     TChatStatusIcon(status: overall)
                     Text(summary)
                         .font(ax.font("font-size-sm", 12, weight: "font-weight-medium", design: .monospaced))
                         .foregroundStyle(ax.text)
-                        .lineLimit(1)
+                        .lineLimit(typeSize.isAccessibilitySize ? nil : 1)
                         .truncationMode(.middle)
                     Spacer(minLength: ax.space(2))
                     if calls.count > 1 {
@@ -299,12 +335,14 @@ private struct TChatTools: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .accessibilityValue(open ? "expanded" : "collapsed")
-            .accessibilityHint(calls.map { "\($0.name) \($0.target)" }.joined(separator: ", "))
+            // What the header says: how many calls, how it went, whether the rows are showing.
+            .accessibilityLabel(summary)
+            .accessibilityValue([open ? words.expanded : words.collapsed, words.word(overall), calls.count > 1 ? "\(calls.count)" : nil].compactMap { $0 }.joined(separator: ", "))
+            .accessibilityHint(words.showCalls)
             if open {
                 ForEach(Array(calls.enumerated()), id: \.offset) { _, call in
                     Rectangle().fill(ax.border).frame(height: 1)
-                    TChatToolRow(call: call)
+                    TChatToolRow(call: call).transition(.opacity)
                 }
             }
         }
@@ -333,37 +371,74 @@ private struct TChatTools: View {
 private struct TChatToolRow: View {
     let call: TChatToolCall
     @Environment(\.ax) private var ax
+    @Environment(\.tChatWords) private var words
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: ax.space(2)) {
+        // Name, target, diff and time share a line; at the largest sizes they stack, because a
+        // line of 43 pt monospaced text holds one of them.
+        let stacked = typeSize.isAccessibilitySize
+        HStack(alignment: stacked ? .top : .firstTextBaseline, spacing: ax.space(2)) {
             TChatStatusIcon(status: call.status)
             VStack(alignment: .leading, spacing: ax.hair) {
                 HStack(alignment: .firstTextBaseline, spacing: ax.space(2)) {
                     Text(call.name).font(ax.font("font-size-sm", 12, weight: "font-weight-semibold", design: .monospaced)).foregroundStyle(ax.text)
-                    Text(call.target).font(ax.font("font-size-sm", 12, design: .monospaced)).foregroundStyle(ax.textSecondary)
-                        .lineLimit(2).truncationMode(.middle)
+                    if !stacked { target }
                 }
+                if stacked { target }
                 if let node = call.node {
                     Text(node).font(ax.fontXSmall).foregroundStyle(ax.textSecondary)
                 }
-            }
-            Spacer(minLength: ax.space(2))
-            if let additions = call.additions, let deletions = call.deletions {
-                HStack(spacing: ax.space(1)) {
-                    Text("+\(DashNumbers.plain(additions))").foregroundStyle(ax.tone(.success).text)
-                    Text("\u{2212}\(DashNumbers.plain(deletions))").foregroundStyle(ax.tone(.danger).text)
+                if stacked {
+                    HStack(spacing: ax.space(2)) { diff; duration }
                 }
-                .font(ax.fontSmall.monospacedDigit())
             }
-            if let duration = call.duration {
-                Text(duration).font(ax.fontSmall.monospacedDigit()).foregroundStyle(ax.textSecondary)
+            .frame(maxWidth: stacked ? .infinity : nil, alignment: .leading)
+            if !stacked {
+                Spacer(minLength: ax.space(2))
+                diff
+                duration
             }
         }
         .padding(.horizontal, ax.space(3))
         .padding(.vertical, ax.space(2))
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("\(call.name) \(call.target)")
-        .accessibilityValue([call.status.rawValue, call.duration, call.node].compactMap { $0 }.joined(separator: ", "))
+        .accessibilityValue(spokenValue)
+    }
+
+    private var target: some View {
+        Text(call.target).font(ax.font("font-size-sm", 12, design: .monospaced)).foregroundStyle(ax.textSecondary)
+            .lineLimit(typeSize.isAccessibilitySize ? nil : 2).truncationMode(.middle)
+    }
+
+    @ViewBuilder
+    private var diff: some View {
+        if let additions = call.additions, let deletions = call.deletions {
+            HStack(spacing: ax.space(1)) {
+                Text("+\(DashNumbers.plain(additions))").foregroundStyle(ax.tone(.success).text)
+                Text("\u{2212}\(DashNumbers.plain(deletions))").foregroundStyle(ax.tone(.danger).text)
+            }
+            .font(ax.fontSmall.monospacedDigit())
+        }
+    }
+
+    @ViewBuilder
+    private var duration: some View {
+        if let duration = call.duration {
+            Text(duration).font(ax.fontSmall.monospacedDigit()).foregroundStyle(ax.textSecondary)
+        }
+    }
+
+    /// Everything the row shows: how it went, what changed, how long it took, where it ran.
+    private var spokenValue: String {
+        var parts = [words.word(call.status)]
+        if let additions = call.additions, let deletions = call.deletions {
+            parts.append("\(DashNumbers.plain(additions)) \(words.added)")
+            parts.append("\(DashNumbers.plain(deletions)) \(words.removed)")
+        }
+        parts += [call.duration, call.node].compactMap { $0 }
+        return parts.joined(separator: ", ")
     }
 }
 

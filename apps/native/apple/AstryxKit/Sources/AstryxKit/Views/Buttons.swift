@@ -6,6 +6,7 @@ struct AXButton: View {
     let node: ButtonNode
     @Environment(\.ax) private var ax
     @Environment(\.axSend) private var send
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
         Button {
@@ -13,7 +14,9 @@ struct AXButton: View {
         } label: {
             HStack(spacing: ax.space(2)) {
                 if let icon = node.icon { Image(systemName: icon.symbol) }
-                Text(node.label).lineLimit(1)
+                // A label is one line until the text is so large that one line cannot hold it.
+                Text(node.label).lineLimit(typeSize.isAccessibilitySize ? nil : 1)
+                    .multilineTextAlignment(.center)
             }
         }
         .buttonStyle(AXButtonStyle(variant: node.variant, ax: ax))
@@ -37,6 +40,8 @@ struct AXButtonStyle: ButtonStyle {
             .overlay(shape.strokeBorder(variant == .secondary ? ax.borderStrong : .clear, lineWidth: 1))
             .opacity(isEnabled ? (configuration.isPressed ? 0.75 : 1) : 0.45)
             .contentShape(shape)
+            // The button is drawn 36 pt high; the taps around it still count (44 x 44 pt).
+            .axTapTarget(keepLayout: true)
     }
 
     private var foreground: Color {
@@ -76,6 +81,7 @@ struct AXIconButton: View {
                 .frame(width: side, height: side)
                 .background(RoundedRectangle(cornerRadius: ax.radiusElement, style: .continuous).fill(selected ? ax.accentMuted : .clear))
                 .contentShape(Rectangle())
+                .axTapTarget(keepLayout: true)
         }
         .buttonStyle(.plain)
         .accessibilityLabel(node.label)

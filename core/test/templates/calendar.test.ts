@@ -4,7 +4,16 @@ import { calendar } from "../../src/templates/calendar/model.ts";
 
 const NOW = { epochMs: Date.UTC(2026, 9, 13, 16, 30), utcOffsetMinutes: -420 };
 const start = () => calendar.initial(NOW);
-const view = (s: ReturnType<typeof start>) => calendar.view(s, NOW);
+const view = (s: ReturnType<typeof start>) => {
+  const { value, focusDate } = calendar.view(s, NOW);
+  return { value, focusDate };
+};
+
+test("the view carries the words the native drawing speaks", () => {
+  const { words } = calendar.view(start(), NOW);
+  assert.deepEqual(Object.keys(words).sort(), ["nextMonth", "previousMonth", "selected", "today"]);
+  assert.ok(Object.values(words).every((w) => w.length > 0));
+});
 
 test("opens on April 15, 2026, whatever today is", () => {
   assert.deepEqual(view(start()), { value: "2026-04-15", focusDate: "2026-04-15" });

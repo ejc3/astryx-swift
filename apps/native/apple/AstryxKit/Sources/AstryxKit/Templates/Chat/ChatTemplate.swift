@@ -43,7 +43,7 @@ private struct TChatScreen: View {
         HStack(alignment: .top, spacing: 0) {
             VStack(alignment: .leading, spacing: ax.space(6)) {
                 TChatConversation(items: model.items, openArtifact: open)
-                TChatComposer(composer: model.composer)
+                TChatComposer(composer: model.composer, inert: model.inert)
             }
             .environment(\.axWidth, panel ? width - panelWidth - gap * 2 : width)
             .frame(maxWidth: .infinity, alignment: .topLeading)
@@ -56,6 +56,8 @@ private struct TChatScreen: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .topLeading)
+        .environment(\.tChatWords, model.words)
+        .environment(\.tChatInert, model.inert)
         .tChatDialog(isPresented: Binding(
             get: { model.artifact.dialogOpen },
             set: { if !$0 { send(.set(id: "tpl.chat.dialog", value: .bool(false))) } }
@@ -99,14 +101,17 @@ private struct TChatScreen: View {
 
 private struct TChatComposer: View {
     let composer: TChatModel.Composer
+    let inert: Set<String>
     @State private var text: String
     @FocusState private var focused: Bool
     @Environment(\.ax) private var ax
     @Environment(\.axSend) private var send
     @Environment(\.axStatic) private var isStatic
+    @Environment(\.tChatWords) private var words
 
-    init(composer: TChatModel.Composer) {
+    init(composer: TChatModel.Composer, inert: Set<String>) {
         self.composer = composer
+        self.inert = inert
         _text = State(initialValue: composer.draft)
     }
 
@@ -116,22 +121,24 @@ private struct TChatComposer: View {
         let shape = RoundedRectangle(cornerRadius: ax.radiusContainer + 6, style: .continuous)
         VStack(alignment: .leading, spacing: ax.space(2)) {
             field
-            HStack(spacing: ax.space(1)) {
-                iconButton("at", label: "Mention")
-                iconButton("paperclip", label: "Attach")
-                Spacer(minLength: ax.space(2))
-                modeMenu
-                Button(action: submit) {
-                    Image(systemName: "arrow.up")
-                        .font(.system(size: ax.fontSize("font-size-base", 14), weight: .bold))
-                        .foregroundStyle(canSend ? ax.onAccent : ax.textDisabled)
-                        .frame(width: 32 * min(ax.scale, 1.4), height: 32 * min(ax.scale, 1.4))
-                        .background(Circle().fill(canSend ? ax.accent : ax.muted))
-                        .contentShape(Circle())
+            // One row; at the largest text sizes, where it cannot fit, the mode menu gets its own.
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: ax.space(1)) {
+                    iconButton("at", label: words.mention, id: "mention")
+                    iconButton("paperclip", label: words.attach, id: "attach")
+                    Spacer(minLength: ax.space(2))
+                    modeMenu
+                    sendButton
                 }
-                .buttonStyle(.plain)
-                .disabled(!canSend)
-                .accessibilityLabel("Send")
+                VStack(alignment: .leading, spacing: ax.space(1)) {
+                    modeMenu
+                    HStack(spacing: ax.space(1)) {
+                        iconButton("at", label: words.mention, id: "mention")
+                        iconButton("paperclip", label: words.attach, id: "attach")
+                        Spacer(minLength: ax.space(2))
+                        sendButton
+                    }
+                }
             }
         }
         .padding(ax.space(3))
@@ -161,6 +168,20 @@ private struct TChatComposer: View {
         }
     }
 
+    private var sendButton: some View {
+        Button(action: submit) {
+            Image(systemName: "arrow.up")
+                .font(.system(size: ax.fontSize("font-size-base", 14), weight: .bold))
+                .foregroundStyle(canSend ? ax.onAccent : ax.textDisabled)
+                .frame(width: tChatSide(ax), height: tChatSide(ax))
+                .background(Circle().fill(canSend ? ax.accent : ax.muted))
+                .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .disabled(!canSend)
+        .accessibilityLabel(words.send)
+    }
+
     private var modeMenu: some View {
         Menu {
             Picker(composer.modeLabel, selection: Binding(
@@ -178,7 +199,7 @@ private struct TChatComposer: View {
             }
             .foregroundStyle(ax.textSecondary)
             .padding(.horizontal, ax.space(2))
-            .frame(minHeight: 32 * min(ax.scale, 1.4))
+            .frame(minHeight: tChatSide(ax))
             .contentShape(Rectangle())
         }
         .menuStyle(.button)
@@ -186,16 +207,18 @@ private struct TChatComposer: View {
         .fixedSize()
     }
 
-    /// A ghost icon button with no action of its own, as the web's Mention and Attach.
-    private func iconButton(_ symbol: String, label: String) -> some View {
+    /// A ghost icon button with no action of its own, as the web's Mention and Attach: the core
+    /// lists them as inert, so they are drawn disabled and VoiceOver says so.
+    private func iconButton(_ symbol: String, label: String, id: String) -> some View {
         Button {} label: {
             Image(systemName: symbol)
                 .font(.system(size: ax.fontSize("font-size-base", 14)))
                 .foregroundStyle(ax.iconSecondary)
-                .frame(width: 32 * min(ax.scale, 1.4), height: 32 * min(ax.scale, 1.4))
+                .frame(width: tChatSide(ax), height: tChatSide(ax))
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .disabled(inert.contains(id))
         .accessibilityLabel(label)
     }
 
@@ -213,15 +236,19 @@ private struct TChatArtifactPanel: View {
     let artifact: TChatModel.Artifact
     let close: () -> Void
     @Environment(\.ax) private var ax
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: ax.space(3)) {
                 Image(systemName: "doc.text").foregroundStyle(ax.textSecondary)
+                // The document's title is its identity: one line, until the text is so large that
+                // a truncated title would say nothing.
                 VStack(alignment: .leading, spacing: 0) {
-                    Text(artifact.title).font(ax.fontStrong).foregroundStyle(ax.text).lineLimit(1)
-                    Text(artifact.subtitle).font(ax.fontSmall).foregroundStyle(ax.textSecondary).lineLimit(1)
+                    Text(artifact.title).font(ax.fontStrong).foregroundStyle(ax.text).lineLimit(typeSize.isAccessibilitySize ? nil : 1)
+                    Text(artifact.subtitle).font(ax.fontSmall).foregroundStyle(ax.textSecondary).lineLimit(typeSize.isAccessibilitySize ? nil : 1)
                 }
+                .fixedSize(horizontal: false, vertical: true)
                 Spacer(minLength: ax.space(2))
                 TChatArtifactActions(artifact: artifact, onClose: close)
             }
@@ -243,12 +270,14 @@ struct TChatArtifactActions: View {
     let artifact: TChatModel.Artifact
     var onClose: (() -> Void)?
     @Environment(\.ax) private var ax
+    @Environment(\.tChatWords) private var words
+    @Environment(\.tChatInert) private var inert
 
     var body: some View {
         HStack(spacing: ax.space(1)) {
             Menu {
                 ForEach(artifact.versions, id: \.self) { version in
-                    Button(version) {}
+                    Button(version) {}.disabled(inert.contains("versions"))
                 }
             } label: {
                 HStack(spacing: ax.space(1)) {
@@ -257,20 +286,22 @@ struct TChatArtifactActions: View {
                 }
                 .foregroundStyle(ax.textSecondary)
                 .padding(.horizontal, ax.space(2))
-                .frame(minHeight: 32 * min(ax.scale, 1.4))
+                .frame(minHeight: tChatSide(ax))
                 .contentShape(Rectangle())
             }
             .menuStyle(.button)
             .buttonStyle(.plain)
             .fixedSize()
-            action("doc.on.doc", label: "Copy") { tChatCopy(artifact.content) }
+            .accessibilityLabel(words.versions)
+            .accessibilityValue(versionTag)
+            action("doc.on.doc", label: words.copy) { tChatCopy(artifact.content) }
             ShareLink(item: artifact.content, subject: Text(artifact.title)) {
                 glyph("square.and.arrow.up")
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("Share")
+            .accessibilityLabel(words.share)
             if let onClose {
-                action("xmark", label: "Close document", perform: onClose)
+                action("xmark", label: words.closeDocument, perform: onClose)
             }
         }
     }
@@ -284,7 +315,7 @@ struct TChatArtifactActions: View {
         Image(systemName: symbol)
             .font(.system(size: ax.fontSize("font-size-base", 14)))
             .foregroundStyle(ax.iconSecondary)
-            .frame(width: 32 * min(ax.scale, 1.4), height: 32 * min(ax.scale, 1.4))
+            .frame(width: tChatSide(ax), height: tChatSide(ax))
             .contentShape(Rectangle())
     }
 
@@ -321,6 +352,9 @@ struct TChatArtifactDialog: View {
     @Environment(\.ax) private var ax
     @Environment(\.axSend) private var send
     @Environment(\.axStatic) private var isStatic
+    @Environment(\.tChatWords) private var words
+    @Environment(\.tChatInert) private var inert
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
         VStack(spacing: 0) {
@@ -329,7 +363,7 @@ struct TChatArtifactDialog: View {
                     Text(artifact.title).font(ax.fontStrong).foregroundStyle(ax.text).lineLimit(2)
                         .fixedSize(horizontal: false, vertical: true)
                         .accessibilityAddTraits(.isHeader)
-                    Text(artifact.subtitle).font(ax.fontSmall).foregroundStyle(ax.textSecondary).lineLimit(1)
+                    Text(artifact.subtitle).font(ax.fontSmall).foregroundStyle(ax.textSecondary).lineLimit(typeSize.isAccessibilitySize ? nil : 1)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 overflow
@@ -339,11 +373,11 @@ struct TChatArtifactDialog: View {
                     Image(systemName: "xmark")
                         .font(.system(size: ax.fontSize("font-size-base", 14)))
                         .foregroundStyle(ax.iconSecondary)
-                        .frame(width: 32 * min(ax.scale, 1.4), height: 32 * min(ax.scale, 1.4))
+                        .frame(width: tChatSide(ax), height: tChatSide(ax))
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel("Close document")
+                .accessibilityLabel(words.closeDocument)
             }
             .padding(.horizontal, ax.space(4))
             .padding(.vertical, ax.space(3))
@@ -368,22 +402,22 @@ struct TChatArtifactDialog: View {
     private var overflow: some View {
         Menu {
             Section(artifact.versions.first.map { String($0.prefix(while: { !$0.isWhitespace })) } ?? "") {
-                ForEach(artifact.versions, id: \.self) { version in Button(version) {} }
+                ForEach(artifact.versions, id: \.self) { version in Button(version) {}.disabled(inert.contains("versions")) }
             }
-            Button { tChatCopy(artifact.content) } label: { Label("Copy", systemImage: "doc.on.doc") }
-            ShareLink(item: artifact.content, subject: Text(artifact.title)) { Label("Share", systemImage: "square.and.arrow.up") }
+            Button { tChatCopy(artifact.content) } label: { Label(words.copy, systemImage: "doc.on.doc") }
+            ShareLink(item: artifact.content, subject: Text(artifact.title)) { Label(words.share, systemImage: "square.and.arrow.up") }
         } label: {
             Image(systemName: "ellipsis")
                 .font(.system(size: ax.fontSize("font-size-base", 14), weight: .semibold))
                 .foregroundStyle(ax.iconSecondary)
-                .frame(width: 32 * min(ax.scale, 1.4), height: 32 * min(ax.scale, 1.4))
+                .frame(width: tChatSide(ax), height: tChatSide(ax))
                 .contentShape(Rectangle())
         }
         .menuStyle(.button)
         .buttonStyle(.plain)
         .menuIndicator(.hidden)
         .fixedSize()
-        .accessibilityLabel("Document actions")
+        .accessibilityLabel(words.documentActions)
     }
 }
 

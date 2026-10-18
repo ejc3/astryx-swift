@@ -1,4 +1,4 @@
-import Foundation
+import SwiftUI
 
 /// The chat template's view model: a Swift mirror of `ChatView` in
 /// core/src/templates/chat/model.ts. The unions of that file (`kind`) are enums here, and
@@ -112,6 +112,65 @@ struct TChatMessage: Decodable, Identifiable {
     let parts: [TChatPart]
 }
 
+/// The words the native drawing speaks and labels controls with (view.words in the core). A
+/// model from an older core has none; they are then empty rather than invented here.
+struct TChatWords: Decodable {
+    struct Status: Decodable {
+        var pending = ""
+        var running = ""
+        var complete = ""
+        var error = ""
+    }
+    var mention = ""
+    var attach = ""
+    var send = ""
+    var copy = ""
+    var share = ""
+    var closeDocument = ""
+    var documentActions = ""
+    var versions = ""
+    var you = ""
+    var expanded = ""
+    var collapsed = ""
+    var showCalls = ""
+    var status = Status()
+    var added = ""
+    var removed = ""
+
+    static let empty = TChatWords()
+
+    func word(_ status: TChatToolCall.Status) -> String {
+        switch status {
+        case .pending: self.status.pending
+        case .running: self.status.running
+        case .complete: self.status.complete
+        case .error: self.status.error
+        }
+    }
+}
+
+private struct TChatWordsKey: EnvironmentKey { static let defaultValue = TChatWords.empty }
+
+extension EnvironmentValues {
+    var tChatWords: TChatWords {
+        get { self[TChatWordsKey.self] }
+        set { self[TChatWordsKey.self] = newValue }
+    }
+}
+
+private struct TChatInertKey: EnvironmentKey { static let defaultValue: Set<String> = [] }
+
+extension EnvironmentValues {
+    /// Which of the template's controls the core keeps inert (view.inert).
+    var tChatInert: Set<String> {
+        get { self[TChatInertKey.self] }
+        set { self[TChatInertKey.self] = newValue }
+    }
+}
+
+/// The hit side of a chat icon control: its drawn size, but never under 44 pt.
+func tChatSide(_ ax: AXStyle) -> CGFloat { Swift.max(axMinTarget, 32 * Swift.min(ax.scale, 1.4)) }
+
 struct TChatModel: Decodable {
     struct Composer: Decodable {
         struct Mode: Decodable, Identifiable {
@@ -132,7 +191,21 @@ struct TChatModel: Decodable {
         let panelOpen: Bool
         let dialogOpen: Bool
     }
+    /// Controls the stock page draws but wires to nothing ("mention", "attach", "versions").
+    let inert: Set<String>
+    let words: TChatWords
     let items: [TChatItem]
     let composer: Composer
     let artifact: Artifact
+
+    private enum Keys: String, CodingKey { case inert, words, items, composer, artifact }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: Keys.self)
+        inert = Set(try c.decodeIfPresent([String].self, forKey: .inert) ?? [])
+        words = try c.decodeIfPresent(TChatWords.self, forKey: .words) ?? .empty
+        items = try c.decode([TChatItem].self, forKey: .items)
+        composer = try c.decode(Composer.self, forKey: .composer)
+        artifact = try c.decode(Artifact.self, forKey: .artifact)
+    }
 }
