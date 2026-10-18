@@ -20,13 +20,16 @@ final class WebBridge: NSObject, WKScriptMessageHandler {
         config.setURLSchemeHandler(BundledPages(), forURLScheme: "astryx")
         let content = WKUserContentController()
         config.userContentController = content
+        addScenarioDriver(to: config)
         webView = WKWebView(frame: .zero, configuration: config)
         super.init()
         content.add(WeakHandler(self), name: "astryx")
         #if DEBUG
         if #available(macOS 13.3, iOS 16.4, *) { webView.isInspectable = true }
         #endif
-        webView.load(URLRequest(url: URL(string: "astryx://app/index.html")!))
+        // Bare: the template alone, wrapped as the stock page wraps its copy, so the panes
+        // compare like for like; the app's own sidebar does the navigating.
+        webView.load(URLRequest(url: URL(string: "astryx://app/index.html?bare=1")!))
     }
 
     /// A store changed: kept, and given to the page once it is listening.
@@ -61,6 +64,26 @@ final class WebBridge: NSObject, WKScriptMessageHandler {
         default:
             return
         }
+    }
+}
+
+
+/// The in-page driver (web/public/astryx-drive.js, copied into the app as web/astryx-drive.js),
+/// added to every web view so a scenario's gestures can be performed in any of them.
+@MainActor
+func addScenarioDriver(to config: WKWebViewConfiguration) {
+    guard let url = Bundle.main.resourceURL?.appendingPathComponent("web/astryx-drive.js"),
+          let source = try? String(contentsOf: url, encoding: .utf8) else { return }
+    config.userContentController.addUserScript(WKUserScript(source: source, injectionTime: .atDocumentEnd, forMainFrameOnly: true))
+}
+
+extension WKWebView {
+    /// Performs a scenario step's gestures in the page, as a person would; throws what the page threw.
+    @MainActor
+    func performGestures(_ gestures: Any) async throws {
+        _ = try await callAsyncJavaScript(
+            "await window.__astryxDrive.perform(gestures); return true;",
+            arguments: ["gestures": gestures], in: nil, contentWorld: .page)
     }
 }
 
@@ -123,10 +146,18 @@ final class StockBridge {
     init() {
         let config = WKWebViewConfiguration()
         config.setURLSchemeHandler(BundledPages(), forURLScheme: "astryx")
+        addScenarioDriver(to: config)
         webView = WKWebView(frame: .zero, configuration: config)
         #if DEBUG
         if #available(macOS 13.3, iOS 16.4, *) { webView.isInspectable = true }
         #endif
+    }
+
+    /// Loads the current template afresh: its own state back to the start (a scenario begins).
+    func restart() {
+        guard let template = shown else { return }
+        shown = nil
+        show(template)
     }
 
     /// Shows `template`: the first time by loading the page, after that without a reload.
@@ -169,10 +200,19 @@ final class OwnCoreBridge {
     init() {
         let config = WKWebViewConfiguration()
         config.setURLSchemeHandler(BundledPages(), forURLScheme: "astryx")
+        addScenarioDriver(to: config)
         webView = WKWebView(frame: .zero, configuration: config)
         #if DEBUG
         if #available(macOS 13.3, iOS 16.4, *) { webView.isInspectable = true }
         #endif
+    }
+
+    /// Loads the page afresh at the current screen: its own core starts over (a scenario begins).
+    func restart() {
+        guard let screen = shown else { return }
+        loaded = false
+        shown = nil
+        show(screen)
     }
 
     /// Follows the shared core to `screen`: the first time by loading the page there.
@@ -182,7 +222,7 @@ final class OwnCoreBridge {
         guard let escaped = screen.addingPercentEncoding(withAllowedCharacters: .alphanumerics) else { return }
         if !loaded {
             loaded = true
-            webView.load(URLRequest(url: URL(string: "astryx://app/index.html?screen=\(escaped)")!))
+            webView.load(URLRequest(url: URL(string: "astryx://app/index.html?bare=1&screen=\(escaped)")!))
         } else {
             webView.evaluateJavaScript("window.__astryxOwn && window.__astryxOwn.navigate(decodeURIComponent('\(escaped)'))")
         }

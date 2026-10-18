@@ -76,9 +76,10 @@ public struct AppSnapshot: Decodable, Sendable {
     public let dialog: DialogInfo?
     public let theme: ThemeChoice
     public let surface: SurfaceChoice?
+    public let scenarios: ScenariosSnapshot?
 
     private enum CodingKeys: String, CodingKey {
-        case protocolVersion = "protocol", appName, nav, current, screen, toast, dialog, theme, surface
+        case protocolVersion = "protocol", appName, nav, current, screen, toast, dialog, theme, surface, scenarios
     }
 }
 

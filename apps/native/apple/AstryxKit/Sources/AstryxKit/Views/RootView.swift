@@ -46,6 +46,11 @@ public struct RootView: View {
                 ProgressView()
             }
         }
+        .overlay(alignment: .bottom) {
+            if let playing = model.app?.scenarios?.playing, web != nil {
+                ScenarioBar(playing: playing).padding(.bottom, 12)
+            }
+        }
         .axTheme(model.theme, scheme: scheme, typeSize: typeSize)
         .environment(\.axSend, AXSender { [model] action in model.perform(action) })
         .alert(
@@ -145,6 +150,9 @@ private struct SurfaceRoot: View {
                 NavigationStack {
                     SurfaceLayout(app: app, mode: mode, web: web, webOwn: webOwn, stock: stock)
                         .toolbar {
+                            if let scenarios = app.scenarios {
+                                ToolbarItem(placement: .primaryAction) { ScenarioMenu(scenarios: scenarios) }
+                            }
                             ToolbarItem(placement: .primaryAction) { picker }
                         }
                         #if os(iOS)
@@ -290,6 +298,9 @@ private struct AppShell: View {
         } detail: {
             ScreenView(app: app, inlineToolbar: false)
                 .toolbar {
+                    if picker != nil, let scenarios = app.scenarios {
+                        ToolbarItem(placement: .primaryAction) { ScenarioMenu(scenarios: scenarios) }
+                    }
                     if let picker {
                         ToolbarItem(placement: .primaryAction) { picker }
                     }

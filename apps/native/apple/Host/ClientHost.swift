@@ -41,6 +41,62 @@ final class ClientHost: NSObject, AXClientServices {
               let snapshot = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return }
         if let surface = snapshot["surface"] as? [String: Any], let template = surface["stockTemplate"] as? String { stock.show(template) }
         if let current = snapshot["current"] as? String { own.show(current) }
+        play(snapshot["scenarios"] as? [String: Any])
+    }
+
+    // MARK: Scenarios
+
+    /// The step being performed now, so a snapshot that repeats it does not perform it twice.
+    private var performing: (scenario: String, index: Int)?
+    /// The scenario whose run has begun (its stock and own-core panes restarted).
+    private var begun: String?
+
+    /// Performs the step the core says is next: from the native side (the step's recorded
+    /// actions, sent as the SwiftUI controls send them) or from the web side (its gestures,
+    /// done in the web page on Hermes), and in parallel in the panes with state of their own
+    /// (stock and own-core). Then tells the core the step is done.
+    private func play(_ scenarios: [String: Any]?) {
+        guard let playing = scenarios?["playing"] as? [String: Any], let id = playing["id"] as? String else {
+            performing = nil
+            begun = nil
+            return
+        }
+        guard let step = playing["step"] as? [String: Any], let index = step["index"] as? Int,
+              let driver = playing["driver"] as? String else { return }
+        if let p = performing, p.scenario == id, p.index == index { return }
+        performing = (id, index)
+        let gestures = step["gestures"] ?? []
+        let actions = (step["actions"] as? [Any]) ?? []
+        let fresh = begun != id
+        begun = id
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            if fresh {
+                // The panes with state of their own start the scenario from their first state too.
+                self.stock.restart()
+                self.own.restart()
+                try? await Task.sleep(for: .milliseconds(1500))
+            }
+            switch driver {
+            case "web":
+                do { try await self.web.webView.performGestures(gestures) }
+                catch { NSLog("astryx: scenario %@ step %d failed on the web side: %@", id, index, String(describing: error)) }
+            default:
+                for action in actions {
+                    guard let data = try? JSONSerialization.data(withJSONObject: action),
+                          let json = String(data: data, encoding: .utf8) else { continue }
+                    self.dispatch(json)
+                }
+            }
+            // The same gestures where state is separate; a step that cannot be done there is noted, not fatal.
+            for pane in [self.stock.webView, self.own.webView] {
+                do { try await pane.performGestures(gestures) }
+                catch { NSLog("astryx: scenario %@ step %d did not replay in a side pane: %@", id, index, String(describing: error)) }
+            }
+            // Long enough to see each step happen in every drawing.
+            try? await Task.sleep(for: .milliseconds(900))
+            self.dispatch("{\"type\":\"press\",\"id\":\"scenario.done:\(index)\"}")
+        }
     }
 
     func run() {
@@ -89,6 +145,10 @@ final class ClientHost: NSObject, AXClientServices {
                 let queued = self.waiting
                 self.waiting = []
                 for action in queued { self.call("dispatch", action) }
+                // `-AXScenario inbox:web` (the UI tests, a demo) starts a scenario at once.
+                if let scenario = UserDefaults.standard.string(forKey: "AXScenario") {
+                    self.call("dispatch", "{\"type\":\"press\",\"id\":\"scenario.start:\(scenario)\"}")
+                }
             }
         }
     }
