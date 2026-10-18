@@ -17,6 +17,8 @@ struct InboxModel: Decodable, Equatable {
     var bulkActions: [BulkAction]
     var openId: String?
     var mode: Mode
+    /// Ids of the controls the core has no action for ("refresh", "archive", "send"...): drawn disabled.
+    var inert: [String]
     /// Pixel width of the web's trailing "Received" column (the web's measurement; not used natively).
     var receivedWidth: Double
     var pane: Pane?
@@ -31,6 +33,9 @@ struct InboxModel: Decodable, Equatable {
         var unreadStatus: String
         var unreadSuffix: String
         var hasAttachments: String
+        /// Spoken state of a row's tick box.
+        var selected: String
+        var notSelected: String
         var empty: Empty
         var columns: Columns
         var pane: PaneText
@@ -47,11 +52,18 @@ struct InboxModel: Decodable, Equatable {
         struct PaneText: Decodable, Equatable {
             var label: String
             var resizeLabel: String
+            var resizeUnit: String
             var back: String
             var close: String
             var closeTooltip: String
             var reply: String
             var replyAll: String
+            var previous: String
+            var next: String
+            var expanded: String
+            var collapsed: String
+            var expandHint: String
+            var collapseHint: String
         }
         struct Composer: Decodable, Equatable {
             var sheetLabel: String
@@ -68,6 +80,12 @@ struct InboxModel: Decodable, Equatable {
             var actionsLabel: String
             var send: String
             var discard: String
+            var cancel: String
+            var discardTitle: String
+            var discardAction: String
+            var saveDraft: String
+            var keepEditing: String
+            var remove: String
             var tools: [Tool]
             struct Tool: Decodable, Equatable { var id: String; var label: String }
         }
@@ -161,6 +179,9 @@ struct InboxModel: Decodable, Equatable {
         var isStacked: Bool
         var isTight: Bool
         var isTouch: Bool
+        /// The widths the core holds (0 = not measured yet).
+        var measured: Measured
+        struct Measured: Decodable, Equatable { var surface: Int; var list: Int }
     }
 
     struct Person: Codable, Equatable, Identifiable, Hashable {
@@ -179,5 +200,10 @@ struct InboxModel: Decodable, Equatable {
         var body: String
         /// Everybody the inbox has heard from, offered as recipients.
         var directory: [Person]
+        /// Whether the draft holds typed content that cancelling would lose.
+        var isDirty: Bool
     }
+
+    /// Whether the core has no action behind this control, so it is drawn disabled.
+    func isInert(_ id: String) -> Bool { inert.contains(id) }
 }

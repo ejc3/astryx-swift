@@ -143,3 +143,16 @@ test("the view is plain JSON", () => {
   const v = view(set(start(), "filter:category", "design"));
   assert.deepEqual(JSON.parse(JSON.stringify(v)), v);
 });
+
+test("the view carries the column titles and words, and lists the controls with no action as inert", () => {
+  const v = invoice.view(invoice.initial(NOW), NOW);
+  assert.deepEqual(v.columns.map((c) => [c.key, c.title, c.filter]), [
+    ["description", "Description", "description"],
+    ["category", "Category", "category"],
+    ["quantity", "Qty", "quantity"],
+    ["unitPrice", "Rate", null],
+    ["amount", "Amount", null],
+  ]);
+  assert.equal(v.words.downloadPdf, "Download PDF");
+  assert.deepEqual(v.inert, ["downloadPdf", "dispute"]);
+});

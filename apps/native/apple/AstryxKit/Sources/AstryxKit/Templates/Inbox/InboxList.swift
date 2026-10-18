@@ -1,9 +1,8 @@
 import SwiftUI
 
-/// What a row or thread action does here. The web draws the archive, move and delete controls
-/// but wires nothing to them (the core has no such actions), so natively they are drawn and
-/// send nothing too. "Reply" on a row opens that thread and starts the reply, both actions
-/// the core has.
+/// What a row or thread action does here. The core has no archive, move or delete action (the
+/// model lists them as `inert`), so those are drawn disabled and never reach this function.
+/// "Reply" on a row opens that thread and starts the reply, both actions the core has.
 @MainActor
 func inboxPerform(_ action: String, row id: String, send: AXSender) {
     guard action == "reply" else { return }
@@ -11,9 +10,10 @@ func inboxPerform(_ action: String, row id: String, send: AXSender) {
     send(.press(id: inboxAction("reply")))
 }
 
-/// The buttons of a row's swipe, context menu and accessibility actions.
+/// The buttons of a row's context menu and accessibility actions; the ones the core cannot do are disabled.
 struct InboxRowMenu: View {
     let row: InboxModel.Row
+    let inert: [String]
     @Environment(\.axSend) private var send
 
     var body: some View {
@@ -23,6 +23,7 @@ struct InboxRowMenu: View {
             } label: {
                 Label(action.label, systemImage: inboxSymbol(action.id))
             }
+            .disabled(inert.contains(action.id))
         }
     }
 }
@@ -35,6 +36,8 @@ struct InboxRowMenu: View {
 struct InboxRowView: View {
     let row: InboxModel.Row
     let mode: InboxModel.Mode
+    let words: InboxModel.Words
+    let inert: [String]
     let selected: Bool
     let showTags: Bool
     let onToggle: () -> Void
@@ -46,33 +49,56 @@ struct InboxRowView: View {
     private let tagsWidth: CGFloat = 190
     private let receivedWidth: CGFloat = 118
 
+    private var showsHoverActions: Bool { hovering && !mode.isTouch && !mode.isStacked }
+
     var body: some View {
         HStack(alignment: mode.isStacked ? .top : .center, spacing: ax.space(3)) {
             if !mode.isStacked {
-                InboxCheckbox(checked: selected, label: row.selectionLabel, action: onToggle)
+                InboxCheckbox(checked: selected, label: row.selectionLabel, selected: words.selected, notSelected: words.notSelected, action: onToggle)
             }
-            Circle()
-                .fill(row.status == nil ? Color.clear : ax.accent)
-                .frame(width: 8, height: 8)
-                .padding(.top, mode.isStacked ? ax.space(2) : 0)
-                .accessibilityHidden(true)
-            Group {
-                if mode.isStacked { stacked } else { wide }
+            Button {
+                send(.press(id: inboxAction("open:\(row.id)")))
+            } label: {
+                HStack(alignment: mode.isStacked ? .top : .center, spacing: ax.space(3)) {
+                    Circle()
+                        .fill(row.status == nil ? Color.clear : ax.accent)
+                        .frame(width: 8, height: 8)
+                        .padding(.top, mode.isStacked ? ax.space(2) : 0)
+                        .accessibilityHidden(true)
+                    if mode.isStacked { stacked } else { wide }
+                }
+                .contentShape(Rectangle())
             }
-            .contentShape(Rectangle())
-            .onTapGesture { send(.press(id: inboxAction("open:\(row.id)"))) }
+            .buttonStyle(.plain)
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(accessibilityLabel)
             .accessibilityValue(row.preview)
-            .accessibilityAddTraits(row.isOpen ? [.isButton, .isSelected] : .isButton)
+            .accessibilityAddTraits(row.isOpen ? .isSelected : [])
         }
         .padding(.horizontal, ax.space(4))
         .padding(.vertical, mode.isStacked ? ax.space(3) : ax.space(2))
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(background)
+        .overlay(alignment: .trailing) { hoverActions.padding(.trailing, ax.space(4)) }
         .overlay(alignment: .bottom) { InboxHairline() }
         .onHover { hovering = $0 }
-        .contextMenu { InboxRowMenu(row: row) }
+        .contextMenu { InboxRowMenu(row: row, inert: inert) }
+    }
+
+    /// On a pointer that hovers, the row's actions take the timestamp's place under the cursor.
+    @ViewBuilder
+    private var hoverActions: some View {
+        if showsHoverActions {
+            HStack(spacing: ax.hair) {
+                ForEach(row.actions) { action in
+                    InboxIconButton(symbol: inboxSymbol(action.id), label: action.ariaLabel, help: action.label) {
+                        inboxPerform(action.id, row: row.id, send: send)
+                    }
+                    .disabled(inert.contains(action.id))
+                }
+            }
+            .frame(width: receivedWidth, alignment: .trailing)
+        }
     }
 
     private var background: Color {
@@ -82,7 +108,7 @@ struct InboxRowView: View {
     }
 
     private var accessibilityLabel: String {
-        [row.status, row.sender, row.subject, row.receivedAt, row.hasAttachments ? "attachment" : nil]
+        [row.status, row.sender, row.subject, row.receivedAt, row.hasAttachments ? words.hasAttachments : nil]
             .compactMap { $0 }.joined(separator: ", ")
     }
 
@@ -151,29 +177,18 @@ struct InboxRowView: View {
         }
     }
 
-    /// The timestamp; on a pointer that hovers, the row's actions take its place under the cursor.
+    /// The timestamp, hidden while the hover actions are over it.
     private var received: some View {
-        ZStack(alignment: .trailing) {
-            HStack(spacing: ax.space(1)) {
-                if row.hasAttachments {
-                    Image(systemName: "paperclip").font(ax.fontSmall).foregroundStyle(ax.iconSecondary)
-                }
-                Text(row.receivedAt)
-                    .font(ax.font("font-size-base", 14, weight: weight).monospacedDigit())
-                    .foregroundStyle(ax.textSecondary)
-                    .lineLimit(1)
+        HStack(spacing: ax.space(1)) {
+            if row.hasAttachments {
+                Image(systemName: "paperclip").font(ax.fontSmall).foregroundStyle(ax.iconSecondary)
             }
-            .opacity(hovering && !mode.isTouch ? 0 : 1)
-            if hovering && !mode.isTouch {
-                HStack(spacing: ax.hair) {
-                    ForEach(row.actions) { action in
-                        InboxIconButton(symbol: inboxSymbol(action.id), label: action.ariaLabel, help: action.label) {
-                            inboxPerform(action.id, row: row.id, send: send)
-                        }
-                    }
-                }
-            }
+            Text(row.receivedAt)
+                .font(ax.font("font-size-base", 14, weight: weight).monospacedDigit())
+                .foregroundStyle(ax.textSecondary)
+                .lineLimit(1)
         }
+        .opacity(showsHoverActions ? 0 : 1)
         .frame(width: receivedWidth, alignment: .trailing)
     }
 }
@@ -248,7 +263,7 @@ struct InboxListColumn: View {
                             }
                         }
                         .padding(.horizontal, ax.space(3))
-                        .frame(minHeight: 38 * min(ax.scale, 1.4))
+                        .frame(minHeight: max(38 * min(ax.scale, 1.4), InboxTarget.side))
                         .overlay(alignment: .bottom) {
                             Rectangle().fill(tab.value == model.tab ? ax.accent : .clear).frame(height: 2)
                         }
@@ -285,10 +300,12 @@ struct InboxListColumn: View {
                         .font(ax.fontLabel)
                         .foregroundStyle(ax.text)
                         .padding(.horizontal, ax.space(2))
-                        .frame(minHeight: 28)
+                        .frame(minHeight: InboxTarget.side)
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
+                .disabled(model.isInert(action.id))
+                .opacity(model.isInert(action.id) ? 0.4 : 1)
             }
         }
         let summary = HStack(spacing: ax.space(3)) {
@@ -300,7 +317,7 @@ struct InboxListColumn: View {
             .buttonStyle(.plain)
             .font(ax.fontLabel)
             .foregroundStyle(ax.accent)
-            .frame(minHeight: 28)
+            .frame(minHeight: InboxTarget.side)
         }
         if vertical {
             VStack(alignment: .leading, spacing: ax.space(2)) { actions; summary }.frame(maxWidth: .infinity, alignment: .leading)
@@ -314,7 +331,7 @@ struct InboxListColumn: View {
     private var columnHeader: some View {
         let cols = model.text.columns
         return HStack(spacing: ax.space(3)) {
-            InboxCheckbox(checked: allVisibleSelected, label: cols.conversation, action: toggleAll)
+            InboxCheckbox(checked: allVisibleSelected, label: cols.conversation, selected: model.text.selected, notSelected: model.text.notSelected, action: toggleAll)
             Color.clear.frame(width: 8, height: 1)
             Text(cols.from).frame(width: 190, alignment: .leading)
             Text(cols.subject).frame(maxWidth: .infinity, alignment: .leading)
@@ -333,9 +350,23 @@ struct InboxListColumn: View {
         InboxRowView(
             row: row,
             mode: model.mode,
+            words: model.text,
+            inert: model.inert,
             selected: selected.contains(row.id),
             showTags: !model.mode.isTight,
             onToggle: { toggle(row.id) }
+        )
+    }
+
+    /// The open thread as the list's selection: arrow keys move it, as in Mail, and a row's
+    /// button opens its thread the same way.
+    private var openSelection: Binding<String?> {
+        Binding(
+            get: { model.openId },
+            set: { id in
+                guard let id, id != model.openId else { return }
+                send(.press(id: inboxAction("open:\(id)")))
+            }
         )
     }
 
@@ -346,22 +377,14 @@ struct InboxListColumn: View {
                 ForEach(model.rows) { rowView($0) }
             }
         } else {
-            List {
+            List(selection: openSelection) {
                 ForEach(model.rows) { row in
                     rowView(row)
+                        .tag(row.id)
                         .listRowInsets(EdgeInsets())
                         .listRowSeparator(.hidden)
                         .listRowBackground(Color.clear)
-                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                            ForEach(row.actions.filter { $0.id == "archive" || $0.id == "delete" || $0.id == "move" }) { action in
-                                Button(role: action.id == "delete" ? .destructive : nil) {
-                                    inboxPerform(action.id, row: row.id, send: send)
-                                } label: {
-                                    Label(action.label, systemImage: inboxSymbol(action.id))
-                                }
-                                .tint(action.id == "delete" ? ax.danger : (action.id == "move" ? ax.iconSecondary : ax.accent))
-                            }
-                        }
+                        .modifier(InboxTrailingSwipe(row: row.id, actions: row.actions.filter { !model.isInert($0.id) && $0.id != "reply" }))
                         .swipeActions(edge: .leading, allowsFullSwipe: true) {
                             ForEach(row.actions.filter { $0.id == "reply" }) { action in
                                 Button {
@@ -376,28 +399,48 @@ struct InboxListColumn: View {
             }
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
+            // The selected row is the open thread: the same soft accent the row paints itself.
+            .tint(ax.accentMuted)
         }
     }
 
     private var empty: some View {
-        VStack(spacing: ax.space(3)) {
-            Image(systemName: "tray")
-                .font(.system(size: ax.fontSize("font-size-2xl", 24)))
-                .foregroundStyle(ax.iconSecondary)
-                .frame(width: 56 * min(ax.scale, 1.5), height: 56 * min(ax.scale, 1.5))
-                .background(Circle().fill(ax.muted))
-            VStack(spacing: ax.hair) {
-                Text(model.text.empty.title).font(ax.fontStrong).foregroundStyle(ax.text)
-                Text(model.text.empty.description).font(ax.fontBase).foregroundStyle(ax.textSecondary)
-                    .multilineTextAlignment(.center)
-            }
+        ContentUnavailableView {
+            Label(model.text.empty.title, systemImage: "tray")
+        } description: {
+            Text(model.text.empty.description)
+        } actions: {
             Button(model.text.empty.action) {
                 send(.set(id: inboxAction("tab"), value: .string("inbox")))
             }
             .buttonStyle(AXButtonStyle(variant: .secondary, ax: ax))
         }
-        .padding(ax.space(8))
+        .padding(ax.space(4))
         .frame(maxWidth: .infinity)
-        .accessibilityElement(children: .contain)
+    }
+}
+
+/// A row's trailing swipe, only when some action on it does something.
+struct InboxTrailingSwipe: ViewModifier {
+    let row: String
+    let actions: [InboxModel.RowAction]
+    @Environment(\.ax) private var ax
+    @Environment(\.axSend) private var send
+
+    func body(content: Content) -> some View {
+        if actions.isEmpty {
+            content
+        } else {
+            content.swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                ForEach(actions) { action in
+                    Button(role: action.id == "delete" ? .destructive : nil) {
+                        inboxPerform(action.id, row: row, send: send)
+                    } label: {
+                        Label(action.label, systemImage: inboxSymbol(action.id))
+                    }
+                    .tint(action.id == "delete" ? ax.danger : (action.id == "move" ? ax.iconSecondary : ax.accent))
+                }
+            }
+        }
     }
 }

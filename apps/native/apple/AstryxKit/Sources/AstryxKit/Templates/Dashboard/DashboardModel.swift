@@ -20,6 +20,21 @@ enum DashDataColor: String, Decodable {
 }
 
 struct DashModel: Decodable {
+    /// Words only assistive technology reads: axis titles and what a change means.
+    struct Words: Decodable {
+        let timeTitle: String
+        let usersTitle: String
+        let trendTitle: String
+        let trendAxisX: String
+        let trendAxisY: String
+        let shareTitle: String
+        let shareAxisX: String
+        let up: String
+        let down: String
+        let favorable: String
+        let unfavorable: String
+    }
+
     struct ActiveUsers: Decodable {
         struct Point: Decodable, Identifiable {
             let hour: Double
@@ -40,6 +55,8 @@ struct DashModel: Decodable {
             let label: String
         }
         let title: String
+        /// What the chart says, in words: for the audio graph and for VoiceOver.
+        let summary: String
         let reloadLabel: String
         let points: [Point]
         let series: [Series]
@@ -56,6 +73,13 @@ struct DashModel: Decodable {
         let positive: Bool
         let caption: String
         let sparkline: [Double]
+        /// Which way the figure moved, and whether that is good news (`positive` is the web's color).
+        let direction: String
+        let favorable: Bool
+        /// The change, spoken: "down 8.7%, better".
+        let changeSpoken: String
+        /// The sparkline, in words.
+        let trend: String
         var id: String { label }
     }
 
@@ -70,6 +94,7 @@ struct DashModel: Decodable {
                 var id: String { label }
             }
             let title: String
+            let summary: String
             let segments: [Segment]
             var id: String { title }
         }
@@ -133,6 +158,9 @@ struct DashModel: Decodable {
         let events: EventsTable
     }
 
+    let words: Words
+    /// Ids of the controls the core has no action for ("viewMore", "tableLink"): drawn disabled.
+    let inert: [String]
     let activeUsers: ActiveUsers
     let metrics: [Metric]
     let demographics: Demographics

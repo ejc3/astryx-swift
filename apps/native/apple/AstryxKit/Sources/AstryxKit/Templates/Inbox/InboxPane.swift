@@ -35,6 +35,7 @@ struct InboxPaneView: View {
         HStack(spacing: ax.hair) {
             ForEach(pane.actions) { action in
                 InboxIconButton(symbol: inboxSymbol(action.id), label: action.ariaLabel, help: action.label)
+                    .disabled(model.isInert(action.id))
             }
         }
     }
@@ -49,7 +50,7 @@ struct InboxPaneView: View {
                     Label(words.back, systemImage: "chevron.left")
                         .font(ax.fontLabel)
                         .foregroundStyle(ax.accent)
-                        .frame(minHeight: 36)
+                        .frame(minHeight: max(36, InboxTarget.side))
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
@@ -96,6 +97,7 @@ struct InboxPaneView: View {
                 ForEach(pane.messages) { message in
                     InboxMessageView(
                         message: message,
+                        words: words,
                         isOpen: pane.openMessages.contains(message.id),
                         toggle: { toggleMessage(message.id) }
                     )
@@ -137,6 +139,7 @@ struct InboxPaneView: View {
 /// One message of the thread: a header that discloses the body and its attachments.
 struct InboxMessageView: View {
     let message: InboxModel.Message
+    let words: InboxModel.Words.PaneText
     let isOpen: Bool
     let toggle: () -> Void
     @Environment(\.ax) private var ax
@@ -173,8 +176,8 @@ struct InboxMessageView: View {
             .buttonStyle(.plain)
             .accessibilityLabel("\(message.sender), \(message.senderEmail), \(message.receivedFull)")
             .accessibilityAddTraits(.isButton)
-            .accessibilityValue(isOpen ? "expanded" : "collapsed")
-            .accessibilityHint(isOpen ? "Collapses the message" : "Expands the message")
+            .accessibilityValue(isOpen ? words.expanded : words.collapsed)
+            .accessibilityHint(isOpen ? words.collapseHint : words.expandHint)
 
             if isOpen {
                 VStack(alignment: .leading, spacing: ax.space(3)) {
@@ -199,7 +202,7 @@ struct InboxMessageView: View {
             get: { message.lightboxIndex != nil },
             set: { if !$0 { send(.press(id: inboxAction("lightboxClose"))) } }
         )) {
-            InboxLightbox(message: message)
+            InboxLightbox(message: message, words: words)
         }
     }
 }
@@ -285,6 +288,7 @@ struct InboxPicture: View {
 /// and index are the core's.
 struct InboxLightbox: View {
     let message: InboxModel.Message
+    let words: InboxModel.Words.PaneText
     @Environment(\.ax) private var ax
     @Environment(\.axSend) private var send
 
@@ -305,10 +309,12 @@ struct InboxLightbox: View {
                     Image(systemName: "xmark.circle.fill")
                         .font(.system(size: 22))
                         .foregroundStyle(ax.iconSecondary)
+                        .frame(minWidth: InboxTarget.side, minHeight: InboxTarget.side)
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .keyboardShortcut(.cancelAction)
-                .accessibilityLabel("Close")
+                .accessibilityLabel(words.closeTooltip)
             }
             if let attachment {
                 InboxPicture(attachment: attachment)
@@ -319,11 +325,11 @@ struct InboxLightbox: View {
             }
             if message.attachments.count > 1 {
                 HStack(spacing: ax.space(4)) {
-                    step(-1, symbol: "chevron.left", label: "Previous")
+                    step(-1, symbol: "chevron.left", label: words.previous)
                     Text("\(index + 1) / \(message.attachments.count)")
                         .font(ax.fontSmall.monospacedDigit())
                         .foregroundStyle(ax.textSecondary)
-                    step(1, symbol: "chevron.right", label: "Next")
+                    step(1, symbol: "chevron.right", label: words.next)
                 }
             }
         }
@@ -340,7 +346,7 @@ struct InboxLightbox: View {
         } label: {
             Image(systemName: symbol)
                 .font(.system(size: 16, weight: .semibold))
-                .frame(width: 36, height: 36)
+                .frame(width: max(36, InboxTarget.side), height: max(36, InboxTarget.side))
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

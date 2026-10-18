@@ -92,3 +92,9 @@ test("the view is plain JSON", () => {
   const v = view(start());
   assert.deepEqual(JSON.parse(JSON.stringify(v)), v);
 });
+
+test("the view carries the board's words and lists the controls with no action as inert", () => {
+  const v = kanban.view(kanban.initial(NOW), NOW);
+  assert.deepEqual([v.words.addTask, v.words.sprint, v.words.workItemActions], ["Add task", "Sprint", "Work item actions"]);
+  assert.deepEqual(v.inert, ["sort", "filter", "search", "addTask", "open", "assignToMe"]);
+});

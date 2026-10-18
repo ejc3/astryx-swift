@@ -6,9 +6,12 @@ import SwiftUI
 /// chart shows the point's label and each series' value, as the web tooltip does.
 struct DashActiveUsers: View {
     let chart: DashModel.ActiveUsers
+    let words: DashModel.Words
     @Environment(\.ax) private var ax
     @Environment(\.axSend) private var send
     @Environment(\.axWidth) private var width
+    @ScaledMetric(relativeTo: .body) private var compactHeight: CGFloat = 220
+    @ScaledMetric(relativeTo: .body) private var regularHeight: CGFloat = 300
 
     var body: some View {
         VStack(alignment: .leading, spacing: ax.space(6)) {
@@ -29,12 +32,12 @@ struct DashActiveUsers: View {
                 .buttonStyle(AXButtonStyle(variant: .secondary, ax: ax))
             }
             VStack(alignment: .leading, spacing: ax.space(3)) {
-                DashLineChart(chart: chart)
-                    .frame(height: width < 500 ? 220 : 300)
+                DashLineChart(chart: chart, words: words)
+                    .frame(height: width < 500 ? min(compactHeight, 330) : min(regularHeight, 450))
                 FlowLayout(spacing: ax.space(6), crossAlignment: 0.5) {
-                    ForEach(chart.series) { series in
+                    ForEach(Array(chart.series.enumerated()), id: \.element.id) { index, series in
                         HStack(spacing: ax.space(2)) {
-                            DashSwatch(color: ax.color(series.color.token))
+                            DashLineSwatch(color: ax.color(series.color.token), dash: DashSeriesLook.dash(index))
                             Text(series.name).font(ax.fontSmall).foregroundStyle(ax.textSecondary)
                         }
                     }
@@ -45,8 +48,44 @@ struct DashActiveUsers: View {
     }
 }
 
+/// What tells the series apart besides hue: a dash pattern each (solid, dashed, dotted) and, on
+/// the point being read, a symbol each. The legend draws the same patterns.
+enum DashSeriesLook {
+    static func dash(_ index: Int) -> [CGFloat] {
+        switch index % 3 {
+        case 0: []
+        case 1: [7, 4]
+        default: [1.5, 4]
+        }
+    }
+
+    static func symbol(_ index: Int) -> BasicChartSymbolShape {
+        switch index % 3 {
+        case 0: .circle
+        case 1: .square
+        default: .triangle
+        }
+    }
+}
+
+/// A short stretch of a series' line: its color and dash pattern.
+struct DashLineSwatch: View {
+    let color: Color
+    let dash: [CGFloat]
+    var body: some View {
+        Path { path in
+            path.move(to: CGPoint(x: 0, y: 5))
+            path.addLine(to: CGPoint(x: 22, y: 5))
+        }
+        .stroke(color, style: StrokeStyle(lineWidth: 2.5, lineCap: dash.isEmpty ? .round : .butt, dash: dash))
+        .frame(width: 22, height: 10)
+        .accessibilityHidden(true)
+    }
+}
+
 private struct DashLineChart: View {
     let chart: DashModel.ActiveUsers
+    let words: DashModel.Words
     @State private var selected: Double?
     @Environment(\.ax) private var ax
 
@@ -77,28 +116,29 @@ private struct DashLineChart: View {
 
     var body: some View {
         Chart {
-            ForEach(chart.series) { series in
+            ForEach(Array(chart.series.enumerated()), id: \.element.id) { index, series in
                 ForEach(visible) { point in
                     LineMark(
-                        x: .value("Time", point.hour),
+                        x: .value(words.timeTitle, point.hour),
                         y: .value(series.name, point.value(for: series.key)),
-                        series: .value("Series", series.name)
+                        series: .value(chart.title, series.name)
                     )
                     .foregroundStyle(ax.color(series.color.token))
-                    .lineStyle(StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
+                    .lineStyle(StrokeStyle(lineWidth: 2, lineCap: DashSeriesLook.dash(index).isEmpty ? .round : .butt, lineJoin: .round, dash: DashSeriesLook.dash(index)))
                     .interpolationMethod(.linear)
                 }
             }
             if let picked {
-                RuleMark(x: .value("Time", picked.hour))
+                RuleMark(x: .value(words.timeTitle, picked.hour))
                     .foregroundStyle(ax.border)
                     .annotation(position: .top, spacing: 4, overflowResolution: .init(x: .fit(to: .chart), y: .disabled)) {
                         DashTooltip(point: picked, series: chart.series)
                     }
-                ForEach(chart.series) { series in
-                    PointMark(x: .value("Time", picked.hour), y: .value(series.name, picked.value(for: series.key)))
+                ForEach(Array(chart.series.enumerated()), id: \.element.id) { index, series in
+                    PointMark(x: .value(words.timeTitle, picked.hour), y: .value(series.name, picked.value(for: series.key)))
                         .foregroundStyle(ax.color(series.color.token))
-                        .symbolSize(40)
+                        .symbol(DashSeriesLook.symbol(index))
+                        .symbolSize(56)
                 }
             }
         }
@@ -127,8 +167,7 @@ private struct DashLineChart: View {
                 }
             }
         }
-        .accessibilityLabel(chart.title)
-        .accessibilityValue(chart.series.map(\.name).joined(separator: ", "))
+        .accessibilityChartDescriptor(DashLineDescriptor(chart: chart, words: words))
     }
 }
 
@@ -141,9 +180,9 @@ private struct DashTooltip: View {
     var body: some View {
         VStack(alignment: .leading, spacing: ax.space(1)) {
             Text(point.label).font(ax.fontSmall).foregroundStyle(ax.textSecondary)
-            ForEach(series) { s in
+            ForEach(Array(series.enumerated()), id: \.element.id) { index, s in
                 HStack(spacing: ax.space(2)) {
-                    DashSwatch(color: ax.color(s.color.token))
+                    DashLineSwatch(color: ax.color(s.color.token), dash: DashSeriesLook.dash(index))
                     Text("\(s.name): \(DashNumbers.plain(point.value(for: s.key)))")
                         .font(ax.fontSmall.monospacedDigit())
                         .foregroundStyle(ax.text)

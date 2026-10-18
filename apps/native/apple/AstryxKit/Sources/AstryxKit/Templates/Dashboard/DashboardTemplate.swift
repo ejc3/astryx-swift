@@ -5,7 +5,8 @@ import SwiftUI
 ///
 /// A report: nothing in it changes state. The one control that sends is Reload
 /// (`tpl.dashboard.reload`, which the core accepts and ignores for sample data); the "View
-/// more" buttons and the table links do nothing on the web either, so they send nothing here.
+/// more" buttons and the table links have no action in the core (the model lists them as
+/// `inert`), so they are drawn disabled.
 struct DashboardTemplate: View {
     let view: JSONValue
 
@@ -25,14 +26,18 @@ private struct DashContent: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: ax.space(6)) {
-            DashActiveUsers(chart: model.activeUsers)
-            DashMetrics(metrics: model.metrics)
+            DashActiveUsers(chart: model.activeUsers, words: model.words)
+            DashMetrics(metrics: model.metrics, words: model.words)
             DashDivider()
-            DashSectionHeader(title: model.demographics.title, more: model.demographics.moreLabel)
-            DashDemographics(cards: model.demographics.cards)
+            DashSectionHeader(title: model.demographics.title, more: model.demographics.moreLabel, isInert: model.inert.contains("viewMore"))
+            DashDemographics(cards: model.demographics.cards, words: model.words)
             DashDivider()
-            DashSectionHeader(title: model.engagement.title, more: model.engagement.moreLabel)
-            DashEngagement(pages: DashTableData(model.engagement.pages), events: DashTableData(model.engagement.events))
+            DashSectionHeader(title: model.engagement.title, more: model.engagement.moreLabel, isInert: model.inert.contains("viewMore"))
+            DashEngagement(
+                pages: DashTableData(model.engagement.pages),
+                events: DashTableData(model.engagement.events),
+                linksInert: model.inert.contains("tableLink")
+            )
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -51,6 +56,7 @@ struct DashDivider: View {
 private struct DashSectionHeader: View {
     let title: String
     let more: String
+    let isInert: Bool
     @Environment(\.ax) private var ax
 
     var body: some View {
@@ -62,6 +68,7 @@ private struct DashSectionHeader: View {
             Spacer(minLength: ax.space(2))
             Button {} label: { Text(more).lineLimit(1) }
                 .buttonStyle(AXButtonStyle(variant: .secondary, ax: ax))
+                .disabled(isInert)
         }
     }
 }
@@ -92,6 +99,7 @@ struct DashSwatch: View {
 
 private struct DashMetrics: View {
     let metrics: [DashModel.Metric]
+    let words: DashModel.Words
     @Environment(\.ax) private var ax
     @Environment(\.axWidth) private var width
 
@@ -102,13 +110,14 @@ private struct DashMetrics: View {
             alignment: .leading,
             spacing: ax.space(4)
         ) {
-            ForEach(metrics) { DashMetricCard(metric: $0, stacked: width < 600) }
+            ForEach(metrics) { DashMetricCard(metric: $0, words: words, stacked: width < 600) }
         }
     }
 }
 
 private struct DashMetricCard: View {
     let metric: DashModel.Metric
+    let words: DashModel.Words
     /// Value above change, so cards of a narrow two-column grid all have the same height.
     let stacked: Bool
     @Environment(\.ax) private var ax
@@ -116,32 +125,35 @@ private struct DashMetricCard: View {
     var body: some View {
         DashCard {
             VStack(alignment: .leading, spacing: ax.space(2)) {
-                Text(metric.label)
-                    .font(ax.heading(4))
-                    .foregroundStyle(ax.text)
-                    .lineLimit(2)
-                    .accessibilityHidden(true)
-                if stacked {
-                    VStack(alignment: .leading, spacing: ax.hair) { figure; change }
-                } else {
-                    ViewThatFits(in: .horizontal) {
-                        HStack(alignment: .firstTextBaseline, spacing: ax.space(2)) { figure; change }
+                // The figures read as one element, with the change in words and its meaning;
+                // the sparkline is its own element, an audio graph.
+                VStack(alignment: .leading, spacing: ax.space(2)) {
+                    Text(metric.label)
+                        .font(ax.heading(4))
+                        .foregroundStyle(ax.text)
+                        .lineLimit(2)
+                    if stacked {
                         VStack(alignment: .leading, spacing: ax.hair) { figure; change }
+                    } else {
+                        ViewThatFits(in: .horizontal) {
+                            HStack(alignment: .firstTextBaseline, spacing: ax.space(2)) { figure; change }
+                            VStack(alignment: .leading, spacing: ax.hair) { figure; change }
+                        }
                     }
+                    Text(metric.caption)
+                        .font(ax.fontSmall)
+                        .foregroundStyle(ax.textSecondary)
                 }
-                Text(metric.caption)
-                    .font(ax.fontSmall)
-                    .foregroundStyle(ax.textSecondary)
-                    .accessibilityHidden(true)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(metric.label)
+                .accessibilityValue("\(metric.value), \(metric.changeSpoken). \(metric.caption)")
                 DashSparkline(values: metric.sparkline, color: ax.color(DashDataColor.blue.token))
                     .frame(height: 40)
                     .padding(.top, ax.space(1))
-                    .accessibilityHidden(true)
+                    .accessibilityChartDescriptor(DashSparklineDescriptor(metric: metric, words: words))
             }
         }
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(metric.label)
-        .accessibilityValue("\(metric.value), \(metric.change). \(metric.caption)")
+        .accessibilityElement(children: .contain)
     }
 
     private var figure: some View {
@@ -154,9 +166,11 @@ private struct DashMetricCard: View {
 
     private var change: some View {
         HStack(spacing: ax.space(1)) {
-            Image(systemName: metric.positive ? "arrow.up" : "arrow.down")
+            // The arrow says which way it moved; its color whether that is good news (a falling
+            // bounce rate is). The web colors by `positive`, the move's sign; this follows the meaning.
+            Image(systemName: metric.direction == "down" ? "arrow.down" : "arrow.up")
                 .font(.system(size: ax.fontSize("font-size-xs", 10), weight: .bold))
-                .foregroundStyle(ax.tone(metric.positive ? .success : .danger).solid)
+                .foregroundStyle(ax.tone(metric.favorable ? .success : .danger).solid)
             Text(metric.change)
                 .font(ax.fontBase.monospacedDigit())
                 .foregroundStyle(ax.textSecondary)
@@ -194,6 +208,7 @@ private struct DashSparkline: View {
 
 private struct DashDemographics: View {
     let cards: [DashModel.Demographics.Card]
+    let words: DashModel.Words
     @Environment(\.ax) private var ax
     @Environment(\.axWidth) private var width
 
@@ -204,13 +219,14 @@ private struct DashDemographics: View {
             alignment: .leading,
             spacing: ax.space(4)
         ) {
-            ForEach(cards) { DashSegmentCard(card: $0) }
+            ForEach(cards) { DashSegmentCard(card: $0, words: words) }
         }
     }
 }
 
 private struct DashSegmentCard: View {
     let card: DashModel.Demographics.Card
+    let words: DashModel.Words
     @Environment(\.ax) private var ax
 
     var body: some View {
@@ -222,7 +238,7 @@ private struct DashSegmentCard: View {
                     .accessibilityAddTraits(.isHeader)
                 DashStackedBar(segments: card.segments)
                     .frame(height: 24)
-                    .accessibilityHidden(true)
+                    .accessibilityChartDescriptor(DashBarDescriptor(card: card, words: words))
                 FlowLayout(spacing: ax.space(4), crossAlignment: 0) {
                     ForEach(card.segments) { segment in
                         VStack(alignment: .leading, spacing: 0) {
@@ -277,6 +293,7 @@ enum DashNumbers {
 private struct DashEngagement: View {
     let pages: DashTableData
     let events: DashTableData
+    let linksInert: Bool
     @Environment(\.ax) private var ax
     @Environment(\.axWidth) private var width
 
@@ -285,8 +302,8 @@ private struct DashEngagement: View {
         let gap = ax.space(4)
         let cardWidth = sideBySide ? (width - gap) / 2 : width
         let tables = Group {
-            DashTable(data: pages)
-            DashTable(data: events)
+            DashTable(data: pages, linkInert: linksInert)
+            DashTable(data: events, linkInert: linksInert)
         }
         Group {
             if sideBySide {
@@ -301,6 +318,7 @@ private struct DashEngagement: View {
 
 private struct DashTable: View {
     let data: DashTableData
+    let linkInert: Bool
     @Environment(\.ax) private var ax
     @Environment(\.axWidth) private var width
 
@@ -318,8 +336,12 @@ private struct DashTable: View {
                     Spacer(minLength: ax.space(2))
                     Button {} label: {
                         Text(data.linkLabel).font(ax.fontLabel).foregroundStyle(ax.accent)
+                            .frame(minHeight: InboxTarget.side)
+                            .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
+                    .disabled(linkInert)
+                    .opacity(linkInert ? 0.45 : 1)
                 }
                 VStack(spacing: 0) {
                     if tabular { header }

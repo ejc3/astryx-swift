@@ -3,6 +3,12 @@ import Foundation
 /// The invoice template's view model: a mirror of the `View` type of
 /// core/src/templates/invoice/model.ts, field for field.
 struct InvoiceModel: Decodable, Equatable {
+    /// The words of the table's controls and spoken labels.
+    var words: Words
+    /// The table's columns: key, title and the filter each offers.
+    var columns: [Column]
+    /// Ids of the controls the core has no action for ("downloadPdf", "dispute"): drawn disabled.
+    var inert: [String]
     var title: String
     var details: [Detail]
     var basisFilters: [Choice]
@@ -19,6 +25,55 @@ struct InvoiceModel: Decodable, Equatable {
     var totals: [Total]
     /// Shown under the table when the figures describe a subset.
     var banner: Notice?
+
+    struct Words: Decodable, Equatable {
+        var downloadPdf: String
+        var searchPlaceholder: String
+        var searchLabel: String
+        var clearSearch: String
+        var basisLabel: String
+        var sort: String
+        var sortNone: String
+        var filter: String
+        var filterActive: String
+        var filterColumn: String
+        var removeFilter: String
+        var clearFilter: String
+        var clearFilters: String
+        var clearAllFilters: String
+        var done: String
+        var dispute: String
+        var rowHint: String
+        var sortHint: String
+        var ascending: String
+        var descending: String
+        var sortedBy: String
+        var sortCleared: String
+        var containsPrompt: String
+        var quantityPrompt: String
+        var detail: DetailWords
+        var tableLabel: String
+
+        struct DetailWords: Decodable, Equatable {
+            var category: String
+            var billing: String
+            var calculation: String
+            var amount: String
+            var share: String
+        }
+    }
+
+    struct Column: Decodable, Equatable {
+        var key: String
+        var title: String
+        /// The filter the column offers, named after the filter's column key.
+        var filter: String?
+    }
+
+    func isInert(_ id: String) -> Bool { inert.contains(id) }
+
+    /// The spoken word of a sort direction.
+    func spoken(_ direction: Direction) -> String { direction == .ascending ? words.ascending : words.descending }
 
     struct Detail: Decodable, Equatable {
         var label: String
@@ -96,5 +151,35 @@ struct InvoiceModel: Decodable, Equatable {
         var label: String
         var value: String
         var emphasis: Emphasis?
+    }
+}
+
+/// A column as the table lays it out: the core's key and title, and the room each takes here.
+struct InvoiceColumn: Identifiable {
+    var key: String
+    var title: String
+    /// The filter this column offers, named after the filter's column key.
+    var filter: String?
+    var width: CGFloat?
+    var trailing: Bool
+
+    var id: String { key }
+
+    /// The width and alignment of a column by key; the words are the model's.
+    private static func layout(_ key: String) -> (width: CGFloat?, trailing: Bool) {
+        switch key {
+        case "category": (150, false)
+        case "quantity": (72, true)
+        case "unitPrice": (104, true)
+        case "amount": (132, true)
+        default: (nil, false)
+        }
+    }
+
+    static func all(_ model: InvoiceModel) -> [InvoiceColumn] {
+        model.columns.map { column in
+            let fit = layout(column.key)
+            return InvoiceColumn(key: column.key, title: column.title, filter: column.filter, width: fit.width, trailing: fit.trailing)
+        }
     }
 }

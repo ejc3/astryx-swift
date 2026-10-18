@@ -51,6 +51,13 @@ struct KanbanScreen: View {
             board
         }
         .frame(maxWidth: .infinity, alignment: .topLeading)
+        // A card landing somewhere (dropped, or moved from its menu) is felt as a tap.
+        .sensoryFeedback(.impact(weight: .medium), trigger: placement)
+    }
+
+    /// Which card sits in which column, in order: it changes when a card moves, however it moved.
+    private var placement: [String] {
+        model.columns.map { column in column.cards.map(\.id).joined(separator: ",") }
     }
 
     // MARK: Toolbar
@@ -65,15 +72,18 @@ struct KanbanScreen: View {
                 .accessibilityLabel("\(model.total)")
         }
         let tools = HStack(spacing: ax.hair) {
-            InboxIconButton(symbol: "arrow.up.arrow.down", label: "Sort")
-            InboxIconButton(symbol: "line.3.horizontal.decrease", label: "Filter")
-            InboxIconButton(symbol: "magnifyingglass", label: "Search")
+            InboxIconButton(symbol: "arrow.up.arrow.down", label: model.words.sort).disabled(model.isInert("sort"))
+            InboxIconButton(symbol: "line.3.horizontal.decrease", label: model.words.filter).disabled(model.isInert("filter"))
+            InboxIconButton(symbol: "magnifyingglass", label: model.words.search).disabled(model.isInert("search"))
         }
         let add = Button {
         } label: {
-            Label("Add task", systemImage: "plus")
+            Label(model.words.addTask, systemImage: "plus")
+                .lineLimit(1)
+                .fixedSize()
         }
         .buttonStyle(AXButtonStyle(variant: .primary, ax: ax))
+        .disabled(model.isInert("addTask"))
         return ViewThatFits(in: .horizontal) {
             HStack(spacing: ax.space(2)) {
                 heading
@@ -93,7 +103,7 @@ struct KanbanScreen: View {
             }
         }
         .accessibilityElement(children: .contain)
-        .accessibilityLabel("Board actions")
+        .accessibilityLabel(model.words.boardActions)
     }
 
     /// The sprint selector: a menu of the core's options, sending `set sprint <value>`.
@@ -107,7 +117,7 @@ struct KanbanScreen: View {
                 .overlay(shape.strokeBorder(ax.borderStrong, lineWidth: 1))
         } else {
             Menu {
-                Picker("Sprint", selection: Binding(
+                Picker(model.words.sprint, selection: Binding(
                     get: { model.sprint },
                     set: { send(.set(id: kanbanAction("sprint"), value: .string($0))) }
                 )) {
@@ -125,7 +135,7 @@ struct KanbanScreen: View {
             .buttonStyle(.plain)
             .menuIndicator(.hidden)
             .fixedSize()
-            .accessibilityLabel("Sprint")
+            .accessibilityLabel(model.words.sprint)
             .accessibilityValue(current)
         }
     }
@@ -174,12 +184,13 @@ struct KanbanScreen: View {
     private func columns(width: CGFloat?, gap: CGFloat) -> some View {
         HStack(alignment: .top, spacing: gap) {
             ForEach(model.columns) { column in
-                KanbanColumnView(column: column, drag: $drag)
+                KanbanColumnView(column: column, model: model, drag: $drag)
                     .frame(width: width)
                     .frame(maxWidth: width == nil ? .infinity : nil, maxHeight: .infinity, alignment: .top)
             }
         }
         .fixedSize(horizontal: false, vertical: true)
+        .modifier(KanbanBoardDrop(drag: $drag))
     }
 }
 
@@ -187,6 +198,7 @@ struct KanbanScreen: View {
 
 struct KanbanColumnView: View {
     let column: KanbanModel.Column
+    let model: KanbanModel
     @Binding var drag: KanbanDragState
     @Environment(\.ax) private var ax
     @Environment(\.axSend) private var send
@@ -238,7 +250,7 @@ struct KanbanColumnView: View {
             Circle()
                 .fill(ax.tone(tone).solid)
                 .frame(width: 8, height: 8)
-                .accessibilityLabel("\(column.title) status")
+                .accessibilityLabel("\(column.title) \(model.words.status)")
             Text(column.title)
                 .font(ax.heading(4))
                 .foregroundStyle(ax.text)
@@ -251,17 +263,20 @@ struct KanbanColumnView: View {
                     .foregroundStyle(ax.textSecondary)
                     .frame(minWidth: 24, minHeight: 24)
                     .contentShape(Rectangle())
+                    .inboxHitTarget(size: 24)
             }
             .buttonStyle(.plain)
             .help(column.tooltip)
             .accessibilityLabel(column.tooltip)
+            // A popover on an iPad or a Mac; on an iPhone the same content is a sheet.
             .popover(isPresented: $showingTip) {
-                Text(column.tooltip)
-                    .font(ax.fontSmall)
-                    .foregroundStyle(ax.text)
-                    .padding(ax.space(3))
-                    .frame(maxWidth: 240)
-                    .presentationCompactAdaptation(.popover)
+                InboxCompactSheet(title: column.title, done: model.words.done) {
+                    Text(column.tooltip)
+                        .font(ax.fontSmall)
+                        .foregroundStyle(ax.text)
+                        .padding(ax.space(3))
+                        .frame(maxWidth: 240)
+                }
             }
             Spacer(minLength: 0)
             Text("\(column.count)")
@@ -281,6 +296,8 @@ struct KanbanColumnView: View {
                 ForEach(column.cards) { card in
                     KanbanCardView(
                         card: card,
+                        model: model,
+                        column: column.title,
                         isDragged: drag.card == card.id && drag.target != nil,
                         lineAbove: lineAbove(card),
                         lineBelow: lineBelow(card),
@@ -306,11 +323,14 @@ struct KanbanColumnView: View {
         return remaining.last?.id == card.id
     }
 
+    /// Drawn by hand: the system's empty-state view sets its title in a size meant for a whole
+    /// screen, too big for a column of 228 points.
     private var empty: some View {
         VStack(spacing: ax.space(2)) {
             Image(systemName: KanbanColumnView.symbol(column.emptyIcon.name))
                 .font(.system(size: ax.fontSize("font-size-2xl", 24)))
                 .foregroundStyle(ax.textSecondary)
+                .accessibilityHidden(true)
             Text(column.emptyTitle).font(ax.fontStrong).foregroundStyle(ax.text)
             Text(column.emptyDescription)
                 .font(ax.fontSmall)
@@ -338,6 +358,9 @@ struct KanbanColumnView: View {
 
 struct KanbanCardView: View {
     let card: KanbanModel.Card
+    let model: KanbanModel
+    /// The title of the column the card is in, announced with its moves.
+    let column: String
     var isDragged = false
     var lineAbove = false
     var lineBelow = false
@@ -393,7 +416,7 @@ struct KanbanCardView: View {
         .contentShape(RoundedRectangle(cornerRadius: ax.radiusContainer, style: .continuous))
         .onDrag {
             onDragStart()
-            return NSItemProvider(object: card.id as NSString)
+            return KanbanCardDrag.provider(for: card.id)
         } preview: {
             preview
         }
@@ -403,7 +426,7 @@ struct KanbanCardView: View {
         .accessibilityValue("\(card.description) \(card.meta)")
         .accessibilityActions {
             ForEach(card.moveTargets) { target in
-                Button(target.label) { send(.press(id: target.id)) }
+                Button(target.label) { move(target) }
             }
         }
     }
@@ -437,11 +460,20 @@ struct KanbanCardView: View {
 
     @ViewBuilder
     private var menuItems: some View {
-        Button("Open") {}
-        Button("Assign to me") {}
+        Button(model.words.open) {}.disabled(model.isInert("open"))
+        Button(model.words.assignToMe) {}.disabled(model.isInert("assignToMe"))
         Divider()
         ForEach(card.moveTargets) { target in
-            Button(target.label) { send(.press(id: target.id)) }
+            Button(target.label) { move(target) }
+        }
+    }
+
+    /// Moves the card by the menu or by a VoiceOver action, and says where it went.
+    private func move(_ target: KanbanModel.MoveTarget) {
+        send(.press(id: target.id))
+        let to = target.id.split(separator: ":").last.map(String.init) ?? ""
+        if let title = model.columns.first(where: { $0.id == to })?.title {
+            AccessibilityNotification.Announcement("\(model.words.movedTo) \(title)").post()
         }
     }
 
@@ -454,16 +486,44 @@ struct KanbanCardView: View {
                 .foregroundStyle(ax.iconSecondary)
                 .frame(width: 28, height: 24)
                 .contentShape(Rectangle())
+                .inboxHitTarget(size: 24)
         }
         .menuStyle(.button)
         .buttonStyle(.plain)
         .menuIndicator(.hidden)
         .fixedSize()
-        .accessibilityLabel("Work item actions")
+        .accessibilityLabel(model.words.workItemActions)
     }
 }
 
 // MARK: Dropping
+
+/// A card dragged by this board: its id travels as data of a type of its own, visible to this
+/// app only, so text dragged in from elsewhere is never taken for a card.
+enum KanbanCardDrag {
+    static let type = UTType(exportedAs: "app.astryx.kanban.card")
+
+    static func provider(for id: String) -> NSItemProvider {
+        let provider = NSItemProvider()
+        provider.registerDataRepresentation(forTypeIdentifier: type.identifier, visibility: .ownProcess) { completion in
+            completion(Data(id.utf8), nil)
+            return nil
+        }
+        return provider
+    }
+
+    /// The card id a drop carries, once its data has loaded.
+    static func card(in info: DropInfo, then use: @escaping @MainActor (String?) -> Void) {
+        guard let provider = info.itemProviders(for: [type]).first else {
+            Task { @MainActor in use(nil) }
+            return
+        }
+        provider.loadDataRepresentation(forTypeIdentifier: type.identifier) { data, _ in
+            let id = data.flatMap { String(data: $0, encoding: .utf8) }
+            Task { @MainActor in use(id) }
+        }
+    }
+}
 
 /// Makes a column a drop target. (ImageRenderer draws a drop target as a "not supported" box,
 /// so drawn to an image the column is left plain.)
@@ -472,7 +532,33 @@ struct KanbanDropZone: ViewModifier {
     @Environment(\.axStatic) private var isStatic
 
     func body(content: Content) -> some View {
-        if isStatic { content } else { content.onDrop(of: [.plainText], delegate: delegate) }
+        if isStatic { content } else { content.onDrop(of: [KanbanCardDrag.type], delegate: delegate) }
+    }
+}
+
+/// The board around its columns. A card carried over the gaps between columns, or out of the
+/// board, has nowhere to land: the drag is refused there (it flies back), and the drag state is
+/// cleared when the pointer leaves, so a drag that is cancelled leaves nothing behind.
+struct KanbanBoardDrop: ViewModifier {
+    @Binding var drag: KanbanDragState
+    @Environment(\.axStatic) private var isStatic
+
+    func body(content: Content) -> some View {
+        if isStatic { content } else { content.onDrop(of: [KanbanCardDrag.type], delegate: BoardDelegate(drag: $drag)) }
+    }
+
+    @MainActor
+    private struct BoardDelegate: DropDelegate {
+        @Binding var drag: KanbanDragState
+
+        func validateDrop(info: DropInfo) -> Bool { info.hasItemsConforming(to: [KanbanCardDrag.type]) }
+        func dropEntered(info: DropInfo) { drag.target = nil }
+        func dropUpdated(info: DropInfo) -> DropProposal? { DropProposal(operation: .cancel) }
+        func dropExited(info: DropInfo) { drag = KanbanDragState() }
+        func performDrop(info: DropInfo) -> Bool {
+            drag = KanbanDragState()
+            return false
+        }
     }
 }
 
@@ -500,7 +586,8 @@ struct KanbanDropDelegate: DropDelegate {
         if drag.target != target { drag.target = target }
     }
 
-    func validateDrop(info: DropInfo) -> Bool { drag.card != nil }
+    /// Only a card of this board's own type may land; text from another app may not.
+    func validateDrop(info: DropInfo) -> Bool { info.hasItemsConforming(to: [KanbanCardDrag.type]) }
 
     func dropEntered(info: DropInfo) { update(info) }
 
@@ -514,10 +601,15 @@ struct KanbanDropDelegate: DropDelegate {
     }
 
     func performDrop(info: DropInfo) -> Bool {
-        guard let card = drag.card else { return false }
         let at = index(at: info.location)
-        send(.set(id: kanbanAction("drop:\(card)"), value: .string("\(column):\(at)")))
+        let column = column
+        let fallback = drag.card
+        let send = send
         drag = KanbanDragState()
+        KanbanCardDrag.card(in: info) { id in
+            guard let card = id ?? fallback else { return }
+            send(.set(id: kanbanAction("drop:\(card)"), value: .string("\(column):\(at)")))
+        }
         return true
     }
 }

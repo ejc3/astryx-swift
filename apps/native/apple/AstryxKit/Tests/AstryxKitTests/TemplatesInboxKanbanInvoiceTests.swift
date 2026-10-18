@@ -251,7 +251,7 @@ final class TemplatesInboxKanbanInvoiceTests: XCTestCase {
         compose.subject = "Re: Checkout returns 502 for EU customers"
         compose.body = "Thanks for the detail. We are looking at the EU gateway now."
         for (label, scheme) in [("light", ColorScheme.light), ("dark", .dark)] {
-            try write(try png(piece(InboxComposeForm(compose: compose, words: inbox.text.composer), theme, scheme, width: 560), width: 560, height: nil), "inbox.compose.\(label)")
+            try write(try png(piece(InboxComposeForm(compose: compose, words: inbox.text.composer, inert: inbox.inert), theme, scheme, width: 560), width: 560, height: nil), "inbox.compose.\(label)")
         }
 
         // inbox x3, kanban x2, invoice x3 (each four pictures), and the compose sheet in two schemes

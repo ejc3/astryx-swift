@@ -1,7 +1,10 @@
 import SwiftUI
 
-/// The line-item table: a header of sortable, filterable columns and a row per line. A row opens
-/// the line's details (the web's hover card) in a popover.
+/// The line-item table, drawn by hand where the system's `Table` cannot be used (an iPad or iPhone,
+/// where the page scrolls and the table has no height of its own; and drawn to an image): a header
+/// of sortable, filterable columns and a row per line. A row opens the line's details (the web's
+/// hover card) in a popover, or in a sheet on a compact width. On the Mac the lines are a real
+/// `Table` (`InvoiceSystemTable`).
 struct InvoiceTable: View {
     let model: InvoiceModel
     @Environment(\.ax) private var ax
@@ -12,13 +15,14 @@ struct InvoiceTable: View {
             InvoiceHeaderRow(model: model)
             InboxHairline()
             ForEach(model.rows) { row in
-                InvoiceLineRow(row: row, isOpen: Binding(
+                InvoiceLineRow(model: model, row: row, isOpen: Binding(
                     get: { detail == row.id },
                     set: { detail = $0 ? row.id : (detail == row.id ? nil : detail) }
                 ))
             }
         }
         .accessibilityElement(children: .contain)
+        .accessibilityLabel(model.words.tableLabel)
     }
 }
 
@@ -32,7 +36,7 @@ struct InvoiceHeaderRow: View {
 
     var body: some View {
         HStack(spacing: ax.space(3)) {
-            ForEach(InvoiceColumn.all) { column in
+            ForEach(InvoiceColumn.all(model)) { column in
                 cell(column)
                     .frame(width: column.width, alignment: column.trailing ? .trailing : .leading)
                     .frame(maxWidth: column.width == nil ? .infinity : nil, alignment: column.trailing ? .trailing : .leading)
@@ -68,11 +72,12 @@ struct InvoiceHeaderRow: View {
                 }
                 .frame(minHeight: 28)
                 .contentShape(Rectangle())
+                .inboxHitTarget(size: 28)
             }
             .buttonStyle(.plain)
             .accessibilityLabel(column.title)
-            .accessibilityValue(sort.map { $0.direction.rawValue } ?? "")
-            .accessibilityHint("Sorts the lines by \(column.title)")
+            .accessibilityValue(sort.map { model.spoken($0.direction) } ?? "")
+            .accessibilityHint("\(model.words.sortHint) \(column.title)")
             .accessibilityAddTraits(.isButton)
 
             if let filter = column.filter {
@@ -85,18 +90,21 @@ struct InvoiceHeaderRow: View {
                         .foregroundStyle(active ? ax.accent : ax.iconSecondary)
                         .frame(width: 26, height: 28)
                         .contentShape(Rectangle())
+                        .inboxHitTarget(size: 28)
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel("Filter \(column.title)")
-                .accessibilityValue(active ? "active" : "")
+                .accessibilityLabel("\(model.words.filterColumn) \(column.title)")
+                .accessibilityValue(active ? model.words.filterActive : "")
+                // A popover on an iPad; a sheet if the width is compact.
                 .popover(isPresented: Binding(get: { openFilter == filter }, set: { if !$0 && openFilter == filter { openFilter = nil } })) {
-                    VStack(alignment: .leading, spacing: ax.space(2)) {
-                        Text(column.title).font(ax.fontLabel).foregroundStyle(ax.text)
-                        InvoiceFilterEditor(model: model, filter: filter, title: column.title)
+                    InboxCompactSheet(title: column.title, done: model.words.done) {
+                        VStack(alignment: .leading, spacing: ax.space(2)) {
+                            Text(column.title).font(ax.fontLabel).foregroundStyle(ax.text)
+                            InvoiceFilterEditor(model: model, filter: filter, title: column.title)
+                        }
+                        .padding(ax.space(4))
+                        .frame(minWidth: 260, idealWidth: 280)
                     }
-                    .padding(ax.space(4))
-                    .frame(minWidth: 260, idealWidth: 280)
-                    .presentationCompactAdaptation(.popover)
                 }
             }
             if !column.trailing { Spacer(minLength: 0) }
@@ -106,6 +114,7 @@ struct InvoiceHeaderRow: View {
 
 /// One line of the table.
 struct InvoiceLineRow: View {
+    let model: InvoiceModel
     let row: InvoiceModel.Row
     @Binding var isOpen: Bool
     @Environment(\.ax) private var ax
@@ -121,7 +130,7 @@ struct InvoiceLineRow: View {
                     .foregroundStyle(ax.text)
                     .lineLimit(1)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                ForEach(Array(InvoiceColumn.all.dropFirst().enumerated()), id: \.offset) { _, column in
+                ForEach(Array(InvoiceColumn.all(model).dropFirst().enumerated()), id: \.offset) { _, column in
                     Text(value(for: column))
                         .font(column.key == "category" ? ax.fontBase : ax.fontBase.monospacedDigit())
                         .foregroundStyle(column.key == "category" ? ax.textSecondary : ax.text)
@@ -136,13 +145,14 @@ struct InvoiceLineRow: View {
         .background(RoundedRectangle(cornerRadius: ax.radiusInner, style: .continuous).fill(hovering ? ax.overlayHover : .clear).padding(.horizontal, -ax.space(2)))
         .onHover { hovering = $0 }
         .popover(isPresented: $isOpen, arrowEdge: .bottom) {
-            InvoiceLineDetail(row: row)
-                .presentationCompactAdaptation(.popover)
+            InboxCompactSheet(title: row.description, done: model.words.done) {
+                InvoiceLineDetail(model: model, row: row)
+            }
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(row.description)
         .accessibilityValue("\(row.category), \(row.card.billing), \(row.card.calculation), \(row.amount)")
-        .accessibilityHint("Shows the line's details")
+        .accessibilityHint(model.words.rowHint)
         .accessibilityAddTraits(.isButton)
     }
 
@@ -187,14 +197,16 @@ struct InvoiceCards: View {
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
+                // A popover on an iPad or a Mac; on an iPhone the same details are a sheet.
                 .popover(isPresented: Binding(get: { detail == row.id }, set: { if !$0 && detail == row.id { detail = nil } })) {
-                    InvoiceLineDetail(row: row)
-                        .presentationCompactAdaptation(.popover)
+                    InboxCompactSheet(title: row.description, done: model.words.done) {
+                        InvoiceLineDetail(model: model, row: row)
+                    }
                 }
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel(row.description)
                 .accessibilityValue("\(row.category), \(row.card.billing), \(row.card.calculation), \(row.amount)")
-                .accessibilityAddTraits(.isButton)
+                .accessibilityHint(model.words.rowHint)
                 InboxHairline()
             }
         }
@@ -202,12 +214,26 @@ struct InvoiceCards: View {
 }
 
 /// The details of one line (the web's hover card): category, billing, the sum, the amount, its
-/// share of the invoice, and a Dispute button.
+/// share of the invoice, and a Dispute button (disabled: the core has no such action).
 struct InvoiceLineDetail: View {
+    let model: InvoiceModel
     let row: InvoiceModel.Row
     @Environment(\.ax) private var ax
+    #if os(iOS)
+    @Environment(\.horizontalSizeClass) private var sizeClass
+    #endif
+
+    /// A popover is 300 points wide; as a sheet the details take the width they are given.
+    private var fixedWidth: CGFloat? {
+        #if os(iOS)
+        return sizeClass == .compact ? nil : 300
+        #else
+        return 300
+        #endif
+    }
 
     var body: some View {
+        let words = model.words.detail
         VStack(alignment: .leading, spacing: ax.space(3)) {
             Text(row.description)
                 .font(ax.heading(3))
@@ -215,20 +241,22 @@ struct InvoiceLineDetail: View {
                 .accessibilityAddTraits(.isHeader)
                 .fixedSize(horizontal: false, vertical: true)
             VStack(spacing: ax.space(2)) {
-                item("Category", row.card.category)
-                item("Billing", row.card.billing)
-                item("Calculation", row.card.calculation)
-                item("Amount", row.card.amount)
-                item("Share of invoice", row.card.share)
+                item(words.category, row.card.category)
+                item(words.billing, row.card.billing)
+                item(words.calculation, row.card.calculation)
+                item(words.amount, row.card.amount)
+                item(words.share, row.card.share)
             }
             Button {
             } label: {
-                Text("Dispute this line").frame(maxWidth: .infinity)
+                Text(model.words.dispute).frame(maxWidth: .infinity)
             }
             .buttonStyle(AXButtonStyle(variant: .secondary, ax: ax))
+            .disabled(model.isInert("dispute"))
         }
         .padding(ax.space(4))
-        .frame(width: 300)
+        .frame(width: fixedWidth)
+        .frame(maxWidth: fixedWidth == nil ? .infinity : nil, alignment: .topLeading)
     }
 
     private func item(_ label: String, _ value: String) -> some View {
@@ -261,11 +289,11 @@ struct InvoiceFilterEditor: View {
         VStack(alignment: .leading, spacing: ax.space(2)) {
             if filter == "category" { categoryList } else { field }
             if current != nil {
-                Button("Clear filter") { send(.press(id: invoiceAction("unfilter:\(filter)"))) }
+                Button(model.words.clearFilter) { send(.press(id: invoiceAction("unfilter:\(filter)"))) }
                     .buttonStyle(.plain)
                     .font(ax.fontLabel)
                     .foregroundStyle(ax.accent)
-                    .frame(minHeight: 28)
+                    .frame(minHeight: InboxTarget.side)
             }
         }
         .onAppear { text = current?.text ?? "" }
@@ -283,7 +311,7 @@ struct InvoiceFilterEditor: View {
                         Spacer(minLength: ax.space(3))
                         if selected { Image(systemName: "checkmark").foregroundStyle(ax.accent).font(.system(size: 13, weight: .semibold)) }
                     }
-                    .frame(minHeight: 32)
+                    .frame(minHeight: max(32, InboxTarget.side))
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
@@ -294,7 +322,7 @@ struct InvoiceFilterEditor: View {
 
     private var field: some View {
         let shape = RoundedRectangle(cornerRadius: ax.radiusElement, style: .continuous)
-        let prompt = filter == "quantity" ? "Quantity is\u{2026}" : "\(title) contains\u{2026}"
+        let prompt = filter == "quantity" ? model.words.quantityPrompt : "\(title) \(model.words.containsPrompt)"
         return Group {
             if isStatic {
                 Text(text.isEmpty ? prompt : text).foregroundStyle(text.isEmpty ? ax.textDisabled : ax.text)
@@ -350,3 +378,104 @@ struct InvoiceFilterEditor: View {
         }
     }
 }
+
+#if os(macOS)
+/// The lines as the system's `Table` on the Mac: VoiceOver walks it by row and column and says what
+/// a click on a header sorted, Tab and the arrow keys move through the rows, and the Return key or a
+/// double click opens a line's details. The core sorts and filters; this only asks. A click on a
+/// sorted header turns it round, as every Mac table does, so the web's third state (off) is the
+/// Sort menu's "None".
+struct InvoiceSystemTable: View {
+    let model: InvoiceModel
+    @Environment(\.ax) private var ax
+    @Environment(\.axSend) private var send
+    @State private var selection: String?
+    @State private var detail: String?
+
+    private typealias Row = InvoiceModel.Row
+
+    /// The room the table is given: its header and one line per row. The table does not size
+    /// itself inside a scrolling page.
+    private var height: CGFloat { Self.headerHeight + CGFloat(model.rows.count) * rowHeight + 4 }
+    static let headerHeight: CGFloat = 28
+    /// A line of the base text and the table's padding (25 points at 14-point text, measured).
+    private var rowHeight: CGFloat { (ax.fontSize("font-size-base", 14) * 1.2).rounded(.up) + 8 }
+
+    private func title(_ key: String) -> String { model.columns.first { $0.key == key }?.title ?? key }
+
+    /// The column each key path sorts, as the core names them.
+    private static let keys: [(key: String, path: PartialKeyPath<Row>)] = [
+        ("description", \Row.description),
+        ("category", \Row.category),
+        ("quantity", \Row.quantity),
+        ("unitPrice", \Row.rate),
+        ("amount", \Row.amount),
+    ]
+
+    private var order: Binding<[KeyPathComparator<Row>]> {
+        Binding(
+            get: {
+                guard let sort = model.sort.first else { return [] }
+                let order: SortOrder = sort.direction == .ascending ? .forward : .reverse
+                switch sort.sortKey {
+                case "description": return [KeyPathComparator(\Row.description, order: order)]
+                case "category": return [KeyPathComparator(\Row.category, order: order)]
+                case "quantity": return [KeyPathComparator(\Row.quantity, order: order)]
+                case "unitPrice": return [KeyPathComparator(\Row.rate, order: order)]
+                case "amount": return [KeyPathComparator(\Row.amount, order: order)]
+                default: return []
+                }
+            },
+            set: { next in
+                guard let first = next.first, let key = Self.keys.first(where: { $0.path == first.keyPath })?.key else {
+                    send(.set(id: invoiceAction("sort"), value: .string("")))
+                    return
+                }
+                let direction: InvoiceModel.Direction = first.order == .forward ? .ascending : .descending
+                send(.set(id: invoiceAction("sort"), value: .string("\(key):\(direction.rawValue)")))
+            }
+        )
+    }
+
+    var body: some View {
+        Table(model.rows, selection: $selection, sortOrder: order) {
+            TableColumn(title("description"), value: \.description) { row in
+                Text(row.description).font(ax.fontBase).foregroundStyle(ax.text).lineLimit(1)
+            }
+            TableColumn(title("category"), value: \.category) { row in
+                Text(row.category).font(ax.fontBase).foregroundStyle(ax.textSecondary).lineLimit(1)
+            }
+            .width(min: 90, ideal: 150, max: 220)
+            TableColumn(title("quantity"), value: \.quantity) { row in
+                Text(row.quantity).font(ax.fontBase.monospacedDigit()).foregroundStyle(ax.text)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+            }
+            .width(min: 50, ideal: 72, max: 100)
+            TableColumn(title("unitPrice"), value: \.rate) { row in
+                Text(row.rate).font(ax.fontBase.monospacedDigit()).foregroundStyle(ax.text)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+            }
+            .width(min: 70, ideal: 104, max: 140)
+            TableColumn(title("amount"), value: \.amount) { row in
+                Text(row.amount).font(ax.fontBase.monospacedDigit()).foregroundStyle(ax.text)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+                    .popover(
+                        isPresented: Binding(get: { detail == row.id }, set: { if !$0 && detail == row.id { detail = nil } }),
+                        arrowEdge: .bottom
+                    ) {
+                        InvoiceLineDetail(model: model, row: row)
+                    }
+            }
+            .width(min: 90, ideal: 132, max: 180)
+        }
+        .tableStyle(.inset)
+        .scrollContentBackground(.hidden)
+        .frame(height: height)
+        .contextMenu(forSelectionType: String.self) { _ in
+        } primaryAction: { ids in
+            detail = ids.first
+        }
+        .accessibilityLabel(model.words.tableLabel)
+    }
+}
+#endif

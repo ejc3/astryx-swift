@@ -49,3 +49,18 @@ test("the view is plain JSON, and Reload changes nothing", () => {
   assert.deepEqual(JSON.parse(JSON.stringify(dashboard.view(s, NOW))), dashboard.view(s, NOW));
   assert.equal(dashboard.reduce(s, { type: "press", id: "reload" }, NOW), s);
 });
+
+test("a metric says which way it moved and whether that is good news; a falling bounce rate is", () => {
+  const m = dashboard.view(dashboard.initial(NOW), NOW).metrics;
+  assert.deepEqual(m.map((x) => [x.direction, x.favorable]), [["up", true], ["up", true], ["down", false], ["down", true]]);
+  assert.equal(m[3]!.changeSpoken, "down 8.7%, better");
+  assert.equal(m[2]!.changeSpoken, "down 14.3%, worse");
+  assert.match(m[0]!.trend, /^Trend starts at 48, ranges from 10 to 62 and ends at 62 over 30 days$/);
+});
+
+test("the charts have summaries in words, and the controls with no action are inert", () => {
+  const v = dashboard.view(dashboard.initial(NOW), NOW);
+  assert.match(v.activeUsers.summary, /^All Users starts at 116, ranges from 48 to 120 and ends at 120\. Desktop /);
+  assert.equal(v.demographics.cards[0]!.summary, "Region: NORAM 38.00%, EMEA 28.00%, APAC 22.00%, LATAM 8.00%, Other 4.00%");
+  assert.deepEqual(v.inert, ["viewMore", "tableLink"]);
+});

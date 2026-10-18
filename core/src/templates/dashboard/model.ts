@@ -186,9 +186,55 @@ export type DashboardState = {
   events: readonly EventRow[];
 };
 
+/** Words only assistive technology reads: chart summaries, axis titles and the change's meaning. */
+export type DashboardWords = {
+  timeTitle: string;
+  usersTitle: string;
+  trendTitle: string;
+  trendAxisX: string;
+  trendAxisY: string;
+  shareTitle: string;
+  shareAxisX: string;
+  up: string;
+  down: string;
+  favorable: string;
+  unfavorable: string;
+};
+
+const WORDS: DashboardWords = {
+  timeTitle: "Time",
+  usersTitle: "Active users",
+  trendTitle: "Trend",
+  trendAxisX: "Day",
+  trendAxisY: "Value",
+  shareTitle: "Share",
+  shareAxisX: "Group",
+  up: "up",
+  down: "down",
+  favorable: "better",
+  unfavorable: "worse",
+};
+
+/** Ids of the controls with no action behind them (a host draws them disabled). */
+const INERT = ["viewMore", "tableLink"];
+
+/** A metric where a fall is the good news. */
+const LOWER_IS_BETTER: readonly string[] = ["Bounce Rate"];
+
+function describeSeries(name: string, values: readonly number[]): string {
+  const first = values[0]!;
+  const last = values[values.length - 1]!;
+  return `${name} starts at ${first}, ranges from ${Math.min(...values)} to ${Math.max(...values)} and ends at ${last}`;
+}
+
 export type DashboardView = {
+  words: DashboardWords;
+  /** Ids of the controls the core has no action for; hosts draw these disabled. */
+  inert: string[];
   activeUsers: {
     title: string;
+    /** What the chart says, in words: for the audio graph and for VoiceOver. */
+    summary: string;
     reloadLabel: string;
     points: { hour: number; label: string; allUsers: number; desktop: number; mobile: number }[];
     series: { key: "allUsers" | "desktop" | "mobile"; name: string; color: DataColor }[];
@@ -199,11 +245,25 @@ export type DashboardView = {
     yTicks: number[];
   };
   /** Four cards; the page lays them out two to a row. */
-  metrics: { label: string; value: string; change: string; positive: boolean; caption: string; sparkline: number[] }[];
+  metrics: {
+    label: string;
+    value: string;
+    change: string;
+    positive: boolean;
+    caption: string;
+    sparkline: number[];
+    /** Which way the figure moved. `positive` is the web's color; `favorable` is whether that move is good news. */
+    direction: "up" | "down";
+    favorable: boolean;
+    /** The change, spoken: "down 8.7%, better". */
+    changeSpoken: string;
+    /** The sparkline, in words. */
+    trend: string;
+  }[];
   demographics: {
     title: string;
     moreLabel: string;
-    cards: { title: string; segments: { label: string; value: number; color: DataColor; /** Its share of the bar, to two decimals, without the percent sign: "38.00". */ share: string }[] }[];
+    cards: { title: string; summary: string; segments: { label: string; value: number; color: DataColor; /** Its share of the bar, to two decimals, without the percent sign: "38.00". */ share: string }[] }[];
   };
   engagement: {
     title: string;
@@ -235,6 +295,7 @@ function segmentCard(title: string, data: readonly Segment[]): DashboardView["de
   const total = data.reduce((sum, d) => sum + d.value, 0);
   return {
     title,
+    summary: `${title}: ${data.map((d) => `${d.label} ${((d.value / total) * 100).toFixed(2)}%`).join(", ")}`,
     segments: data.map((d) => ({ label: d.label, value: d.value, color: d.color, share: ((d.value / total) * 100).toFixed(2) })),
   };
 }
@@ -249,8 +310,15 @@ export const dashboard: TemplateModule<DashboardState, DashboardView> = {
     const maxViews = Math.max(...s.pages.map((d) => d.views));
     const maxCount = Math.max(...s.events.map((d) => d.count));
     return {
+      words: WORDS,
+      inert: INERT,
       activeUsers: {
         title: "Active users",
+        summary: [
+          describeSeries("All Users", s.points.map((p) => p[1])),
+          describeSeries("Desktop", s.points.map((p) => p[2])),
+          describeSeries("Mobile", s.points.map((p) => p[3])),
+        ].join(". "),
         reloadLabel: "Reload",
         points: s.points.map((p, hour) => ({ hour, label: p[0], allUsers: p[1], desktop: p[2], mobile: p[3] })),
         series: [
@@ -263,7 +331,20 @@ export const dashboard: TemplateModule<DashboardState, DashboardView> = {
         yDomain: [0, 120],
         yTicks: [0, 20, 40, 60, 80, 100, 120],
       },
-      metrics: s.metrics.map((m, i) => ({ ...m, caption: "Last 30 days vs. Previous", sparkline: [...s.sparklines[i]!] })),
+      metrics: s.metrics.map((m, i) => {
+        const direction = m.change.startsWith("-") ? "down" : "up";
+        const favorable = LOWER_IS_BETTER.includes(m.label) ? direction === "down" : direction === "up";
+        const spark = s.sparklines[i]!;
+        return {
+          ...m,
+          caption: "Last 30 days vs. Previous",
+          sparkline: [...spark],
+          direction,
+          favorable,
+          changeSpoken: `${WORDS[direction]} ${m.change.replace(/^[-+]/, "")}, ${favorable ? WORDS.favorable : WORDS.unfavorable}`,
+          trend: `${describeSeries(WORDS.trendTitle, spark)} over ${spark.length} days`,
+        };
+      }),
       demographics: {
         title: "Demographics",
         moreLabel: "View more",

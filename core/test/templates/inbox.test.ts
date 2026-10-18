@@ -182,3 +182,27 @@ test("the view is plain JSON", () => {
   const s = run(desktop(start()), press("open:c-05"), press("reply"));
   assert.deepEqual(JSON.parse(JSON.stringify(view(s))), view(s));
 });
+
+test("the view echoes the measured widths, so a host can tell when another host reported last", () => {
+  assert.deepEqual(view(start()).mode.measured, { surface: 0, list: 0 });
+  assert.deepEqual(view(desktop(start())).mode.measured, { surface: 1440, list: 480 });
+  const narrow = view(run(start(), set("surface", 1100), set("list", 391)));
+  assert.deepEqual([narrow.mode.isStacked, narrow.mode.isTight, narrow.mode.measured.list], [true, true, 391]);
+});
+
+test("a reply starts clean; typed content makes the draft dirty", () => {
+  const reply = run(start(), press("reply"));
+  assert.equal(view(reply).compose.isDirty, false);
+  assert.equal(view(run(reply, set("body", "Thanks"))).compose.isDirty, true);
+  assert.equal(view(run(reply, set("body", "   "))).compose.isDirty, false);
+  const fresh = run(start(), press("compose"));
+  assert.equal(view(fresh).compose.isDirty, false);
+  assert.equal(view(run(fresh, set("subject", "Hi"))).compose.isDirty, true);
+});
+
+test("the controls with no action behind them are listed as inert", () => {
+  const v = view(start());
+  for (const id of ["refresh", "archive", "move", "delete", "send", "attach", "link", "image", "emoji"]) assert.ok(v.inert.includes(id), id);
+  assert.ok(!v.inert.includes("reply"));
+  assert.ok(!v.inert.includes("compose"));
+});

@@ -29,6 +29,27 @@ extension InboxModel.TokenColor {
     }
 }
 
+/// The smallest hit target of a control: 44 points on iOS (HIG Accessibility and Buttons), 28 on the Mac.
+enum InboxTarget {
+    #if os(iOS)
+    static let side: CGFloat = 44
+    #else
+    static let side: CGFloat = 28
+    #endif
+
+    /// How far a small inline glyph's hit area grows on each side to reach `side`.
+    static func grow(from size: CGFloat) -> CGFloat { max((side - size) / 2, 0) }
+}
+
+extension View {
+    /// Grows the hit area of a small inline control (a chip's remove mark, an info glyph) to the
+    /// platform's minimum target without moving anything around it. `size` is the control's own side.
+    func inboxHitTarget(size: CGFloat) -> some View {
+        let grow = InboxTarget.grow(from: size)
+        return padding(grow).contentShape(Rectangle()).padding(-grow)
+    }
+}
+
 /// The glyph of a row or thread action id.
 func inboxSymbol(_ id: String) -> String {
     switch id {
@@ -125,23 +146,26 @@ struct InboxClippedChips: View {
     }
 }
 
-/// A square ghost icon control, 28 points at the base size (the web's small icon button).
+/// A square ghost icon control: 30 points on the Mac, 44 on iOS (the web's small icon button is 28).
+/// Disable it with `.disabled` where the core has no action behind it.
 struct InboxIconButton: View {
     let symbol: String
     let label: String
     var help: String? = nil
     var action: (() -> Void)? = nil
     @Environment(\.ax) private var ax
+    @Environment(\.isEnabled) private var isEnabled
     @State private var hovering = false
 
     var body: some View {
-        let side = 30 * min(ax.scale, 1.4)
+        let side = max(30 * min(ax.scale, 1.4), InboxTarget.side)
         Button {
             action?()
         } label: {
             Image(systemName: symbol)
                 .font(.system(size: ax.fontSize("font-size-base", 14), weight: .regular))
                 .foregroundStyle(ax.iconSecondary)
+                .opacity(isEnabled ? 1 : 0.4)
                 .frame(width: side, height: side)
                 .background(RoundedRectangle(cornerRadius: ax.radiusElement, style: .continuous).fill(hovering ? ax.overlayHover : .clear))
                 .contentShape(Rectangle())
@@ -163,6 +187,8 @@ struct InboxHairline: View {
 struct InboxCheckbox: View {
     let checked: Bool
     let label: String
+    let selected: String
+    let notSelected: String
     let action: () -> Void
 
     var body: some View {
@@ -170,10 +196,44 @@ struct InboxCheckbox: View {
             AXCheckmark(checked: checked)
                 .frame(minWidth: 28, minHeight: 28)
                 .contentShape(Rectangle())
+                .inboxHitTarget(size: 28)
         }
         .buttonStyle(.plain)
         .accessibilityLabel(label)
-        .accessibilityValue(checked ? "selected" : "not selected")
+        .accessibilityValue(checked ? selected : notSelected)
         .accessibilityAddTraits(checked ? [.isSelected] : [])
+    }
+}
+
+/// The content of a popover that becomes a sheet on a compact width (an iPhone): there it gets a
+/// title bar with a Done button and medium and large heights, since a sheet has no arrow to tap
+/// away. Where the popover stays a popover (iPad, Mac) the content is shown as it is.
+struct InboxCompactSheet<Content: View>: View {
+    let title: String
+    let done: String
+    @ViewBuilder var content: Content
+    #if os(iOS)
+    @Environment(\.horizontalSizeClass) private var sizeClass
+    @Environment(\.dismiss) private var dismiss
+    #endif
+
+    var body: some View {
+        #if os(iOS)
+        if sizeClass == .compact {
+            NavigationStack {
+                content
+                    .navigationTitle(title)
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .confirmationAction) { Button(done) { dismiss() } }
+                    }
+            }
+            .presentationDetents([.medium, .large])
+        } else {
+            content
+        }
+        #else
+        content
+        #endif
     }
 }

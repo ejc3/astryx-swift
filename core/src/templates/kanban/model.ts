@@ -200,7 +200,47 @@ export type ColumnView = {
   cards: CardView[];
 };
 
+/** The words the board's controls and spoken labels use; the web draws its own copies. */
+export type KanbanWords = {
+  boardActions: string;
+  sort: string;
+  filter: string;
+  search: string;
+  addTask: string;
+  sprint: string;
+  workItemActions: string;
+  open: string;
+  assignToMe: string;
+  /** Spoken after a column's title on its colored dot ("To-do status"). */
+  status: string;
+  /** Closes a column's tip when it is a sheet. */
+  done: string;
+  /** Tells a VoiceOver user that a drop landed ("Moved to Done"); the column's title follows. */
+  movedTo: string;
+};
+
+const WORDS: KanbanWords = {
+  boardActions: "Board actions",
+  sort: "Sort",
+  filter: "Filter",
+  search: "Search",
+  addTask: "Add task",
+  sprint: "Sprint",
+  workItemActions: "Work item actions",
+  open: "Open",
+  assignToMe: "Assign to me",
+  status: "status",
+  done: "Done",
+  movedTo: "Moved to",
+};
+
+/** Ids of the controls with no action behind them (a host draws them disabled). */
+const INERT = ["sort", "filter", "search", "addTask", "open", "assignToMe"];
+
 export type KanbanView = {
+  words: KanbanWords;
+  /** Ids of the controls the core has no action for; hosts draw these disabled. */
+  inert: string[];
   title: string;
   /** The number of cards on the board. */
   total: number;
@@ -260,6 +300,8 @@ export const kanban: TemplateModule<KanbanState, KanbanView> = {
   },
   view(s) {
     return {
+      words: WORDS,
+      inert: INERT,
       title: "Sprint Board",
       total: s.items.length,
       sprint: s.sprint,

@@ -151,7 +151,91 @@ export type InvoiceRowView = {
   card: { category: string; billing: string; calculation: string; amount: string; share: string };
 };
 
+/** One column of the table: its key, its title, and the filter it offers (named after the filter's column key). */
+export type InvoiceColumnView = { key: SortKey; title: string; filter: FilterColumn | null };
+
+/** The words the table's controls and spoken labels use; the web draws its own copies. */
+export type InvoiceWords = {
+  downloadPdf: string;
+  searchPlaceholder: string;
+  searchLabel: string;
+  clearSearch: string;
+  basisLabel: string;
+  sort: string;
+  sortNone: string;
+  filter: string;
+  filterActive: string;
+  /** Spoken before a column's title on its funnel ("Filter Category"). */
+  filterColumn: string;
+  /** "Remove filter" before a column's title on a chip's remove control. */
+  removeFilter: string;
+  clearFilter: string;
+  clearFilters: string;
+  clearAllFilters: string;
+  done: string;
+  dispute: string;
+  rowHint: string;
+  /** Sort hint: "Sorts the lines by" before the column's title. */
+  sortHint: string;
+  /** What a column that is sorted says, spoken. */
+  ascending: string;
+  descending: string;
+  /** Announced when the sort changes: "Sorted by" + title + direction. */
+  sortedBy: string;
+  sortCleared: string;
+  /** Prompts of the filter fields: "<title> contains…", and the quantity's. */
+  containsPrompt: string;
+  quantityPrompt: string;
+  detail: { category: string; billing: string; calculation: string; amount: string; share: string };
+  /** The table's own accessibility label. */
+  tableLabel: string;
+};
+
+const WORDS: InvoiceWords = {
+  downloadPdf: "Download PDF",
+  searchPlaceholder: "Search…",
+  searchLabel: "Search line items",
+  clearSearch: "Clear search",
+  basisLabel: "Filter by billing basis",
+  sort: "Sort",
+  sortNone: "None",
+  filter: "Filter",
+  filterActive: "active",
+  filterColumn: "Filter",
+  removeFilter: "Remove filter",
+  clearFilter: "Clear filter",
+  clearFilters: "Clear filters",
+  clearAllFilters: "Clear all filters",
+  done: "Done",
+  dispute: "Dispute this line",
+  rowHint: "Shows the line's details",
+  sortHint: "Sorts the lines by",
+  ascending: "ascending",
+  descending: "descending",
+  sortedBy: "Sorted by",
+  sortCleared: "Sort cleared",
+  containsPrompt: "contains…",
+  quantityPrompt: "Quantity is…",
+  detail: { category: "Category", billing: "Billing", calculation: "Calculation", amount: "Amount", share: "Share of invoice" },
+  tableLabel: "Invoice lines",
+};
+
+const COLUMNS: readonly InvoiceColumnView[] = [
+  { key: "description", title: "Description", filter: "description" },
+  { key: "category", title: "Category", filter: "category" },
+  { key: "quantity", title: "Qty", filter: "quantity" },
+  { key: "unitPrice", title: "Rate", filter: null },
+  { key: "amount", title: "Amount", filter: null },
+];
+
+/** Ids of the controls with no action behind them (a host draws them disabled). */
+const INERT = ["downloadPdf", "dispute"];
+
 export type InvoiceView = {
+  words: InvoiceWords;
+  columns: InvoiceColumnView[];
+  /** Ids of the controls the core has no action for; hosts draw these disabled. */
+  inert: string[];
   title: string;
   details: { label: string; value: string }[];
   basisFilters: { value: string; label: string }[];
@@ -242,6 +326,9 @@ export const invoice: TemplateModule<InvoiceState, InvoiceView> = {
     // Filter presence, not row count: a filter that matches every line still makes the totals a view.
     const activeFilterCount = (s.query.trim() === "" ? 0 : 1) + Object.keys(s.filters).length + (s.basis === "all" ? 0 : 1);
     return {
+      words: WORDS,
+      columns: COLUMNS.map((c) => ({ ...c })),
+      inert: INERT,
       title: "Invoice INV-2043",
       details: INVOICE_DETAILS.map((d) => ({ ...d })),
       basisFilters: BASIS_FILTERS.map((f) => ({ ...f })),

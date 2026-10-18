@@ -26,6 +26,11 @@
  *   press discard          empty the draft and close the sheet
  *   set  surface | list    widths in px the host measured (0 = not measured yet)
  *   set  touch             true when the primary pointer cannot hover
+ *
+ * Controls the core has no action for (Refresh, archive, move, delete, Send, the composer's
+ * tools) are listed in the view's `inert`: a host draws them disabled. `mode.measured` echoes
+ * the widths the core holds, so a host that is not the last to have reported them (the web
+ * drawing shares this state) can tell and report again.
  */
 import { grouped } from "../../format.ts";
 import type { TemplateAction, TemplateModule } from "../types.ts";
@@ -82,6 +87,8 @@ const ROW_ACTIONS: { id: ActionId; label: string }[] = [
   { id: "delete", label: "Delete" },
   { id: "reply", label: "Reply" },
 ];
+/** Ids of the controls whose action the core does not have, so a host shows them disabled. */
+const INERT = ["refresh", "archive", "move", "delete", "send", "attach", "link", "image", "emoji"];
 const THREAD_ACTIONS = ROW_ACTIONS.filter((a) => a.id !== "reply");
 const NARROW_ROW_ACTIONS = ROW_ACTIONS.filter((a) => a.id === "archive" || a.id === "delete");
 
@@ -108,9 +115,28 @@ const TEXT = {
   unreadStatus: "Unread",
   unreadSuffix: " unread",
   hasAttachments: "Has attachments",
+  /** Spoken state of a row's tick box. */
+  selected: "selected",
+  notSelected: "not selected",
   empty: { title: "Nothing here", description: "No conversations in this category.", action: "Go to Inbox" },
   columns: { conversation: "Conversation", from: "From", subject: "Subject", tags: "Tags", received: "Received" },
-  pane: { label: "Conversation", resizeLabel: "Resize conversation pane", back: "Inbox", close: "Close conversation", closeTooltip: "Close", reply: "Reply", replyAll: "Reply all" },
+  pane: {
+    label: "Conversation",
+    resizeLabel: "Resize conversation pane",
+    /** The unit the resize handle's value is spoken in ("440 points"). */
+    resizeUnit: "points",
+    back: "Inbox",
+    close: "Close conversation",
+    closeTooltip: "Close",
+    reply: "Reply",
+    replyAll: "Reply all",
+    previous: "Previous",
+    next: "Next",
+    expanded: "expanded",
+    collapsed: "collapsed",
+    expandHint: "Expands the message",
+    collapseHint: "Collapses the message",
+  },
   composer: {
     sheetLabel: "New message",
     toolbarLabel: "Message",
@@ -126,6 +152,14 @@ const TEXT = {
     actionsLabel: "Message actions",
     send: "Send",
     discard: "Discard draft",
+    cancel: "Cancel",
+    /** The sheet that asks what to do with a draft that has typed content, when it is cancelled. */
+    discardTitle: "Discard this draft?",
+    discardAction: "Discard Draft",
+    saveDraft: "Save Draft",
+    keepEditing: "Keep Editing",
+    /** Spoken before a recipient's name on its remove control ("Remove Priya Raman"). */
+    remove: "Remove",
     tools: [
       { id: "attach", label: "Attach files" },
       { id: "link", label: "Insert link" },
@@ -421,6 +455,8 @@ export type ComposeView = {
   body: string;
   /** Everybody the inbox has heard from, offered as recipients. */
   directory: Recipient[];
+  /** Whether the draft holds typed content that cancelling would lose. */
+  isDirty: boolean;
 };
 
 export type InboxView = {
@@ -438,7 +474,17 @@ export type InboxView = {
   selectionLabel: string[];
   bulkActions: { id: ActionId; label: string }[];
   openId: string | null;
-  mode: { isSingleSurface: boolean; isPaneFullWidth: boolean; isStacked: boolean; isTight: boolean; isTouch: boolean };
+  mode: {
+    isSingleSurface: boolean;
+    isPaneFullWidth: boolean;
+    isStacked: boolean;
+    isTight: boolean;
+    isTouch: boolean;
+    /** The widths the core holds (0 = not measured); a host compares them with its own. */
+    measured: { surface: number; list: number };
+  };
+  /** Ids of the controls with no action behind them; hosts draw these disabled. */
+  inert: string[];
   /** Pixel width of the trailing "Received" column. */
   receivedWidth: number;
   pane: PaneView | null;
@@ -453,6 +499,12 @@ function priorityToken(priority: Priority): TokenView | null {
 
 function actionViews(actions: { id: ActionId; label: string }[], subject: string): ActionView[] {
   return actions.map((a) => ({ id: a.id, label: a.label, ariaLabel: `${a.label} — ${subject}` }));
+}
+
+/** A reply opens with its recipients and subject filled in; only what was typed since counts. */
+function isDirty(c: ComposeState): boolean {
+  if (c.body.trim() !== "" || c.cc.length > 0 || c.bcc.length > 0) return true;
+  return c.conversationId === null && (c.recipients.length > 0 || c.subject.trim() !== "");
 }
 
 function view(s: InboxState): InboxView {
@@ -519,7 +571,15 @@ function view(s: InboxState): InboxView {
     selectionLabel: [String(selectedCount), " ", selectedCount === 1 ? "conversation" : "conversations", " ", "selected"],
     bulkActions: THREAD_ACTIONS,
     openId: d.openId,
-    mode: { isSingleSurface: d.isSingleSurface, isPaneFullWidth: d.isPaneFullWidth, isStacked: d.isStacked, isTight: d.isTight, isTouch: s.layout.touch },
+    mode: {
+      isSingleSurface: d.isSingleSurface,
+      isPaneFullWidth: d.isPaneFullWidth,
+      isStacked: d.isStacked,
+      isTight: d.isTight,
+      isTouch: s.layout.touch,
+      measured: { surface: s.layout.surface, list: s.layout.list },
+    },
+    inert: INERT,
     receivedWidth: trailingWidth(rowActions.length, s.layout.touch),
     pane,
     compose: {
@@ -532,6 +592,7 @@ function view(s: InboxState): InboxView {
       subject: c.subject,
       body: c.body,
       directory: s.conversations.map((item) => ({ id: item.senderEmail, label: item.sender })),
+      isDirty: isDirty(c),
     },
   };
 }

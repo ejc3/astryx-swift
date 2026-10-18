@@ -31,9 +31,9 @@ struct InboxScreen: View {
     /// The pane's width once the handle has moved it; until then two thirds of the surface.
     @State private var movedPane: CGFloat?
     @State private var paneAtDragStart: CGFloat?
-    @State private var sentSurface = -1
-    @State private var sentList = -1
-    @State private var sentTouch: Bool?
+    /// How many times in a row this view has had to tell the core its widths again because
+    /// something else (the web drawing shares the core's state) reported different ones.
+    @State private var corrections = 0
 
     private let listMin: CGFloat = 300
     private let paneMin: CGFloat = 440
@@ -41,8 +41,14 @@ struct InboxScreen: View {
 
     // MARK: Layout facts
 
-    private var sideBySide: Bool { !model.mode.isSingleSurface && model.pane != nil }
     private var inner: CGFloat { max(width - 2, 0) }
+
+    /// Whether the list and the pane both fit at their smallest. The core decides the mode from
+    /// the widths it was last told; this view still never draws the two where they do not fit.
+    private var fits: Bool { inner >= listMin + paneMin + handleWidth }
+    private var sideBySide: Bool { !model.mode.isSingleSurface && model.pane != nil && fits }
+    /// The open thread alone: the core's single surface, or the core thinks there is room and there is not.
+    private var paneAlone: Bool { model.pane != nil && (model.mode.isPaneFullWidth || (!model.mode.isSingleSurface && !fits)) }
 
     private var paneWidth: CGFloat {
         let widest = max(paneMin, inner - listMin - handleWidth)
@@ -70,37 +76,44 @@ struct InboxScreen: View {
                 .overlay(RoundedRectangle(cornerRadius: ax.radiusContainer, style: .continuous).strokeBorder(ax.border, lineWidth: 1))
         }
         .frame(maxWidth: .infinity, alignment: .topLeading)
-        .onChange(of: width, initial: true) { report() }
-        .onChange(of: listWidth, initial: true) { report() }
+        .onChange(of: width, initial: true) { corrections = 0; report() }
+        .onChange(of: listWidth, initial: true) { corrections = 0; report() }
+        .onChange(of: model.mode.measured) { report() }
+        .onChange(of: model.mode.isTouch) { report() }
         .sheet(isPresented: Binding(
             get: { model.compose.isOpen },
             set: { send(.set(id: inboxAction("composeOpen"), value: .bool($0))) }
         )) {
-            InboxComposeForm(compose: model.compose, words: model.text.composer)
+            InboxComposeForm(compose: model.compose, words: model.text.composer, inert: model.inert)
                 #if os(macOS)
                 .frame(minWidth: 560, minHeight: 520)
                 #endif
         }
     }
 
-    /// The page tells the core what it has measured; the core decides what that means.
+    /// The page tells the core what it has measured; the core decides what that means. The core
+    /// echoes the widths it holds, so a width that differs (another drawing reported last) is
+    /// sent again, a few times at most per size.
     private func report() {
+        guard corrections < 4 else { return }
+        let held = model.mode.measured
         let surface = Int(width.rounded())
-        if surface != sentSurface {
-            sentSurface = surface
-            send(.set(id: inboxAction("surface"), value: .number(Double(surface))))
-        }
         let list = Int(listWidth.rounded())
-        if list != sentList {
-            sentList = list
+        var sent = false
+        if held.surface != surface {
+            send(.set(id: inboxAction("surface"), value: .number(Double(surface))))
+            sent = true
+        }
+        if held.list != list {
             send(.set(id: inboxAction("list"), value: .number(Double(list))))
+            sent = true
         }
-        if sentTouch != isTouchDevice {
-            sentTouch = isTouchDevice
-            if model.mode.isTouch != isTouchDevice {
-                send(.set(id: inboxAction("touch"), value: .bool(isTouchDevice)))
-            }
+        if model.mode.isTouch != isTouchDevice {
+            send(.set(id: inboxAction("touch"), value: .bool(isTouchDevice)))
+            sent = true
         }
+        guard sent else { corrections = 0; return }
+        corrections += 1
     }
 
     // MARK: Masthead
@@ -114,6 +127,7 @@ struct InboxScreen: View {
             Label(model.text.refresh, systemImage: "arrow.clockwise")
         }
         .buttonStyle(AXButtonStyle(variant: .ghost, ax: ax))
+        .disabled(model.isInert("refresh"))
         let compose = Button {
             send(.press(id: inboxAction("compose")))
         } label: {
@@ -134,23 +148,27 @@ struct InboxScreen: View {
 
     @ViewBuilder
     private var surface: some View {
-        if model.mode.isPaneFullWidth, let pane = model.pane {
+        if paneAlone, let pane = model.pane {
             InboxPaneView(model: model, pane: pane, fullWidth: true)
                 .environment(\.axWidth, inner)
+                .clipped()
         } else if sideBySide, let pane = model.pane {
             HStack(spacing: 0) {
                 InboxListColumn(model: model)
                     .environment(\.axWidth, listWidth)
                     .frame(width: listWidth)
+                    .clipped()
                 handle
                 InboxPaneView(model: model, pane: pane, fullWidth: false)
                     .environment(\.axWidth, paneWidth)
                     .frame(width: paneWidth)
+                    .clipped()
                     .background(ax.card)
             }
         } else {
             InboxListColumn(model: model)
                 .environment(\.axWidth, inner)
+                .clipped()
         }
     }
 
@@ -177,7 +195,7 @@ struct InboxScreen: View {
             #endif
             .accessibilityElement()
             .accessibilityLabel(model.text.pane.resizeLabel)
-            .accessibilityValue("\(Int(paneWidth)) points")
+            .accessibilityValue("\(Int(paneWidth)) \(model.text.pane.resizeUnit)")
             .accessibilityAdjustableAction { direction in
                 movedPane = paneWidth + (direction == .increment ? 40 : -40)
             }

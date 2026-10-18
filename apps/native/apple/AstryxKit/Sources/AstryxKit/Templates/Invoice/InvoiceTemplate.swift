@@ -23,26 +23,6 @@ struct InvoiceTemplate: View {
 /// The action id of the invoice template: `tpl.invoice.<what>`.
 func invoiceAction(_ what: String) -> String { "tpl.invoice.\(what)" }
 
-/// A column of the table: the words the web draws in its header (they are not in the model).
-struct InvoiceColumn: Identifiable {
-    var key: String
-    var title: String
-    /// The filter this column offers, named after the filter's column key.
-    var filter: String?
-    var width: CGFloat?
-    var trailing: Bool
-
-    var id: String { key }
-
-    static let all: [InvoiceColumn] = [
-        InvoiceColumn(key: "description", title: "Description", filter: "description", width: nil, trailing: false),
-        InvoiceColumn(key: "category", title: "Category", filter: "category", width: 150, trailing: false),
-        InvoiceColumn(key: "quantity", title: "Qty", filter: "quantity", width: 72, trailing: true),
-        InvoiceColumn(key: "unitPrice", title: "Rate", filter: nil, width: 104, trailing: true),
-        InvoiceColumn(key: "amount", title: "Amount", filter: nil, width: 132, trailing: true),
-    ]
-}
-
 struct InvoiceScreen: View {
     let model: InvoiceModel
     @Environment(\.ax) private var ax
@@ -51,6 +31,8 @@ struct InvoiceScreen: View {
     @Environment(\.axWidth) private var width
     @State private var query: String
     @State private var showingFilters = false
+
+    private var columns: [InvoiceColumn] { InvoiceColumn.all(model) }
 
     init(model: InvoiceModel) {
         self.model = model
@@ -70,6 +52,30 @@ struct InvoiceScreen: View {
             if let banner = model.banner { bannerView(banner) }
         }
         .frame(maxWidth: .infinity, alignment: .topLeading)
+        .modifier(InvoiceSearch(prompt: model.words.searchPlaceholder, query: $query))
+        .syncedText(id: invoiceAction("query"), value: model.query, text: $query)
+        .onChange(of: model.sort) { _, sort in announce(sort.first) }
+    }
+
+    /// A sort that changed is said in words, so VoiceOver does not need the rows to be read to know.
+    private func announce(_ sort: InvoiceModel.Sort?) {
+        guard !isStatic else { return }
+        let text: String
+        if let sort, let column = columns.first(where: { $0.key == sort.sortKey }) {
+            text = "\(model.words.sortedBy) \(column.title), \(model.spoken(sort.direction))"
+        } else {
+            text = model.words.sortCleared
+        }
+        AccessibilityNotification.Announcement(text).post()
+    }
+
+    /// Where the lines are drawn by the system's `Table`: the Mac, on a device, wide enough for it.
+    private var usesSystemTable: Bool {
+        #if os(macOS)
+        return isTable && !isStatic
+        #else
+        return false
+        #endif
     }
 
     // MARK: Masthead
@@ -84,9 +90,10 @@ struct InvoiceScreen: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                 Button {
                 } label: {
-                    Label("Download PDF", systemImage: "arrow.down.to.line")
+                    Label(model.words.downloadPdf, systemImage: "arrow.down.to.line")
                 }
                 .buttonStyle(AXButtonStyle(variant: .secondary, ax: ax))
+                .disabled(model.isInert("downloadPdf"))
             }
             details
         }
@@ -117,17 +124,20 @@ struct InvoiceScreen: View {
 
     // MARK: Controls
 
+    /// The billing switch and, where the search field is not in the toolbar (drawn to an image),
+    /// the search box; on a phone, and on a Mac with the system table, the Sort and Filter buttons.
     private var controls: some View {
         ViewThatFits(in: .horizontal) {
             HStack(spacing: ax.space(3)) {
                 basisSwitch
+                if usesSystemTable { sortAndFilter }
                 Spacer(minLength: ax.space(3))
-                searchBox.frame(width: 300)
+                if isStatic { searchBox.frame(width: 300) }
             }
             VStack(alignment: .leading, spacing: ax.space(3)) {
                 basisSwitch
-                searchBox
-                if !isTable { sortAndFilter }
+                if isStatic { searchBox }
+                if !isTable || usesSystemTable { sortAndFilter }
             }
         }
     }
@@ -140,7 +150,7 @@ struct InvoiceScreen: View {
                 value: model.basis
             )
         } else {
-            Picker("Filter by billing basis", selection: Binding(
+            Picker(model.words.basisLabel, selection: Binding(
                 get: { model.basis },
                 set: { send(.set(id: invoiceAction("basis"), value: .string($0))) }
             )) {
@@ -149,7 +159,7 @@ struct InvoiceScreen: View {
             .pickerStyle(.segmented)
             .labelsHidden()
             .fixedSize()
-            .accessibilityLabel("Filter by billing basis")
+            .accessibilityLabel(model.words.basisLabel)
         }
     }
 
@@ -157,86 +167,87 @@ struct InvoiceScreen: View {
         HStack(spacing: ax.space(2)) {
             Image(systemName: "magnifyingglass").foregroundStyle(ax.iconSecondary)
             if isStatic {
-                Text(query.isEmpty ? "Search\u{2026}" : query)
+                Text(query.isEmpty ? model.words.searchPlaceholder : query)
                     .font(ax.fontBase)
                     .foregroundStyle(query.isEmpty ? ax.textDisabled : ax.text)
                     .frame(maxWidth: .infinity, alignment: .leading)
-            } else {
-                TextField("Search line items", text: $query, prompt: Text("Search\u{2026}").foregroundColor(ax.textDisabled))
-                    .textFieldStyle(.plain)
-                    .font(ax.fontBase)
-                    .foregroundStyle(ax.text)
-                    #if os(iOS)
-                    .submitLabel(.search)
-                    #endif
-            }
-            if !query.isEmpty && !isStatic {
-                Button {
-                    query = ""
-                } label: {
-                    Image(systemName: "xmark.circle.fill").foregroundStyle(ax.iconSecondary)
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Clear search")
             }
         }
         .padding(.horizontal, ax.space(3))
         .frame(minHeight: 36 * min(ax.scale, 1.4))
         .background(RoundedRectangle(cornerRadius: ax.radiusElement, style: .continuous).fill(ax.surface))
         .overlay(RoundedRectangle(cornerRadius: ax.radiusElement, style: .continuous).strokeBorder(ax.borderStrong, lineWidth: 1))
-        .syncedText(id: invoiceAction("query"), value: model.query, text: $query)
     }
 
-    /// On a phone, where the header cells are not there: a Sort menu and the filters in a popover.
+    /// Where the header cells cannot sort or filter (a phone; the system table, which sorts by its
+    /// own headers): a Sort menu with checkmarks, and the filters in a popover, or a sheet on a phone.
     private var sortAndFilter: some View {
         HStack(spacing: ax.space(2)) {
-            Menu {
-                ForEach(InvoiceColumn.all) { column in
-                    Button {
-                        send(.set(id: invoiceAction("sort"), value: .string(InvoiceSort.next(after: model.sort.first, key: column.key))))
-                    } label: {
-                        if let sort = model.sort.first, sort.sortKey == column.key {
-                            Label(column.title, systemImage: sort.direction == .ascending ? "chevron.up" : "chevron.down")
-                        } else {
-                            Text(column.title)
-                        }
-                    }
-                }
-                if !model.sort.isEmpty {
-                    Divider()
-                    Button("None") { send(.set(id: invoiceAction("sort"), value: .string(""))) }
-                }
-            } label: {
-                Label(sortTitle, systemImage: "arrow.up.arrow.down")
-                    .font(ax.fontLabel)
-                    .foregroundStyle(ax.text)
-                    .padding(.horizontal, ax.space(3))
-                    .frame(minHeight: 36 * min(ax.scale, 1.4))
-                    .overlay(RoundedRectangle(cornerRadius: ax.radiusElement, style: .continuous).strokeBorder(ax.borderStrong, lineWidth: 1))
-                    .contentShape(Rectangle())
-            }
-            .menuStyle(.button)
-            .buttonStyle(.plain)
-            .menuIndicator(.hidden)
-            .fixedSize()
-            .accessibilityLabel("Sort")
+            if !usesSystemTable { sortMenu }
+            filterButton
+            Spacer(minLength: 0)
+        }
+    }
 
-            Button {
-                showingFilters = true
-            } label: {
-                Label("Filter", systemImage: model.filters.isEmpty ? "line.3.horizontal.decrease" : "line.3.horizontal.decrease.circle.fill")
-                    .font(ax.fontLabel)
-                    .foregroundStyle(model.filters.isEmpty ? ax.text : ax.accent)
-                    .padding(.horizontal, ax.space(3))
-                    .frame(minHeight: 36 * min(ax.scale, 1.4))
-                    .overlay(RoundedRectangle(cornerRadius: ax.radiusElement, style: .continuous).strokeBorder(ax.borderStrong, lineWidth: 1))
-                    .contentShape(Rectangle())
+    /// The sort column and its direction, set with checkmarks; "None" turns sorting off.
+    private var sortMenu: some View {
+        let key = model.sort.first?.sortKey ?? ""
+        let direction = model.sort.first?.direction ?? .ascending
+        return Menu {
+            Picker(model.words.sort, selection: Binding(
+                get: { key },
+                set: { send(.set(id: invoiceAction("sort"), value: .string($0.isEmpty ? "" : "\($0):\(direction.rawValue)"))) }
+            )) {
+                ForEach(columns) { column in Text(column.title).tag(column.key) }
+                Text(model.words.sortNone).tag("")
             }
-            .buttonStyle(.plain)
-            .popover(isPresented: $showingFilters) {
+            .pickerStyle(.inline)
+            if !key.isEmpty {
+                Picker(model.words.sort, selection: Binding(
+                    get: { direction },
+                    set: { send(.set(id: invoiceAction("sort"), value: .string("\(key):\($0.rawValue)"))) }
+                )) {
+                    Text(model.words.ascending).tag(InvoiceModel.Direction.ascending)
+                    Text(model.words.descending).tag(InvoiceModel.Direction.descending)
+                }
+                .pickerStyle(.inline)
+            }
+        } label: {
+            Label(sortTitle, systemImage: "arrow.up.arrow.down")
+                .font(ax.fontLabel)
+                .foregroundStyle(ax.text)
+                .padding(.horizontal, ax.space(3))
+                .frame(minHeight: max(36 * min(ax.scale, 1.4), InboxTarget.side))
+                .overlay(RoundedRectangle(cornerRadius: ax.radiusElement, style: .continuous).strokeBorder(ax.borderStrong, lineWidth: 1))
+                .contentShape(Rectangle())
+        }
+        .menuStyle(.button)
+        .buttonStyle(.plain)
+        .menuIndicator(.hidden)
+        .fixedSize()
+        .accessibilityLabel(model.words.sort)
+        .accessibilityValue(sortSpoken)
+    }
+
+    private var filterButton: some View {
+        Button {
+            showingFilters = true
+        } label: {
+            Label(model.words.filter, systemImage: model.filters.isEmpty ? "line.3.horizontal.decrease" : "line.3.horizontal.decrease.circle.fill")
+                .font(ax.fontLabel)
+                .foregroundStyle(model.filters.isEmpty ? ax.text : ax.accent)
+                .padding(.horizontal, ax.space(3))
+                .frame(minHeight: max(36 * min(ax.scale, 1.4), InboxTarget.side))
+                .overlay(RoundedRectangle(cornerRadius: ax.radiusElement, style: .continuous).strokeBorder(ax.borderStrong, lineWidth: 1))
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        // A popover on an iPad or a Mac; on an iPhone the same form is a sheet.
+        .popover(isPresented: $showingFilters) {
+            InboxCompactSheet(title: model.words.filter, done: model.words.done) {
                 ScrollView {
                     VStack(alignment: .leading, spacing: ax.space(4)) {
-                        ForEach(InvoiceColumn.all.filter { $0.filter != nil }) { column in
+                        ForEach(columns.filter { $0.filter != nil }) { column in
                             VStack(alignment: .leading, spacing: ax.space(1)) {
                                 Text(column.title).font(ax.fontLabel).foregroundStyle(ax.text)
                                 InvoiceFilterEditor(model: model, filter: column.filter ?? "", title: column.title)
@@ -246,24 +257,29 @@ struct InvoiceScreen: View {
                     .padding(ax.space(4))
                 }
                 .frame(minWidth: 280, idealWidth: 320, maxHeight: 460)
-                .presentationCompactAdaptation(.popover)
             }
-            .accessibilityLabel("Filter")
-            .accessibilityValue(model.filters.isEmpty ? "" : "active")
-            Spacer(minLength: 0)
         }
+        .accessibilityLabel(model.words.filter)
+        .accessibilityValue(model.filters.isEmpty ? "" : model.words.filterActive)
     }
 
     private var sortTitle: String {
         guard let sort = model.sort.first,
-              let column = InvoiceColumn.all.first(where: { $0.key == sort.sortKey }) else { return "Sort" }
+              let column = columns.first(where: { $0.key == sort.sortKey }) else { return model.words.sort }
         return column.title
+    }
+
+    /// "Qty, descending", or nothing when the lines are not sorted.
+    private var sortSpoken: String {
+        guard let sort = model.sort.first,
+              let column = columns.first(where: { $0.key == sort.sortKey }) else { return "" }
+        return "\(column.title), \(model.spoken(sort.direction))"
     }
 
     // MARK: Active filters
 
     private var activeFilters: some View {
-        let columns = InvoiceColumn.all.compactMap { column -> (String, String, String)? in
+        let columns = self.columns.compactMap { column -> (String, String, String)? in
             guard let key = column.filter, let value = model.filters[key] else { return nil }
             let shown = key == "category" ? (model.categories.first { $0.value == value.text }?.label ?? value.text) : value.text
             return (key, column.title, shown)
@@ -283,9 +299,10 @@ struct InvoiceScreen: View {
                             .foregroundStyle(ax.tone(.accent).text)
                             .padding(ax.space(1))
                             .contentShape(Rectangle())
+                            .inboxHitTarget(size: 16)
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel("Remove filter \(title)")
+                    .accessibilityLabel("\(model.words.removeFilter) \(title)")
                 }
                 .padding(.leading, ax.space(2))
                 .padding(.trailing, ax.space(1))
@@ -304,7 +321,11 @@ struct InvoiceScreen: View {
             emptyState(empty)
         } else {
             VStack(alignment: .leading, spacing: ax.space(4)) {
-                if isTable {
+                if usesSystemTable {
+                    #if os(macOS)
+                    InvoiceSystemTable(model: model)
+                    #endif
+                } else if isTable {
                     InvoiceTable(model: model)
                 } else {
                     InvoiceCards(model: model)
@@ -315,23 +336,16 @@ struct InvoiceScreen: View {
     }
 
     private func emptyState(_ empty: InvoiceModel.Notice) -> some View {
-        VStack(spacing: ax.space(3)) {
-            Image(systemName: "doc.text.magnifyingglass")
-                .font(.system(size: ax.fontSize("font-size-2xl", 24)))
-                .foregroundStyle(ax.iconSecondary)
-                .frame(width: 56 * min(ax.scale, 1.5), height: 56 * min(ax.scale, 1.5))
-                .background(Circle().fill(ax.muted))
-            VStack(spacing: ax.hair) {
-                Text(empty.title).font(ax.fontStrong).foregroundStyle(ax.text)
-                Text(empty.description).font(ax.fontBase).foregroundStyle(ax.textSecondary)
-                    .multilineTextAlignment(.center)
-            }
-            Button("Clear filters") { send(.press(id: invoiceAction("clear"))) }
+        ContentUnavailableView {
+            Label(empty.title, systemImage: "doc.text.magnifyingglass")
+        } description: {
+            Text(empty.description)
+        } actions: {
+            Button(model.words.clearFilters) { send(.press(id: invoiceAction("clear"))) }
                 .buttonStyle(AXButtonStyle(variant: .secondary, ax: ax))
         }
-        .padding(ax.space(8))
+        .padding(ax.space(4))
         .frame(maxWidth: .infinity)
-        .accessibilityElement(children: .contain)
     }
 
     /// The arithmetic about the table: rules and right-aligned figures on the Amount column.
@@ -373,7 +387,7 @@ struct InvoiceScreen: View {
 
     private func bannerView(_ banner: InvoiceModel.Notice) -> some View {
         let colors = ax.tone(.warning)
-        let button = Button("Clear all filters") { send(.press(id: invoiceAction("clear"))) }
+        let button = Button(model.words.clearAllFilters) { send(.press(id: invoiceAction("clear"))) }
             .buttonStyle(AXButtonStyle(variant: .secondary, ax: ax))
         return ViewThatFits(in: .horizontal) {
             HStack(alignment: .center, spacing: ax.space(3)) {
@@ -404,6 +418,18 @@ struct InvoiceScreen: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
+    }
+}
+
+/// The invoice's search: the system's search field (in the toolbar on a Mac, under the title on
+/// an iPhone) on a device; drawn to an image there is no toolbar, so the screen draws its own box.
+struct InvoiceSearch: ViewModifier {
+    let prompt: String
+    @Binding var query: String
+    @Environment(\.axStatic) private var isStatic
+
+    func body(content: Content) -> some View {
+        if isStatic { content } else { content.searchable(text: $query, prompt: Text(prompt)) }
     }
 }
 
