@@ -54,13 +54,14 @@ final class ClientHost: NSObject, AXClientServices {
         })
     }
 
-    /// `-AXScreen inbox` and `-AXTheme ocean` on the command line (the screen tour) start
-    /// the core somewhere other than the first screen.
+    /// `-AXScreen t.inbox`, `-AXTheme ocean` and `-AXSurface all` on the command line (the
+    /// screen tour, the UI tests) start the core somewhere other than its first state.
     private static func startArgument() -> String? {
         let defaults = UserDefaults.standard
         var start: [String: String] = [:]
         if let screen = defaults.string(forKey: "AXScreen") { start["screen"] = screen }
         if let theme = defaults.string(forKey: "AXTheme") { start["theme"] = theme }
+        if let surface = defaults.string(forKey: "AXSurface") { start["surface"] = surface }
         guard !start.isEmpty, let data = try? JSONSerialization.data(withJSONObject: start) else { return nil }
         return String(data: data, encoding: .utf8)
     }

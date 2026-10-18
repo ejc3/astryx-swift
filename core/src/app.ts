@@ -13,7 +13,7 @@ import { SCENARIOS } from "./scenarios.generated.ts";
 import type { ScenariosSnapshot } from "./scenarios.ts";
 import { THEMES } from "./themes.generated.ts";
 import { THEME_INPUTS, type ResolvedTheme } from "./themes.ts";
-import { PROTOCOL, type Action, type AppSnapshot, type DemoScreenId, type Dialog, type Icon, type NavItem, type Screen, type TemplateScreenId } from "./ui.ts";
+import { PROTOCOL, SURFACES, type Action, type AppSnapshot, type DemoScreenId, type Dialog, type Icon, type NavItem, type Screen, type TemplateScreenId } from "./ui.ts";
 
 /**
  * The stock Astryx template closest to each screen (web/stock: Astryx's own templates,
@@ -127,7 +127,12 @@ export type Client = {
 /** A client over a clock. `now` is read for each action, never by the core itself. */
 export function createClient(now: () => Now, start?: Partial<Pick<State, "screen" | "theme" | "surface">>): Client {
   const first = initialState(now());
-  let state: State = { ...first, ...start, screen: start?.screen && isScreen(start.screen) ? start.screen : first.screen };
+  let state: State = {
+    ...first,
+    ...start,
+    screen: start?.screen && isScreen(start.screen) ? start.screen : first.screen,
+    surface: start?.surface && (SURFACES as readonly string[]).includes(start.surface) ? start.surface : first.surface,
+  };
   const listeners = new Set<(store: StoreName) => void>();
   return {
     getSnapshot(store) {

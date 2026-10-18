@@ -335,8 +335,12 @@ struct SidebarView: View {
 
     var body: some View {
         List(selection: Binding<String?>(get: { selection }, set: { if let v = $0 { selection = v } })) {
-            ForEach(app.nav) { item in
-                SidebarRow(item: item, selected: item.id == selection).tag(item.id)
+            ForEach(app.navSections, id: \.title) { group in
+                Section(group.title) {
+                    ForEach(group.items) { item in
+                        SidebarRow(item: item, selected: item.id == selection).tag(item.id)
+                    }
+                }
             }
         }
         .listStyle(.sidebar)
@@ -359,11 +363,18 @@ struct StaticSidebar: View {
                 .foregroundStyle(ax.text)
                 .padding(.horizontal, ax.space(3))
                 .padding(.bottom, ax.space(3))
-            ForEach(app.nav) { item in
-                SidebarRow(item: item, selected: item.id == app.current)
+            ForEach(app.navSections, id: \.title) { group in
+                Text(group.title)
+                    .font(ax.font("font-size-sm", 12, weight: "font-weight-semibold"))
+                    .foregroundStyle(ax.textSecondary)
                     .padding(.horizontal, ax.space(3))
-                    .padding(.vertical, ax.space(2))
-                    .background(RoundedRectangle(cornerRadius: ax.radiusElement, style: .continuous).fill(item.id == app.current ? ax.accentMuted : .clear))
+                    .padding(.top, ax.space(3))
+                ForEach(group.items) { item in
+                    SidebarRow(item: item, selected: item.id == app.current)
+                        .padding(.horizontal, ax.space(3))
+                        .padding(.vertical, ax.space(2))
+                        .background(RoundedRectangle(cornerRadius: ax.radiusElement, style: .continuous).fill(item.id == app.current ? ax.accentMuted : .clear))
+                }
             }
             Spacer(minLength: 0)
         }

@@ -14,6 +14,21 @@ public struct NavItem: Decodable, Sendable, Identifiable {
     public let label: String
     public let icon: Icon
     public let badge: String?
+    /** The group the core puts it in ("Astryx templates", "More demos"). */
+    public let section: String
+}
+
+extension AppSnapshot {
+    /// The nav items in the core's order, grouped by section in order of first appearance.
+    var navSections: [(title: String, items: [NavItem])] {
+        var order: [String] = []
+        var groups: [String: [NavItem]] = [:]
+        for item in nav {
+            if groups[item.section] == nil { order.append(item.section) }
+            groups[item.section, default: []].append(item)
+        }
+        return order.map { ($0, groups[$0]!) }
+    }
 }
 
 public struct ToastInfo: Decodable, Sendable {
