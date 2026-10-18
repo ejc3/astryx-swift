@@ -30,9 +30,10 @@ targets:
     entitlements:
       path: AstryxSwift.entitlements
       properties:
-        # The Mac App Store requires the sandbox; the web view's content process needs
-        # no network for a page served from the app itself.
+        # The Mac App Store requires the sandbox. A web view in a sandboxed app loads nothing,
+        # not even the pages the app serves itself, without outgoing connections allowed.
         com.apple.security.app-sandbox: true
+        com.apple.security.network.client: true
     info:
       path: Info.plist
       properties:

@@ -1782,7 +1782,28 @@ export const SCENARIOS: Scenario[] = [
       },
       {
         "caption": "Drag a card to the top of another column.",
-        "gestures": [],
+        "gestures": [
+          {
+            "target": [
+              {
+                "by": "role",
+                "role": "heading",
+                "name": "Write the weekly status update"
+              }
+            ],
+            "gesture": {
+              "kind": "drag",
+              "to": [
+                {
+                  "by": "role",
+                  "role": "heading",
+                  "name": "Draft project kickoff brief"
+                }
+              ],
+              "edge": "above"
+            }
+          }
+        ],
         "actions": [
           {
             "type": "set",
@@ -1793,7 +1814,28 @@ export const SCENARIOS: Scenario[] = [
       },
       {
         "caption": "Drag a card below another card.",
-        "gestures": [],
+        "gestures": [
+          {
+            "target": [
+              {
+                "by": "role",
+                "role": "heading",
+                "name": "Review and merge open changes"
+              }
+            ],
+            "gesture": {
+              "kind": "drag",
+              "to": [
+                {
+                  "by": "role",
+                  "role": "heading",
+                  "name": "Draft project kickoff brief"
+                }
+              ],
+              "edge": "below"
+            }
+          }
+        ],
         "actions": [
           {
             "type": "set",
@@ -1804,7 +1846,28 @@ export const SCENARIOS: Scenario[] = [
       },
       {
         "caption": "Drag a card up within its column.",
-        "gestures": [],
+        "gestures": [
+          {
+            "target": [
+              {
+                "by": "role",
+                "role": "heading",
+                "name": "Draft project kickoff brief"
+              }
+            ],
+            "gesture": {
+              "kind": "drag",
+              "to": [
+                {
+                  "by": "role",
+                  "role": "heading",
+                  "name": "Write the weekly status update"
+                }
+              ],
+              "edge": "above"
+            }
+          }
+        ],
         "actions": [
           {
             "type": "set",
@@ -1815,7 +1878,27 @@ export const SCENARIOS: Scenario[] = [
       },
       {
         "caption": "Drag a card into an empty column.",
-        "gestures": [],
+        "gestures": [
+          {
+            "target": [
+              {
+                "by": "role",
+                "role": "heading",
+                "name": "Write the weekly status update"
+              }
+            ],
+            "gesture": {
+              "kind": "drag",
+              "to": [
+                {
+                  "by": "text",
+                  "text": "Nothing in progress"
+                }
+              ],
+              "edge": "above"
+            }
+          }
+        ],
         "actions": [
           {
             "type": "set",
@@ -1826,7 +1909,28 @@ export const SCENARIOS: Scenario[] = [
       },
       {
         "caption": "Pick up a card and put it back.",
-        "gestures": [],
+        "gestures": [
+          {
+            "target": [
+              {
+                "by": "role",
+                "role": "heading",
+                "name": "Collect feedback from stakeholders"
+              }
+            ],
+            "gesture": {
+              "kind": "drag",
+              "to": [
+                {
+                  "by": "role",
+                  "role": "heading",
+                  "name": "Collect feedback from stakeholders"
+                }
+              ],
+              "edge": "center"
+            }
+          }
+        ],
         "actions": [
           {
             "type": "set",

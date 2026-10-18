@@ -28,7 +28,8 @@
    *   | { by: "css", selector: string }
    *   | { by: "nth", index: number }} LocatorOp */
   /** @typedef {{ kind: "click" } | { kind: "fill", text: string } | { kind: "check" } | { kind: "uncheck" }
-   *   | { kind: "select", value: string } | { kind: "press", key: string } | { kind: "hover" }} Gesture */
+   *   | { kind: "select", value: string } | { kind: "press", key: string } | { kind: "hover" }
+   *   | { kind: "drag", to: LocatorOp[], edge: "above" | "below" | "center" }} Gesture */
 
   // ---------------------------------------------------------------- text helpers
 
@@ -578,13 +579,16 @@
 
   // ---------------------------------------------------------------- input modality
 
-  // A browser draws a focus ring (and a library shows its keyboard hints) for :focus-visible,
-  // and decides that from the real input that came before: after a mouse click, a script's
-  // focus() draws no ring. Events a script sends are not real input, so after a driven click
-  // the page's own focus() calls (a menu moving focus to its first item) would draw rings
-  // nobody earned. While a driven gesture stands for a pointer, focus() calls that do not say
-  // otherwise say focusVisible:false; any real key or pointer press hands the decision back
-  // to the browser.
+  // Why this patch exists: a browser draws a focus ring (and a library such as Astryx shows its
+  // "← → to navigate" keyboard hint) for :focus-visible, and decides that from the real input
+  // that came before: after a real mouse click, a script's focus() draws no ring. Events a script
+  // sends are not real input, so after a driven click the page's own focus() calls (a menu moving
+  // focus to its first item, a dialog handing focus back) would draw rings and hints nobody
+  // earned, and a replayed scenario would look different from the same steps done by hand. So,
+  // only while a driven gesture stands for a pointer, a focus() call that does not say otherwise
+  // gets focusVisible:false; any real key or pointer press hands the decision back to the
+  // browser, and nothing outside perform() ever switches it on, so a page that does not drive
+  // anything is untouched.
   let pointerMode = false;
   for (const type of ["keydown", "pointerdown", "mousedown"]) {
     window.addEventListener(type, (e) => { if (e.isTrusted) pointerMode = false; }, true);
@@ -619,7 +623,7 @@
   const mouseEvent = (el, type, point, button, buttons, detail, extra) => fire(el, MouseEvent, type, { ...mouseInit(point, button, buttons, detail), ...extra });
 
   /** The pointer moves onto `el` (leaving what it was on), the way a browser reports it. */
-  function movePointer(el, point) {
+  function movePointer(el, point, buttons = 0) {
     const old = hovered && hovered.isConnected ? hovered : null;
     if (old !== el) {
       const nonBubbling = { bubbles: false };
@@ -641,8 +645,8 @@
       }
       hovered = el;
     }
-    pointerEvent(el, "pointermove", point, 0, 0);
-    mouseEvent(el, "mousemove", point, 0, 0, 0);
+    pointerEvent(el, "pointermove", point, buttons ? -1 : 0, buttons);
+    mouseEvent(el, "mousemove", point, 0, buttons, 0);
   }
 
   /** Where a person's pointer would land on `el`: its centre, and the element drawn there if that is `el` or inside it. */
@@ -658,14 +662,8 @@
 
   const focusTarget = (el) => el.closest(FOCUSABLE) || null;
 
-  function click(el) {
-    const { point, hit: first } = aim(el);
-    let hit = first;
-    movePointer(hit, point);
-    const again = () => {
-      if (!hit.isConnected) hit = document.elementFromPoint(point.x, point.y) || el;
-      return hit;
-    };
+  /** Mouse button down on `hit`: the events, and the focus a browser gives (nothing for a drag handle, else the nearest focusable). */
+  function pressDown(hit, point) {
     const down = pointerEvent(hit, "pointerdown", point, 0, 1);
     const mouseDown = mouseEvent(hit, "mousedown", point, 0, 1, 1);
     if (!down.defaultPrevented && !mouseDown.defaultPrevented) {
@@ -674,11 +672,59 @@
       else if (document.activeElement && (isTextControl(document.activeElement) || isEditable(document.activeElement))) document.activeElement.blur();
       // Anything else keeps focus: a script's blur() makes the next script focus() draw a focus ring, which a click never does.
     }
+  }
+
+  function click(el) {
+    const { point, hit: first } = aim(el);
+    let hit = first;
+    movePointer(hit, point);
+    const again = () => {
+      if (!hit.isConnected) hit = document.elementFromPoint(point.x, point.y) || el;
+      return hit;
+    };
+    pressDown(hit, point);
     hit = again();
     pointerEvent(hit, "pointerup", point, 0, 0);
     mouseEvent(hit, "mouseup", point, 0, 0, 1);
     hit = again();
     mouseEvent(hit, "click", point, 0, 0, 1);
+  }
+
+  const clampPoint = (x, y) => ({ x: Math.min(Math.max(x, 0), window.innerWidth - 1), y: Math.min(Math.max(y, 0), window.innerHeight - 1) });
+
+  /**
+   * Press on `el` near its top-left corner (where a person takes hold of a card), move the pointer
+   * to `toEl` and release: just above its top, just below its bottom, or at its centre. The press is
+   * an element event; the moves and the release go to whatever is drawn under the pointer, so they
+   * reach the listeners a page puts on window. The page gets a frame between moves, as it does
+   * from a person's hand, because it lays out what is being dragged as it goes.
+   */
+  async function drag(el, toEl, edge) {
+    const a = el.getBoundingClientRect();
+    const b = toEl.getBoundingClientRect();
+    const grab = clampPoint(a.left + Math.min(8, a.width / 2), a.top + Math.min(4, a.height / 2));
+    const left = b.left + Math.min(8, b.width / 2);
+    const drop = clampPoint(
+      edge === "center" ? b.left + b.width / 2 : left,
+      edge === "above" ? b.top - 4 : edge === "below" ? b.bottom + 40 : b.top + b.height / 2,
+    );
+    const under = (p, fallback) => document.elementFromPoint(p.x, p.y) || fallback;
+    const first = under(grab, el);
+    const start = el.contains(first) ? first : el;
+    movePointer(start, grab);
+    pressDown(start, grab);
+    const way = [];
+    // A short pull first (a drag starts after a few pixels), then the way to the drop.
+    for (let i = 1; i <= 4; i++) way.push({ x: grab.x + (32 * i) / 4, y: grab.y + (26 * i) / 4 });
+    const pulled = way[way.length - 1];
+    for (let i = 1; i <= 8; i++) way.push({ x: pulled.x + ((drop.x - pulled.x) * i) / 8, y: pulled.y + ((drop.y - pulled.y) * i) / 8 });
+    for (const p of way) {
+      movePointer(under(p, document.body), p, 1);
+      await nextFrame();
+    }
+    const end = under(drop, document.body);
+    pointerEvent(end, "pointerup", drop, 0, 0);
+    mouseEvent(end, "mouseup", drop, 0, 0, 1);
   }
 
   function hover(el) {
@@ -889,6 +935,7 @@
           case "uncheck": setChecked(el, false); break;
           case "press": press(el, gesture.key); break;
           case "select": await select(el, gesture.value); break;
+          case "drag": await drag(el, await find(gesture.to, what + " destination"), gesture.edge); break;
           default: throw new Error("unknown gesture " + JSON.stringify(gesture));
         }
       } catch (error) {

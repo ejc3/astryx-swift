@@ -150,6 +150,9 @@ function recorder(page, report) {
   let last = null; // { target, handle }: where the last gesture happened
   let boxes = []; // bounding boxes asked for, newest last: a mouse move into one hovers it
   let held = false;
+  let pos = { x: 0, y: 0 }; // where the real pointer is
+  let press = null; // a pointer press in progress: what it started on, and what it might end on
+  let moveHover = -1; // index of the hover gesture the last un-pressed mouse move made
 
   const unwrap = (x) => (x && x.__real ? x.__real : x);
   const inexpressible = (why) => { if (!rec.why) rec.why = why; };
@@ -244,6 +247,7 @@ function recorder(page, report) {
     const strip = (o) => Object.fromEntries(Object.entries(o).filter(([, v]) => v !== undefined));
     const api = {
       __real: real,
+      __self: self,
       getByRole(role, opts = {}) {
         const extra = Object.keys(opts).filter((k) => !["name", "exact"].includes(k));
         const name = opts.name === undefined ? undefined : nameOf(opts.name);
@@ -274,7 +278,17 @@ function recorder(page, report) {
       },
       dblclick: (opts) => { inexpressible("double click"); return real.dblclick(opts); },
       tap: (opts) => { inexpressible("tap"); return real.tap(opts); },
-      dragTo: (to, opts) => { inexpressible("drag"); return real.dragTo(unwrap(to), opts); },
+      async dragTo(to, opts) {
+        // Playwright drags from the centre of one element to the centre of the other.
+        const dest = to.__self;
+        const handle = dest ? await dest.real.elementHandle() : null;
+        const target = handle ? (dest.ops ?? (await canonical(handle))) : null;
+        if (target && !rec.why) await verify(handle, target, "dragTo destination");
+        return act(self, "dragTo", () => real.dragTo(unwrap(to), opts), async () => {
+          if (!target) { inexpressible("dragTo destination has no data form and no role"); return null; }
+          return { kind: "drag", to: target, edge: "center" };
+        });
+      },
       fill: (text, opts) => act(self, "fill", () => real.fill(text, opts), async () => ({ kind: "fill", text })),
       clear: (opts) => act(self, "clear", () => real.clear(opts), async () => ({ kind: "fill", text: "" })),
       check: (opts) => act(self, "check", () => real.check(opts), async () => ({ kind: "check" })),
@@ -345,12 +359,24 @@ function recorder(page, report) {
     up: (name) => page.keyboard.up(name),
   };
 
+  /** An element asked for by its box, as a target Playwright and the driver agree on (null when it has none). */
+  async function prepare(b) {
+    const handle = await b.loc.real.elementHandle().catch(() => null);
+    if (!handle) return null;
+    const target = b.loc.ops ?? (await canonical(handle));
+    if (!target) return null;
+    await verify(handle, target, "drag end point");
+    return { box: b.box, target };
+  }
+  const inside = (p, b, slack = 0) => p.x >= b.x - slack && p.x <= b.x + b.width + slack && p.y >= b.y - slack && p.y <= b.y + b.height + slack;
+
   const mouse = {
     async move(x, y, opts) {
       const result = await page.mouse.move(x, y, opts);
-      if (held) return result;
+      pos = { x, y };
+      if (held) { if (press) press.moved = true; return result; }
       // A move into an element asked for by its box hovers that element; any other is the pointer put away.
-      const hit = [...boxes].reverse().find((b) => x >= b.box.x && x <= b.box.x + b.box.width && y >= b.box.y && y <= b.box.y + b.box.height);
+      const hit = [...boxes].reverse().find((b) => inside({ x, y }, b.box));
       if (hit && !rec.why) {
         const handle = await hit.loc.real.elementHandle().catch(() => null);
         let target = hit.loc.ops;
@@ -358,15 +384,47 @@ function recorder(page, report) {
         if (target) {
           if (handle) await verify(handle, target, "hover (mouse move into the element)");
           rec.gestures.push({ target, gesture: { kind: "hover" } });
+          moveHover = rec.gestures.length - 1;
           rec.notes.push("a mouse move into an element is a hover at its centre");
           return result;
         }
       }
-      if (!rec.why) rec.gestures.push({ target: [{ by: "css", selector: "body" }], gesture: { kind: "hover" } });
+      if (!rec.why) { rec.gestures.push({ target: [{ by: "css", selector: "body" }], gesture: { kind: "hover" } }); moveHover = rec.gestures.length - 1; }
       return result;
     },
-    async down(opts) { held = true; inexpressible("pointer drag"); return page.mouse.down(opts); },
-    async up(opts) { held = false; return page.mouse.up(opts); },
+    /** A press on an element asked for by its box, a move, a release on another (or the same): a drag. */
+    async down(opts) {
+      held = true;
+      press = null;
+      if (!rec.why) {
+        const source = [...boxes].reverse().find((b) => inside(pos, b.box));
+        const prepared = source ? await prepare(source) : null;
+        if (!prepared) inexpressible("pointer press on something not asked for by its box");
+        else {
+          // The hover the move to the press point made is part of the press.
+          if (moveHover === rec.gestures.length - 1) { rec.gestures.pop(); rec.notes.pop(); }
+          const others = (await Promise.all(boxes.filter((b) => b !== source).map(prepare))).filter(Boolean);
+          press = { source: prepared, others, moved: false };
+        }
+      }
+      return page.mouse.down(opts);
+    },
+    async up(opts) {
+      held = false;
+      const done = press;
+      press = null;
+      const result = await page.mouse.up(opts);
+      if (!done || rec.why) return result;
+      if (!done.moved) { inexpressible("pointer press and release without a drag"); return result; }
+      // Released near an element asked for by its box (above, below or on it): that is where it was dropped.
+      const near = [...done.others].reverse().find((o) => inside(pos, { x: o.box.x, y: o.box.y - 8, width: o.box.width, height: o.box.height + 56 }));
+      const dest = near ?? (inside(pos, done.source.box) ? done.source : null);
+      if (!dest) { inexpressible("pointer released away from any element asked for by its box"); return result; }
+      const edge = pos.y < dest.box.y ? "above" : pos.y > dest.box.y + dest.box.height ? "below" : "center";
+      rec.gestures.push({ target: done.source.target, gesture: { kind: "drag", to: dest.target, edge } });
+      rec.notes.push("a drag is replayed from the target's top-left corner to a point 4 px above, 40 px below or at the centre of the destination");
+      return result;
+    },
     click: (x, y, opts) => { inexpressible("click at a position"); return page.mouse.click(x, y, opts); },
     dblclick: (x, y, opts) => { inexpressible("double click at a position"); return page.mouse.dblclick(x, y, opts); },
     wheel: (dx, dy) => { inexpressible("mouse wheel"); return page.mouse.wheel(dx, dy); },
@@ -386,7 +444,7 @@ function recorder(page, report) {
 
   return {
     page: stand,
-    begin(name) { rec = { name, gestures: [], notes: [], why: null }; boxes = []; held = false; return rec; },
+    begin(name) { rec = { name, gestures: [], notes: [], why: null }; boxes = []; held = false; press = null; moveHover = -1; return rec; },
     end() { const done = rec; rec = null; return done; },
     forget() { last = null; },
   };
