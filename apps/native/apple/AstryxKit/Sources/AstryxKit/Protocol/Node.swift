@@ -576,8 +576,10 @@ public struct BoardNode: Decodable, Sendable {
     public let columns: [BoardColumn]
 }
 
-/// `template`: a screen the core hands over as a typed view model for one Astryx template.
-/// Only the template's id is kept for now; its view model is not read.
+/// `template`: a screen the core hands over as a typed view model for one Astryx template
+/// (core/src/templates/<id>/model.ts). `view` is decoded by that template's own view
+/// (Templates/<Id>/), into a Swift mirror of the model's `View` type.
 public struct TemplateNode: Decodable, Sendable {
     public let template: String
+    public let view: JSONValue
 }

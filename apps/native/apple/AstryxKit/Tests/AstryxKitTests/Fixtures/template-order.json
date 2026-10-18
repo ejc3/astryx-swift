@@ -1,0 +1,403 @@
+{
+ "protocol": 1,
+ "appName": "Astryx Swift",
+ "nav": [
+  {
+   "id": "t.showcase",
+   "label": "Theme showcase",
+   "icon": "sparkle",
+   "section": "Astryx templates"
+  },
+  {
+   "id": "t.dashboard",
+   "label": "Dashboard",
+   "icon": "chart",
+   "section": "Astryx templates"
+  },
+  {
+   "id": "t.inbox",
+   "label": "Inbox",
+   "icon": "inbox",
+   "section": "Astryx templates"
+  },
+  {
+   "id": "t.kanban",
+   "label": "Kanban board",
+   "icon": "check",
+   "section": "Astryx templates"
+  },
+  {
+   "id": "t.invoice",
+   "label": "Invoice",
+   "icon": "card",
+   "section": "Astryx templates"
+  },
+  {
+   "id": "t.calendar",
+   "label": "Calendar",
+   "icon": "calendar",
+   "section": "Astryx templates"
+  },
+  {
+   "id": "t.chat",
+   "label": "AI chat",
+   "icon": "chat",
+   "section": "Astryx templates"
+  },
+  {
+   "id": "t.checkout",
+   "label": "Checkout",
+   "icon": "cart",
+   "section": "Astryx templates"
+  },
+  {
+   "id": "t.order",
+   "label": "Order detail",
+   "icon": "truck",
+   "section": "Astryx templates"
+  },
+  {
+   "id": "t.settings",
+   "label": "Settings",
+   "icon": "gear",
+   "section": "Astryx templates"
+  },
+  {
+   "id": "overview",
+   "label": "Components",
+   "icon": "grid",
+   "section": "More demos"
+  },
+  {
+   "id": "dashboard",
+   "label": "Dashboard",
+   "icon": "chart",
+   "section": "More demos"
+  },
+  {
+   "id": "inbox",
+   "label": "Inbox",
+   "icon": "inbox",
+   "badge": "3",
+   "section": "More demos"
+  },
+  {
+   "id": "tasks",
+   "label": "Tasks",
+   "icon": "check",
+   "badge": "7",
+   "section": "More demos"
+  },
+  {
+   "id": "people",
+   "label": "People",
+   "icon": "people",
+   "section": "More demos"
+  },
+  {
+   "id": "calendar",
+   "label": "Calendar",
+   "icon": "calendar",
+   "section": "More demos"
+  },
+  {
+   "id": "chat",
+   "label": "Messages",
+   "icon": "chat",
+   "section": "More demos"
+  },
+  {
+   "id": "checkout",
+   "label": "Checkout",
+   "icon": "cart",
+   "section": "More demos"
+  },
+  {
+   "id": "profile",
+   "label": "Profile",
+   "icon": "person",
+   "section": "More demos"
+  },
+  {
+   "id": "settings",
+   "label": "Settings",
+   "icon": "gear",
+   "section": "More demos"
+  }
+ ],
+ "current": "t.order",
+ "screen": {
+  "id": "t.order",
+  "title": "Order detail",
+  "subtitle": "Astryx's detail-page template, on the shared core",
+  "toolbar": [],
+  "body": {
+   "kind": "template",
+   "template": "order",
+   "view": {
+    "tab": "details",
+    "sidePanel": true,
+    "panelDialog": false,
+    "number": "#1001",
+    "itemCount": 5,
+    "customerName": "Jane Doe",
+    "status": "Unfulfilled",
+    "date": "02/23/2026",
+    "flag": "Needs attention",
+    "products": [
+     {
+      "name": "Solstice Mug",
+      "image": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20400%20300%22%20preserveAspectRatio%3D%22xMidYMid%20slice%22%3E%3Crect%20width%3D%22400%22%20height%3D%22300%22%20fill%3D%22%23f5f6f8%22%2F%3E%3Cg%20transform%3D%22translate%28200%20150%29%22%20fill%3D%22none%22%20stroke%3D%22%23c2cad6%22%20stroke-width%3D%225%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Crect%20x%3D%22-44%22%20y%3D%22-44%22%20width%3D%2288%22%20height%3D%2288%22%20rx%3D%2216%22%2F%3E%3Ccircle%20cx%3D%2218%22%20cy%3D%22-18%22%20r%3D%222.5%22%20fill%3D%22%23c2cad6%22%20stroke%3D%22none%22%2F%3E%3Cpath%20d%3D%22M-34%2030%20L-8%200%20L10%2018%20L20%208%20L34%2024%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E",
+      "lines": [
+       "Glaze: Snow",
+       "Finish: Matte"
+      ],
+      "amount": "$89.00",
+      "unit": [
+       "$89.00",
+       " ",
+       "×",
+       " ",
+       1
+      ]
+     },
+     {
+      "name": "Ember Bowl",
+      "image": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20400%20300%22%20preserveAspectRatio%3D%22xMidYMid%20slice%22%3E%3Crect%20width%3D%22400%22%20height%3D%22300%22%20fill%3D%22%23f5f6f8%22%2F%3E%3Cg%20transform%3D%22translate%28200%20150%29%22%20fill%3D%22none%22%20stroke%3D%22%23c2cad6%22%20stroke-width%3D%225%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Crect%20x%3D%22-44%22%20y%3D%22-44%22%20width%3D%2288%22%20height%3D%2288%22%20rx%3D%2216%22%2F%3E%3Ccircle%20cx%3D%2218%22%20cy%3D%22-18%22%20r%3D%222.5%22%20fill%3D%22%23c2cad6%22%20stroke%3D%22none%22%2F%3E%3Cpath%20d%3D%22M-34%2030%20L-8%200%20L10%2018%20L20%208%20L34%2024%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E",
+      "lines": [
+       "Glaze: Sage",
+       "Size: 6 in"
+      ],
+      "amount": "$84.00",
+      "unit": [
+       "$42.00",
+       " ",
+       "×",
+       " ",
+       2
+      ]
+     },
+     {
+      "name": "Terra Cup",
+      "image": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20400%20300%22%20preserveAspectRatio%3D%22xMidYMid%20slice%22%3E%3Crect%20width%3D%22400%22%20height%3D%22300%22%20fill%3D%22%23f5f6f8%22%2F%3E%3Cg%20transform%3D%22translate%28200%20150%29%22%20fill%3D%22none%22%20stroke%3D%22%23c2cad6%22%20stroke-width%3D%225%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Crect%20x%3D%22-44%22%20y%3D%22-44%22%20width%3D%2288%22%20height%3D%2288%22%20rx%3D%2216%22%2F%3E%3Ccircle%20cx%3D%2218%22%20cy%3D%22-18%22%20r%3D%222.5%22%20fill%3D%22%23c2cad6%22%20stroke%3D%22none%22%2F%3E%3Cpath%20d%3D%22M-34%2030%20L-8%200%20L10%2018%20L20%208%20L34%2024%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E",
+      "lines": [
+       "Glaze: Oat",
+       "Size: 14 in"
+      ],
+      "amount": "$65.00",
+      "unit": [
+       "$65.00",
+       " ",
+       "×",
+       " ",
+       1
+      ]
+     },
+     {
+      "name": "Dawn Plate Set",
+      "image": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20400%20300%22%20preserveAspectRatio%3D%22xMidYMid%20slice%22%3E%3Crect%20width%3D%22400%22%20height%3D%22300%22%20fill%3D%22%23f5f6f8%22%2F%3E%3Cg%20transform%3D%22translate%28200%20150%29%22%20fill%3D%22none%22%20stroke%3D%22%23c2cad6%22%20stroke-width%3D%225%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Crect%20x%3D%22-44%22%20y%3D%22-44%22%20width%3D%2288%22%20height%3D%2288%22%20rx%3D%2216%22%2F%3E%3Ccircle%20cx%3D%2218%22%20cy%3D%22-18%22%20r%3D%222.5%22%20fill%3D%22%23c2cad6%22%20stroke%3D%22none%22%2F%3E%3Cpath%20d%3D%22M-34%2030%20L-8%200%20L10%2018%20L20%208%20L34%2024%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E",
+      "lines": [
+       "Glaze: Charcoal",
+       "Capacity: 3 oz"
+      ],
+      "amount": "$102.00",
+      "unit": [
+       "$34.00",
+       " ",
+       "×",
+       " ",
+       3
+      ]
+     },
+     {
+      "name": "Kiln Salad Bowl",
+      "image": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20400%20300%22%20preserveAspectRatio%3D%22xMidYMid%20slice%22%3E%3Crect%20width%3D%22400%22%20height%3D%22300%22%20fill%3D%22%23f5f6f8%22%2F%3E%3Cg%20transform%3D%22translate%28200%20150%29%22%20fill%3D%22none%22%20stroke%3D%22%23c2cad6%22%20stroke-width%3D%225%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Crect%20x%3D%22-44%22%20y%3D%22-44%22%20width%3D%2288%22%20height%3D%2288%22%20rx%3D%2216%22%2F%3E%3Ccircle%20cx%3D%2218%22%20cy%3D%22-18%22%20r%3D%222.5%22%20fill%3D%22%23c2cad6%22%20stroke%3D%22none%22%2F%3E%3Cpath%20d%3D%22M-34%2030%20L-8%200%20L10%2018%20L20%208%20L34%2024%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E",
+      "lines": [
+       "Glaze: Snow",
+       "Height: 8 in"
+      ],
+      "amount": "$78.00",
+      "unit": [
+       "$78.00",
+       " ",
+       "×",
+       " ",
+       1
+      ]
+     }
+    ],
+    "summary": [
+     {
+      "label": "Subtotal",
+      "note": [
+       5,
+       " items"
+      ],
+      "amount": "$418.00",
+      "strong": false
+     },
+     {
+      "label": "Discount",
+      "note": [
+       "New customer code: NEW15"
+      ],
+      "amount": "– $15.00",
+      "strong": false
+     },
+     {
+      "label": "Shipping",
+      "note": [
+       "Free shipping (0.0lbs) USPS"
+      ],
+      "amount": "$0.00",
+      "strong": false
+     },
+     {
+      "label": "Tax",
+      "note": [
+       "Sales tax (8.25%)"
+      ],
+      "amount": "$33.25",
+      "strong": false
+     },
+     {
+      "label": "Total",
+      "note": null,
+      "amount": "$436.25",
+      "strong": true
+     }
+    ],
+    "paidBy": {
+     "label": "Paid by customer",
+     "note": "Visa ...7482",
+     "amount": "$436.25"
+    },
+    "activity": [
+     {
+      "user": "Jane Doe",
+      "text": "placed order #1001",
+      "changes": null,
+      "reactions": 2,
+      "time": "Feb 23 at 9:12 AM"
+     },
+     {
+      "user": "Alex Rivera",
+      "text": "Customer requested gift wrapping for the mug & plate set. I've added a note to the packing slip — warehouse team should wrap in recycled kraft paper.",
+      "changes": null,
+      "reactions": 3,
+      "time": "Feb 23 at 10:45 AM"
+     },
+     {
+      "user": "System",
+      "text": "has several information changes",
+      "changes": [
+       "Payment verified via Visa ...7482",
+       "Fraud check passed — low risk"
+      ],
+      "reactions": null,
+      "time": "Feb 23 at 11:30 AM"
+     },
+     {
+      "user": "Alex Rivera",
+      "text": "marked order as ready for fulfillment",
+      "changes": null,
+      "reactions": 1,
+      "time": "Feb 23 at 2:15 PM"
+     }
+    ],
+    "notes": "Customer is a repeat buyer — 3rd order this quarter. Prefers snow and oat glazes. Requested gift wrapping for the mug set. Ships to a residential address in CA.",
+    "customer": [
+     {
+      "label": "Name",
+      "value": "Jane Doe"
+     },
+     {
+      "label": "Address",
+      "value": "321 Smith Road, CA 38238"
+     },
+     {
+      "label": "Phone",
+      "value": "234-"
+     },
+     {
+      "label": "Email",
+      "value": "janedoe@email.com"
+     },
+     {
+      "label": "Billing Address",
+      "value": "Same as shipping address"
+     }
+    ],
+    "fraud": {
+     "risk": 15,
+     "recommendation": "Recommendation: Fulfill order",
+     "detail": "There is a low chance that you will receive a chargeback on this order."
+    }
+   }
+  }
+ },
+ "toast": null,
+ "dialog": null,
+ "theme": {
+  "id": "astryx",
+  "label": "Theme",
+  "setId": "settings.theme",
+  "options": [
+   {
+    "value": "astryx",
+    "label": "Astryx"
+   },
+   {
+    "value": "ocean",
+    "label": "Ocean"
+   },
+   {
+    "value": "ember",
+    "label": "Ember"
+   },
+   {
+    "value": "grape",
+    "label": "Grape"
+   }
+  ]
+ },
+ "surface": {
+  "id": "app.surface",
+  "label": "Show",
+  "value": "native",
+  "options": [
+   {
+    "value": "native",
+    "label": "Native",
+    "description": "SwiftUI, on the shared core in Hermes"
+   },
+   {
+    "value": "web",
+    "label": "Web on Hermes",
+    "description": "The refactored web page, on the same shared core"
+   },
+   {
+    "value": "webOwn",
+    "label": "Web, own core",
+    "description": "The refactored web page, on a core of its own in the page: no Hermes"
+   },
+   {
+    "value": "stock",
+    "label": "Stock Astryx",
+    "description": "Astryx as it is today: its own template and its own state"
+   },
+   {
+    "value": "compare",
+    "label": "Native and web",
+    "description": "Native and web on Hermes, side by side"
+   },
+   {
+    "value": "all",
+    "label": "All four",
+    "description": "All four drawings at once"
+   }
+  ],
+  "stockTemplate": "detail-page",
+  "stockLabel": "Astryx as it is today: its own template and its own state"
+ }
+}

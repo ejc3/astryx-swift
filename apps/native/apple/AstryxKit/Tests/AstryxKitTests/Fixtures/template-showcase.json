@@ -1,0 +1,738 @@
+{
+ "protocol": 1,
+ "appName": "Astryx Swift",
+ "nav": [
+  {
+   "id": "t.showcase",
+   "label": "Theme showcase",
+   "icon": "sparkle",
+   "section": "Astryx templates"
+  },
+  {
+   "id": "t.dashboard",
+   "label": "Dashboard",
+   "icon": "chart",
+   "section": "Astryx templates"
+  },
+  {
+   "id": "t.inbox",
+   "label": "Inbox",
+   "icon": "inbox",
+   "section": "Astryx templates"
+  },
+  {
+   "id": "t.kanban",
+   "label": "Kanban board",
+   "icon": "check",
+   "section": "Astryx templates"
+  },
+  {
+   "id": "t.invoice",
+   "label": "Invoice",
+   "icon": "card",
+   "section": "Astryx templates"
+  },
+  {
+   "id": "t.calendar",
+   "label": "Calendar",
+   "icon": "calendar",
+   "section": "Astryx templates"
+  },
+  {
+   "id": "t.chat",
+   "label": "AI chat",
+   "icon": "chat",
+   "section": "Astryx templates"
+  },
+  {
+   "id": "t.checkout",
+   "label": "Checkout",
+   "icon": "cart",
+   "section": "Astryx templates"
+  },
+  {
+   "id": "t.order",
+   "label": "Order detail",
+   "icon": "truck",
+   "section": "Astryx templates"
+  },
+  {
+   "id": "t.settings",
+   "label": "Settings",
+   "icon": "gear",
+   "section": "Astryx templates"
+  },
+  {
+   "id": "overview",
+   "label": "Components",
+   "icon": "grid",
+   "section": "More demos"
+  },
+  {
+   "id": "dashboard",
+   "label": "Dashboard",
+   "icon": "chart",
+   "section": "More demos"
+  },
+  {
+   "id": "inbox",
+   "label": "Inbox",
+   "icon": "inbox",
+   "badge": "3",
+   "section": "More demos"
+  },
+  {
+   "id": "tasks",
+   "label": "Tasks",
+   "icon": "check",
+   "badge": "7",
+   "section": "More demos"
+  },
+  {
+   "id": "people",
+   "label": "People",
+   "icon": "people",
+   "section": "More demos"
+  },
+  {
+   "id": "calendar",
+   "label": "Calendar",
+   "icon": "calendar",
+   "section": "More demos"
+  },
+  {
+   "id": "chat",
+   "label": "Messages",
+   "icon": "chat",
+   "section": "More demos"
+  },
+  {
+   "id": "checkout",
+   "label": "Checkout",
+   "icon": "cart",
+   "section": "More demos"
+  },
+  {
+   "id": "profile",
+   "label": "Profile",
+   "icon": "person",
+   "section": "More demos"
+  },
+  {
+   "id": "settings",
+   "label": "Settings",
+   "icon": "gear",
+   "section": "More demos"
+  }
+ ],
+ "current": "t.showcase",
+ "screen": {
+  "id": "t.showcase",
+  "title": "Theme showcase",
+  "subtitle": "Astryx's theme-showcase template, on the shared core",
+  "toolbar": [],
+  "body": {
+   "kind": "template",
+   "template": "showcase",
+   "view": {
+    "nav": {
+     "label": "Theme preview navigation",
+     "heading": "Studio",
+     "items": [
+      {
+       "label": "Shop",
+       "isSelected": true
+      },
+      {
+       "label": "New In",
+       "isSelected": false
+      },
+      {
+       "label": "Stories",
+       "isSelected": false
+      },
+      {
+       "label": "Help",
+       "isSelected": false
+      }
+     ],
+     "actions": [
+      {
+       "label": "Search",
+       "icon": "search"
+      },
+      {
+       "label": "Account",
+       "icon": "account"
+      },
+      {
+       "label": "Cart",
+       "icon": "cart"
+      }
+     ],
+     "signIn": "Sign in"
+    },
+    "hero": {
+     "lines": [
+      "Little joys,",
+      "everywhere you go"
+     ],
+     "body": "We believe the smallest details are the ones that matter most. Turn an ordinary day into something worth remembering."
+    },
+    "products": [
+     {
+      "name": "Minimalist Watch",
+      "description": "Clean design meets everyday durability.",
+      "badge": "New",
+      "badgeVariant": "blue",
+      "image": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20400%20300%22%20preserveAspectRatio%3D%22xMidYMid%20slice%22%3E%3Crect%20width%3D%22400%22%20height%3D%22300%22%20fill%3D%22%23f5f6f8%22%2F%3E%3Cg%20transform%3D%22translate%28200%20150%29%22%20fill%3D%22none%22%20stroke%3D%22%23c2cad6%22%20stroke-width%3D%225%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Crect%20x%3D%22-44%22%20y%3D%22-44%22%20width%3D%2288%22%20height%3D%2288%22%20rx%3D%2216%22%2F%3E%3Ccircle%20cx%3D%2218%22%20cy%3D%22-18%22%20r%3D%222.5%22%20fill%3D%22%23c2cad6%22%20stroke%3D%22none%22%2F%3E%3Cpath%20d%3D%22M-34%2030%20L-8%200%20L10%2018%20L20%208%20L34%2024%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E",
+      "quantity": {
+       "label": "Quantity",
+       "value": 1,
+       "min": 1,
+       "max": 99
+      },
+      "addLabel": "Add to cart"
+     },
+     {
+      "name": "Wireless Headphones",
+      "description": "Immersive sound, all-day comfort.",
+      "badge": "Popular",
+      "badgeVariant": "green",
+      "image": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20400%20300%22%20preserveAspectRatio%3D%22xMidYMid%20slice%22%3E%3Crect%20width%3D%22400%22%20height%3D%22300%22%20fill%3D%22%23f5f6f8%22%2F%3E%3Cg%20transform%3D%22translate%28200%20150%29%22%20fill%3D%22none%22%20stroke%3D%22%23c2cad6%22%20stroke-width%3D%225%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Crect%20x%3D%22-44%22%20y%3D%22-44%22%20width%3D%2288%22%20height%3D%2288%22%20rx%3D%2216%22%2F%3E%3Ccircle%20cx%3D%2218%22%20cy%3D%22-18%22%20r%3D%222.5%22%20fill%3D%22%23c2cad6%22%20stroke%3D%22none%22%2F%3E%3Cpath%20d%3D%22M-34%2030%20L-8%200%20L10%2018%20L20%208%20L34%2024%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E",
+      "quantity": {
+       "label": "Quantity",
+       "value": 1,
+       "min": 1,
+       "max": 99
+      },
+      "addLabel": "Add to cart"
+     },
+     {
+      "name": "Canvas Backpack",
+      "description": "Water-resistant canvas with a quiet, modern profile.",
+      "badge": "Limited",
+      "badgeVariant": "yellow",
+      "image": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20400%20300%22%20preserveAspectRatio%3D%22xMidYMid%20slice%22%3E%3Crect%20width%3D%22400%22%20height%3D%22300%22%20fill%3D%22%23f5f6f8%22%2F%3E%3Cg%20transform%3D%22translate%28200%20150%29%22%20fill%3D%22none%22%20stroke%3D%22%23c2cad6%22%20stroke-width%3D%225%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Crect%20x%3D%22-44%22%20y%3D%22-44%22%20width%3D%2288%22%20height%3D%2288%22%20rx%3D%2216%22%2F%3E%3Ccircle%20cx%3D%2218%22%20cy%3D%22-18%22%20r%3D%222.5%22%20fill%3D%22%23c2cad6%22%20stroke%3D%22none%22%2F%3E%3Cpath%20d%3D%22M-34%2030%20L-8%200%20L10%2018%20L20%208%20L34%2024%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E",
+      "quantity": {
+       "label": "Quantity",
+       "value": 1,
+       "min": 1,
+       "max": 99
+      },
+      "addLabel": "Add to cart"
+     }
+    ],
+    "checkout": {
+     "heading": "Checkout",
+     "email": {
+      "label": "Email",
+      "placeholder": "you@studio.com",
+      "value": ""
+     },
+     "shipping": {
+      "label": "Shipping method",
+      "description": "Delivery time may vary based on location and availability.",
+      "value": "economy",
+      "options": [
+       {
+        "value": "economy",
+        "label": "Economy Shipping",
+        "description": "Delivered in 5–7 business days",
+        "price": "$12.00"
+       },
+       {
+        "value": "standard",
+        "label": "Standard Shipping",
+        "description": "Delivered in 3–5 business days",
+        "price": "$16.00"
+       },
+       {
+        "value": "express",
+        "label": "Express Shipping",
+        "description": "Delivered in 1–2 business days",
+        "price": "$24.00"
+       }
+      ]
+     },
+     "payment": {
+      "label": "Payment method",
+      "options": [
+       {
+        "value": "card",
+        "label": "Pay with card",
+        "text": "Card",
+        "icon": "card",
+        "isSelected": true
+       },
+       {
+        "value": "apple",
+        "label": "Pay with Apple Pay",
+        "text": "Apple Pay",
+        "icon": "smartphone",
+        "isSelected": false
+       },
+       {
+        "value": "google",
+        "label": "Pay with Google Pay",
+        "text": "Google Pay",
+        "icon": "wallet",
+        "isSelected": false
+       }
+      ]
+     },
+     "card": {
+      "label": "Card number",
+      "placeholder": "1234 1234 1234 1234",
+      "value": ""
+     },
+     "expiry": {
+      "label": "Expiry",
+      "placeholder": "MM / YY",
+      "value": ""
+     },
+     "cvc": {
+      "label": "CVC",
+      "placeholder": "123",
+      "value": ""
+     },
+     "country": {
+      "label": "Country",
+      "value": "us",
+      "options": [
+       {
+        "value": "us",
+        "label": "United States"
+       },
+       {
+        "value": "ca",
+        "label": "Canada"
+       },
+       {
+        "value": "uk",
+        "label": "United Kingdom"
+       },
+       {
+        "value": "de",
+        "label": "Germany"
+       },
+       {
+        "value": "jp",
+        "label": "Japan"
+       },
+       {
+        "value": "au",
+        "label": "Australia"
+       }
+      ]
+     },
+     "saveInfo": {
+      "label": "Securely save my information for 1-click checkout",
+      "description": "Pay faster on Studio and everywhere Link is accepted.",
+      "value": true
+     },
+     "payLabel": "Pay now"
+    },
+    "chat": {
+     "heading": "Studio AI",
+     "actions": [
+      {
+       "label": "Export conversation",
+       "icon": "download"
+      },
+      {
+       "label": "Close chat",
+       "icon": "close"
+      }
+     ],
+     "messages": [
+      {
+       "kind": "system",
+       "text": "Today"
+      },
+      {
+       "kind": "user",
+       "text": "Where’s my order?"
+      },
+      {
+       "kind": "assistant",
+       "paragraphs": [
+        "Your order #1043 — the Minimalist Watch and Linen Throw — shipped this morning from the Aisle 3 warehouse and is currently in transit with UPS. It’s on track to arrive at your address by end of day tomorrow.",
+        "Let me know if you’d like to reschedule the delivery, redirect it to a pickup point, or start a return once it arrives."
+       ],
+       "details": null
+      },
+      {
+       "kind": "user",
+       "text": "Can you show me the full details?"
+      },
+      {
+       "kind": "assistant",
+       "paragraphs": [
+        "Here’s everything I have on order #1043:"
+       ],
+       "details": [
+        {
+         "label": "Items",
+         "description": "Minimalist Watch · Linen Throw",
+         "end": {
+          "kind": "amount",
+          "text": "$248"
+         }
+        },
+        {
+         "label": "Shipping",
+         "description": "UPS Ground",
+         "end": {
+          "kind": "amount",
+          "text": "$12"
+         }
+        },
+        {
+         "label": "Estimated arrival",
+         "description": "Tomorrow by 8pm",
+         "end": {
+          "kind": "badge",
+          "text": "On time",
+          "variant": "green"
+         }
+        },
+        {
+         "label": "Tracking",
+         "description": "UPS 1Z 999 AA1 0123 4567 84",
+         "end": {
+          "kind": "link",
+          "text": "Track →"
+         }
+        }
+       ]
+      }
+     ],
+     "suggestions": [
+      "Reschedule delivery",
+      "Update shipping address",
+      "Start a return"
+     ],
+     "composer": {
+      "value": "",
+      "placeholder": "Ask Studio AI…",
+      "attachLabel": "Attach",
+      "voiceLabel": "Voice input"
+     }
+    },
+    "revenue": {
+     "heading": "Revenue",
+     "kpis": [
+      {
+       "value": "18K",
+       "label": "Monthly revenue"
+      },
+      {
+       "value": "+12%",
+       "label": "Order growth"
+      }
+     ],
+     "activityHeading": "Activity",
+     "seeAll": "See all",
+     "items": [
+      {
+       "id": "1",
+       "icon": "bag",
+       "label": "Order #1043",
+       "detail": "Placed · 1:59 pm",
+       "amount": "+$248",
+       "isMuted": false
+      },
+      {
+       "id": "2",
+       "icon": "banknote",
+       "label": "Order #1041",
+       "detail": "Refunded · 12:40 pm",
+       "amount": "−$89",
+       "isMuted": true
+      },
+      {
+       "id": "3",
+       "icon": "bag",
+       "label": "Order #1040",
+       "detail": "Placed · 10:30 am",
+       "amount": "+$156",
+       "isMuted": false
+      },
+      {
+       "id": "4",
+       "icon": "bag",
+       "label": "Order #1038",
+       "detail": "Placed · 9:11 am",
+       "amount": "+$412",
+       "isMuted": false
+      },
+      {
+       "id": "5",
+       "icon": "bag",
+       "label": "Order #1037",
+       "detail": "Placed · 8:42 am",
+       "amount": "+$95",
+       "isMuted": false
+      }
+     ]
+    },
+    "inventory": {
+     "heading": "Inventory",
+     "addLabel": "Add item",
+     "search": {
+      "label": "Search inventory",
+      "placeholder": "Type and hit enter…",
+      "value": ""
+     },
+     "filters": [
+      {
+       "label": "Categories",
+       "placeholder": "Categories",
+       "icon": "folder",
+       "options": [
+        "Wearables",
+        "Audio",
+        "Bags",
+        "Drinkware",
+        "Home"
+       ]
+      },
+      {
+       "label": "Locations",
+       "placeholder": "Locations",
+       "icon": "mapPin",
+       "options": [
+        "Aisle 1",
+        "Aisle 2",
+        "Aisle 3",
+        "Aisle 4",
+        "Aisle 5",
+        "Aisle 6"
+       ]
+      },
+      {
+       "label": "Tags",
+       "placeholder": "Tags",
+       "icon": "tag",
+       "options": [
+        "New",
+        "Popular",
+        "Limited",
+        "Leather",
+        "Drinkware",
+        "Home"
+       ]
+      }
+     ],
+     "moreFiltersLabel": "Filters",
+     "viewButtons": [
+      {
+       "label": "List view",
+       "icon": "list"
+      },
+      {
+       "label": "Grid view",
+       "icon": "grid"
+      }
+     ],
+     "banner": "2 items are running low",
+     "columns": {
+      "select": "",
+      "item": "Item",
+      "available": "Available",
+      "location": "Location",
+      "tags": "Tags",
+      "actions": ""
+     },
+     "rows": [
+      {
+       "id": "a",
+       "selectLabel": "Select Minimalist Watch",
+       "selected": false,
+       "image": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20400%20300%22%20preserveAspectRatio%3D%22xMidYMid%20slice%22%3E%3Crect%20width%3D%22400%22%20height%3D%22300%22%20fill%3D%22%23f5f6f8%22%2F%3E%3Cg%20transform%3D%22translate%28200%20150%29%22%20fill%3D%22none%22%20stroke%3D%22%23c2cad6%22%20stroke-width%3D%225%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Crect%20x%3D%22-44%22%20y%3D%22-44%22%20width%3D%2288%22%20height%3D%2288%22%20rx%3D%2216%22%2F%3E%3Ccircle%20cx%3D%2218%22%20cy%3D%22-18%22%20r%3D%222.5%22%20fill%3D%22%23c2cad6%22%20stroke%3D%22none%22%2F%3E%3Cpath%20d%3D%22M-34%2030%20L-8%200%20L10%2018%20L20%208%20L34%2024%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E",
+       "fallback": "M",
+       "name": "Minimalist Watch",
+       "meta": "Stainless steel, sapphire crystal",
+       "available": 42,
+       "location": "Aisle 3",
+       "tags": [
+        {
+         "label": "New",
+         "variant": "blue"
+        }
+       ]
+      },
+      {
+       "id": "b",
+       "selectLabel": "Select Wireless Headphones",
+       "selected": true,
+       "image": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20400%20300%22%20preserveAspectRatio%3D%22xMidYMid%20slice%22%3E%3Crect%20width%3D%22400%22%20height%3D%22300%22%20fill%3D%22%23f5f6f8%22%2F%3E%3Cg%20transform%3D%22translate%28200%20150%29%22%20fill%3D%22none%22%20stroke%3D%22%23c2cad6%22%20stroke-width%3D%225%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Crect%20x%3D%22-44%22%20y%3D%22-44%22%20width%3D%2288%22%20height%3D%2288%22%20rx%3D%2216%22%2F%3E%3Ccircle%20cx%3D%2218%22%20cy%3D%22-18%22%20r%3D%222.5%22%20fill%3D%22%23c2cad6%22%20stroke%3D%22none%22%2F%3E%3Cpath%20d%3D%22M-34%2030%20L-8%200%20L10%2018%20L20%208%20L34%2024%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E",
+       "fallback": "W",
+       "name": "Wireless Headphones",
+       "meta": "ANC, 30hr battery",
+       "available": 128,
+       "location": "Aisle 1",
+       "tags": [
+        {
+         "label": "Popular",
+         "variant": "green"
+        }
+       ]
+      },
+      {
+       "id": "c",
+       "selectLabel": "Select Canvas Backpack",
+       "selected": false,
+       "image": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20400%20300%22%20preserveAspectRatio%3D%22xMidYMid%20slice%22%3E%3Crect%20width%3D%22400%22%20height%3D%22300%22%20fill%3D%22%23f5f6f8%22%2F%3E%3Cg%20transform%3D%22translate%28200%20150%29%22%20fill%3D%22none%22%20stroke%3D%22%23c2cad6%22%20stroke-width%3D%225%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Crect%20x%3D%22-44%22%20y%3D%22-44%22%20width%3D%2288%22%20height%3D%2288%22%20rx%3D%2216%22%2F%3E%3Ccircle%20cx%3D%2218%22%20cy%3D%22-18%22%20r%3D%222.5%22%20fill%3D%22%23c2cad6%22%20stroke%3D%22none%22%2F%3E%3Cpath%20d%3D%22M-34%2030%20L-8%200%20L10%2018%20L20%208%20L34%2024%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E",
+       "fallback": "C",
+       "name": "Canvas Backpack",
+       "meta": "Water-resistant, 25L",
+       "available": 63,
+       "location": "Aisle 2",
+       "tags": [
+        {
+         "label": "Limited",
+         "variant": "yellow"
+        }
+       ]
+      },
+      {
+       "id": "d",
+       "selectLabel": "Select Leather Wallet",
+       "selected": true,
+       "image": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20400%20300%22%20preserveAspectRatio%3D%22xMidYMid%20slice%22%3E%3Crect%20width%3D%22400%22%20height%3D%22300%22%20fill%3D%22%23f5f6f8%22%2F%3E%3Cg%20transform%3D%22translate%28200%20150%29%22%20fill%3D%22none%22%20stroke%3D%22%23c2cad6%22%20stroke-width%3D%225%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Crect%20x%3D%22-44%22%20y%3D%22-44%22%20width%3D%2288%22%20height%3D%2288%22%20rx%3D%2216%22%2F%3E%3Ccircle%20cx%3D%2218%22%20cy%3D%22-18%22%20r%3D%222.5%22%20fill%3D%22%23c2cad6%22%20stroke%3D%22none%22%2F%3E%3Cpath%20d%3D%22M-34%2030%20L-8%200%20L10%2018%20L20%208%20L34%2024%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E",
+       "fallback": "L",
+       "name": "Leather Wallet",
+       "meta": "Full-grain, RFID blocking",
+       "available": 15,
+       "location": "Aisle 4",
+       "tags": [
+        {
+         "label": "Leather",
+         "variant": "yellow"
+        }
+       ]
+      },
+      {
+       "id": "e",
+       "selectLabel": "Select Travel Tumbler",
+       "selected": false,
+       "image": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20400%20300%22%20preserveAspectRatio%3D%22xMidYMid%20slice%22%3E%3Crect%20width%3D%22400%22%20height%3D%22300%22%20fill%3D%22%23f5f6f8%22%2F%3E%3Cg%20transform%3D%22translate%28200%20150%29%22%20fill%3D%22none%22%20stroke%3D%22%23c2cad6%22%20stroke-width%3D%225%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Crect%20x%3D%22-44%22%20y%3D%22-44%22%20width%3D%2288%22%20height%3D%2288%22%20rx%3D%2216%22%2F%3E%3Ccircle%20cx%3D%2218%22%20cy%3D%22-18%22%20r%3D%222.5%22%20fill%3D%22%23c2cad6%22%20stroke%3D%22none%22%2F%3E%3Cpath%20d%3D%22M-34%2030%20L-8%200%20L10%2018%20L20%208%20L34%2024%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E",
+       "fallback": "T",
+       "name": "Travel Tumbler",
+       "meta": "Vacuum insulated, 16oz",
+       "available": 87,
+       "location": "Aisle 5",
+       "tags": [
+        {
+         "label": "Drinkware",
+         "variant": "green"
+        }
+       ]
+      },
+      {
+       "id": "f",
+       "selectLabel": "Select Linen Throw",
+       "selected": true,
+       "image": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20400%20300%22%20preserveAspectRatio%3D%22xMidYMid%20slice%22%3E%3Crect%20width%3D%22400%22%20height%3D%22300%22%20fill%3D%22%23f5f6f8%22%2F%3E%3Cg%20transform%3D%22translate%28200%20150%29%22%20fill%3D%22none%22%20stroke%3D%22%23c2cad6%22%20stroke-width%3D%225%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Crect%20x%3D%22-44%22%20y%3D%22-44%22%20width%3D%2288%22%20height%3D%2288%22%20rx%3D%2216%22%2F%3E%3Ccircle%20cx%3D%2218%22%20cy%3D%22-18%22%20r%3D%222.5%22%20fill%3D%22%23c2cad6%22%20stroke%3D%22none%22%2F%3E%3Cpath%20d%3D%22M-34%2030%20L-8%200%20L10%2018%20L20%208%20L34%2024%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E",
+       "fallback": "L",
+       "name": "Linen Throw",
+       "meta": "Heavyweight, oat",
+       "available": 24,
+       "location": "Aisle 6",
+       "tags": [
+        {
+         "label": "Home",
+         "variant": "orange"
+        }
+       ]
+      }
+     ],
+     "rowMenuLabel": "Row actions",
+     "rowMenu": [
+      {
+       "label": "Edit"
+      },
+      {
+       "label": "Duplicate"
+      },
+      {
+       "label": "Move to…"
+      },
+      {
+       "divider": true
+      },
+      {
+       "label": "Delete"
+      }
+     ]
+    }
+   }
+  }
+ },
+ "toast": null,
+ "dialog": null,
+ "theme": {
+  "id": "astryx",
+  "label": "Theme",
+  "setId": "settings.theme",
+  "options": [
+   {
+    "value": "astryx",
+    "label": "Astryx"
+   },
+   {
+    "value": "ocean",
+    "label": "Ocean"
+   },
+   {
+    "value": "ember",
+    "label": "Ember"
+   },
+   {
+    "value": "grape",
+    "label": "Grape"
+   }
+  ]
+ },
+ "surface": {
+  "id": "app.surface",
+  "label": "Show",
+  "value": "native",
+  "options": [
+   {
+    "value": "native",
+    "label": "Native",
+    "description": "SwiftUI, on the shared core in Hermes"
+   },
+   {
+    "value": "web",
+    "label": "Web on Hermes",
+    "description": "The refactored web page, on the same shared core"
+   },
+   {
+    "value": "webOwn",
+    "label": "Web, own core",
+    "description": "The refactored web page, on a core of its own in the page: no Hermes"
+   },
+   {
+    "value": "stock",
+    "label": "Stock Astryx",
+    "description": "Astryx as it is today: its own template and its own state"
+   },
+   {
+    "value": "compare",
+    "label": "Native and web",
+    "description": "Native and web on Hermes, side by side"
+   },
+   {
+    "value": "all",
+    "label": "All four",
+    "description": "All four drawings at once"
+   }
+  ],
+  "stockTemplate": "theme-showcase",
+  "stockLabel": "Astryx as it is today: its own template and its own state"
+ }
+}

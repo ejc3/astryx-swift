@@ -43,7 +43,7 @@ struct NodeView: View {
         case .calendar(let n): AXCalendar(node: n)
         case .chat(let n): AXChat(node: n)
         case .board(let n): AXBoard(node: n)
-        case .template(let n): AXTemplatePlaceholder(template: n.template)
+        case .template(let n): TemplateView(node: n)
         case .unknown(let kind): AXPlaceholder(kind: kind)
         }
     }
@@ -80,7 +80,8 @@ struct NodeChildren: View {
     }
 }
 
-/// A refactored template's screen, until its own SwiftUI view exists: a card naming it.
+/// A template's screen whose view model could not be read, or whose view is not written yet:
+/// a card naming it (and, for a model that did not decode, why).
 struct AXTemplatePlaceholder: View {
     let template: String
     @Environment(\.ax) private var ax

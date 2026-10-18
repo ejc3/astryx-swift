@@ -1,0 +1,550 @@
+{
+ "protocol": 1,
+ "appName": "Astryx Swift",
+ "nav": [
+  {
+   "id": "t.showcase",
+   "label": "Theme showcase",
+   "icon": "sparkle",
+   "section": "Astryx templates"
+  },
+  {
+   "id": "t.dashboard",
+   "label": "Dashboard",
+   "icon": "chart",
+   "section": "Astryx templates"
+  },
+  {
+   "id": "t.inbox",
+   "label": "Inbox",
+   "icon": "inbox",
+   "section": "Astryx templates"
+  },
+  {
+   "id": "t.kanban",
+   "label": "Kanban board",
+   "icon": "check",
+   "section": "Astryx templates"
+  },
+  {
+   "id": "t.invoice",
+   "label": "Invoice",
+   "icon": "card",
+   "section": "Astryx templates"
+  },
+  {
+   "id": "t.calendar",
+   "label": "Calendar",
+   "icon": "calendar",
+   "section": "Astryx templates"
+  },
+  {
+   "id": "t.chat",
+   "label": "AI chat",
+   "icon": "chat",
+   "section": "Astryx templates"
+  },
+  {
+   "id": "t.checkout",
+   "label": "Checkout",
+   "icon": "cart",
+   "section": "Astryx templates"
+  },
+  {
+   "id": "t.order",
+   "label": "Order detail",
+   "icon": "truck",
+   "section": "Astryx templates"
+  },
+  {
+   "id": "t.settings",
+   "label": "Settings",
+   "icon": "gear",
+   "section": "Astryx templates"
+  },
+  {
+   "id": "overview",
+   "label": "Components",
+   "icon": "grid",
+   "section": "More demos"
+  },
+  {
+   "id": "dashboard",
+   "label": "Dashboard",
+   "icon": "chart",
+   "section": "More demos"
+  },
+  {
+   "id": "inbox",
+   "label": "Inbox",
+   "icon": "inbox",
+   "badge": "3",
+   "section": "More demos"
+  },
+  {
+   "id": "tasks",
+   "label": "Tasks",
+   "icon": "check",
+   "badge": "7",
+   "section": "More demos"
+  },
+  {
+   "id": "people",
+   "label": "People",
+   "icon": "people",
+   "section": "More demos"
+  },
+  {
+   "id": "calendar",
+   "label": "Calendar",
+   "icon": "calendar",
+   "section": "More demos"
+  },
+  {
+   "id": "chat",
+   "label": "Messages",
+   "icon": "chat",
+   "section": "More demos"
+  },
+  {
+   "id": "checkout",
+   "label": "Checkout",
+   "icon": "cart",
+   "section": "More demos"
+  },
+  {
+   "id": "profile",
+   "label": "Profile",
+   "icon": "person",
+   "section": "More demos"
+  },
+  {
+   "id": "settings",
+   "label": "Settings",
+   "icon": "gear",
+   "section": "More demos"
+  }
+ ],
+ "current": "t.chat",
+ "screen": {
+  "id": "t.chat",
+  "title": "AI chat",
+  "subtitle": "Astryx's ai-chat template, on the shared core",
+  "toolbar": [],
+  "body": {
+   "kind": "template",
+   "template": "chat",
+   "view": {
+    "items": [
+     {
+      "kind": "divider",
+      "text": "Today"
+     },
+     {
+      "kind": "message",
+      "id": "m1",
+      "sender": "user",
+      "files": [
+       "auth-service.ts",
+       "middleware.ts"
+      ],
+      "parts": [
+       {
+        "kind": "bubble",
+        "time": {
+         "at": "2026-04-29T10:15:00",
+         "label": "10:15 AM"
+        },
+        "content": {
+         "kind": "mention",
+         "text": "@agent Can you review these auth files? The JWT refresh logic seems broken — tokens expire but the middleware doesn't catch it.",
+         "tokens": [
+          {
+           "value": "@agent",
+           "label": "@Agent",
+           "variant": "blue"
+          }
+         ]
+        }
+       }
+      ]
+     },
+     {
+      "kind": "message",
+      "id": "m2",
+      "sender": "assistant",
+      "avatar": "Agent",
+      "files": [],
+      "parts": [
+       {
+        "kind": "bubble",
+        "variant": "ghost",
+        "content": {
+         "kind": "text",
+         "text": "Looking into the auth files now. Let me read through the code and trace the token refresh flow."
+        }
+       },
+       {
+        "kind": "tools",
+        "expanded": true,
+        "calls": [
+         {
+          "name": "read",
+          "target": "auth-service.ts",
+          "status": "complete",
+          "duration": "45ms"
+         },
+         {
+          "name": "read",
+          "target": "middleware.ts",
+          "status": "complete",
+          "duration": "38ms"
+         },
+         {
+          "name": "bash",
+          "target": "grep -rn \"refreshToken\" src/",
+          "status": "complete",
+          "duration": "120ms",
+          "node": "cli:remote-server"
+         }
+        ]
+       },
+       {
+        "kind": "bubble",
+        "variant": "ghost",
+        "content": {
+         "kind": "markdown",
+         "text": "Found the issue. In `middleware.ts`, the token validation runs **before** the refresh check. When a token expires, the middleware rejects the request immediately instead of attempting a refresh.\n\nHere's the problematic sequence:\n\n1. Request arrives with an expired access token\n2. `validateToken()` throws `TokenExpiredError`\n3. The catch block returns `401` — never reaching `refreshToken()`\n\nThe fix is to catch `TokenExpiredError` specifically and attempt a refresh before rejecting:"
+        }
+       },
+       {
+        "kind": "bubble",
+        "variant": "ghost",
+        "content": {
+         "kind": "code",
+         "title": "middleware.ts",
+         "language": "typescript",
+         "code": "async function authMiddleware(req: Request) {\n  try {\n    const decoded = validateToken(req.headers.authorization);\n    req.user = decoded;\n  } catch (err) {\n    if (err instanceof TokenExpiredError) {\n      // Attempt silent refresh before rejecting\n      const refreshed = await refreshToken(req.cookies.refreshToken);\n      if (refreshed) {\n        req.user = refreshed.user;\n        req.newAccessToken = refreshed.accessToken;\n        return next(req);\n      }\n    }\n    return new Response('Unauthorized', { status: 401 });\n  }\n  return next(req);\n}"
+        }
+       },
+       {
+        "kind": "tools",
+        "expanded": false,
+        "calls": [
+         {
+          "name": "edit",
+          "target": "middleware.ts",
+          "status": "complete",
+          "duration": "85ms",
+          "additions": 8,
+          "deletions": 2
+         }
+        ]
+       },
+       {
+        "kind": "meta",
+        "time": {
+         "at": "2026-04-29T10:15:30",
+         "label": "10:15 AM"
+        },
+        "footer": "Agent"
+       }
+      ]
+     },
+     {
+      "kind": "message",
+      "id": "m3",
+      "sender": "user",
+      "files": [],
+      "parts": [
+       {
+        "kind": "bubble",
+        "group": "first",
+        "content": {
+         "kind": "text",
+         "text": "Nice catch, that makes sense"
+        }
+       },
+       {
+        "kind": "bubble",
+        "group": "last",
+        "time": {
+         "at": "2026-04-29T10:16:00",
+         "label": "10:16 AM"
+        },
+        "status": "delivered",
+        "content": {
+         "kind": "text",
+         "text": "Can you also add a test for the refresh path?"
+        }
+       }
+      ]
+     },
+     {
+      "kind": "message",
+      "id": "m4",
+      "sender": "assistant",
+      "avatar": "Agent",
+      "files": [],
+      "parts": [
+       {
+        "kind": "tools",
+        "expanded": true,
+        "calls": [
+         {
+          "name": "read",
+          "target": "middleware.test.ts",
+          "status": "complete",
+          "duration": "32ms"
+         },
+         {
+          "name": "edit",
+          "target": "middleware.test.ts",
+          "status": "complete",
+          "duration": "110ms",
+          "additions": 24,
+          "deletions": 0
+         },
+         {
+          "name": "bash",
+          "target": "yarn test middleware",
+          "status": "complete",
+          "duration": "3.2s",
+          "node": "cli:remote-server"
+         }
+        ]
+       },
+       {
+        "kind": "bubble",
+        "variant": "ghost",
+        "content": {
+         "kind": "markdown",
+         "text": "Added a test for the refresh flow. All **4 tests** pass:\n\n| Test | Status |\n|------|--------|\n| Valid token passes through | ✅ |\n| Expired token triggers refresh | ✅ |\n| Expired token with invalid refresh returns 401 | ✅ |\n| Malformed token returns 401 immediately | ✅ |"
+        }
+       },
+       {
+        "kind": "bubble",
+        "variant": "ghost",
+        "content": {
+         "kind": "code",
+         "title": "middleware.test.ts",
+         "language": "typescript",
+         "code": "describe('authMiddleware', () => {\n  it('refreshes an expired token silently', async () => {\n    const expiredToken = createExpiredJWT(mockUser);\n    const validRefresh = createRefreshToken(mockUser);\n\n    const req = mockRequest({\n      authorization: `Bearer ${expiredToken}`,\n      cookies: { refreshToken: validRefresh },\n    });\n\n    const res = await authMiddleware(req);\n\n    expect(res.status).toBe(200);\n    expect(req.user.id).toBe(mockUser.id);\n    expect(req.newAccessToken).toBeDefined();\n  });\n});"
+        }
+       },
+       {
+        "kind": "meta",
+        "time": {
+         "at": "2026-04-29T10:16:45",
+         "label": "10:16 AM"
+        }
+       }
+      ]
+     },
+     {
+      "kind": "status",
+      "text": "Changes saved to workspace"
+     },
+     {
+      "kind": "message",
+      "id": "m5",
+      "sender": "user",
+      "files": [],
+      "parts": [
+       {
+        "kind": "bubble",
+        "time": {
+         "at": "2026-04-29T10:18:00",
+         "label": "10:18 AM"
+        },
+        "content": {
+         "kind": "text",
+         "text": "Looks solid. Before I open the PR, can you write up a short design doc explaining the token-refresh flow for the team?"
+        }
+       }
+      ]
+     },
+     {
+      "kind": "message",
+      "id": "m6",
+      "sender": "assistant",
+      "avatar": "Agent",
+      "files": [],
+      "parts": [
+       {
+        "kind": "bubble",
+        "variant": "ghost",
+        "content": {
+         "kind": "markdown",
+         "text": "I've drafted a design doc covering the problem, the fix, and the test matrix — pulling straight from the changes we just made.\n\nOpen the document below to review it. Want me to expand any section?"
+        }
+       },
+       {
+        "kind": "bubble",
+        "variant": "ghost",
+        "width": "100%",
+        "time": {
+         "at": "2026-04-29T10:18:40",
+         "label": "10:18 AM"
+        },
+        "content": {
+         "kind": "artifact",
+         "label": "Open JWT Token Refresh: Design & Rollout",
+         "title": "JWT Token Refresh: Design & Rollout",
+         "caption": "Document"
+        }
+       }
+      ]
+     },
+     {
+      "kind": "message",
+      "id": "m7",
+      "sender": "user",
+      "files": [],
+      "parts": [
+       {
+        "kind": "bubble",
+        "time": {
+         "at": "2026-04-29T10:20:00",
+         "label": "10:20 AM"
+        },
+        "status": "delivered",
+        "content": {
+         "kind": "text",
+         "text": "This is great. Can you add a section on rollout and monitoring at the end?"
+        }
+       }
+      ]
+     },
+     {
+      "kind": "message",
+      "id": "m8",
+      "sender": "assistant",
+      "avatar": "Agent",
+      "files": [],
+      "parts": [
+       {
+        "kind": "bubble",
+        "variant": "ghost",
+        "content": {
+         "kind": "markdown",
+         "text": "On it — adding a **Rollout & Monitoring** section with a staged flag ramp and the alert thresholds. Updating the document now."
+        }
+       },
+       {
+        "kind": "tools",
+        "expanded": false,
+        "calls": [
+         {
+          "name": "edit",
+          "target": "docs/token-refresh.md",
+          "status": "running",
+          "node": "cli:remote-server"
+         }
+        ]
+       },
+       {
+        "kind": "meta",
+        "time": {
+         "at": "2026-04-29T10:20:30",
+         "label": "10:20 AM"
+        }
+       }
+      ]
+     }
+    ],
+    "composer": {
+     "draft": "",
+     "placeholder": "Ask anything...",
+     "mode": "ask",
+     "modeLabel": "Ask",
+     "modes": [
+      {
+       "id": "ask",
+       "label": "Ask"
+      },
+      {
+       "id": "edit",
+       "label": "Edit"
+      }
+     ]
+    },
+    "artifact": {
+     "title": "JWT Token Refresh: Design & Rollout",
+     "subtitle": "Document · Updated just now",
+     "content": "## Overview\n\nOur API gateway authenticates every request with a short-lived JWT access token. Until now, an expired token meant an immediate `401` — even when the user still held a valid refresh token. This document describes the silent-refresh flow we just shipped and how we're rolling it out.\n\n## The Problem\n\nToken validation ran **before** any refresh logic, so the middleware rejected expired tokens outright:\n\n1. A request arrives with an expired access token\n2. `validateToken()` throws `TokenExpiredError`\n3. The catch block returns `401` — `refreshToken()` is never reached\n\nThe result was users getting logged out whenever an access token lapsed mid-session.\n\n## The Fix\n\nThe middleware now catches `TokenExpiredError` specifically and attempts a silent refresh before rejecting. On success it reissues an access token and continues the request; on failure it falls back to `401`.\n\n- **Transparent** — valid sessions never see an interruption\n- **Safe** — a missing or invalid refresh token still returns `401`\n- **Cheap** — refresh only runs on the expiry path, not on every request\n\n## Testing\n\nThe refresh path is covered end to end:\n\n| Scenario | Expected |\n|----------|----------|\n| Valid token passes through | `200` |\n| Expired token, valid refresh | `200` + new access token |\n| Expired token, invalid refresh | `401` |\n| Malformed token | `401` |\n\n## Rollout & Monitoring\n\n1. Ship behind the `silent_refresh` flag at 5% of traffic\n2. Watch the `auth.refresh.success` and `auth.refresh.failure` counters\n3. Alert if the failure rate exceeds **2%** over any 5-minute window\n4. Ramp to 100% once metrics hold steady for 24 hours",
+     "versions": [
+      "v2 (current)",
+      "v1"
+     ],
+     "panelOpen": true,
+     "dialogOpen": false
+    }
+   }
+  }
+ },
+ "toast": null,
+ "dialog": null,
+ "theme": {
+  "id": "astryx",
+  "label": "Theme",
+  "setId": "settings.theme",
+  "options": [
+   {
+    "value": "astryx",
+    "label": "Astryx"
+   },
+   {
+    "value": "ocean",
+    "label": "Ocean"
+   },
+   {
+    "value": "ember",
+    "label": "Ember"
+   },
+   {
+    "value": "grape",
+    "label": "Grape"
+   }
+  ]
+ },
+ "surface": {
+  "id": "app.surface",
+  "label": "Show",
+  "value": "native",
+  "options": [
+   {
+    "value": "native",
+    "label": "Native",
+    "description": "SwiftUI, on the shared core in Hermes"
+   },
+   {
+    "value": "web",
+    "label": "Web on Hermes",
+    "description": "The refactored web page, on the same shared core"
+   },
+   {
+    "value": "webOwn",
+    "label": "Web, own core",
+    "description": "The refactored web page, on a core of its own in the page: no Hermes"
+   },
+   {
+    "value": "stock",
+    "label": "Stock Astryx",
+    "description": "Astryx as it is today: its own template and its own state"
+   },
+   {
+    "value": "compare",
+    "label": "Native and web",
+    "description": "Native and web on Hermes, side by side"
+   },
+   {
+    "value": "all",
+    "label": "All four",
+    "description": "All four drawings at once"
+   }
+  ],
+  "stockTemplate": "ai-chat",
+  "stockLabel": "Astryx as it is today: its own template and its own state"
+ }
+}

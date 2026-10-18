@@ -2,7 +2,7 @@
 // apps/native/apple/AstryxKit/Tests/AstryxKitTests/Fixtures. Run: node scripts/fixtures.ts
 import { mkdirSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { createClient, SCREENS, THEME_INPUTS, type Now } from "../src/index.ts";
+import { createClient, SCREENS, TEMPLATES, THEME_INPUTS, type Now } from "../src/index.ts";
 
 // Tuesday 2026-10-13, 9:30 AM in UTC-7: the fixtures' fixed "now".
 const NOW: Now = { epochMs: Date.UTC(2026, 9, 13, 16, 30), utcOffsetMinutes: -420 };
@@ -11,6 +11,11 @@ mkdirSync(dir, { recursive: true });
 for (const screen of SCREENS) {
   const c = createClient(() => NOW, { screen });
   writeFileSync(`${dir}app-${screen}.json`, JSON.stringify(c.getSnapshot("app"), null, 1) + "\n");
+}
+// Every refactored template's screen, as the native apps receive it (a "template" node with its view model).
+for (const t of TEMPLATES) {
+  const c = createClient(() => NOW, { screen: `t.${t.id}` });
+  writeFileSync(`${dir}template-${t.id}.json`, JSON.stringify(c.getSnapshot("app"), null, 1) + "\n");
 }
 // A few states worth drawing: a toast, a dialog, an inbox on a phone (detail shown), checkout errors.
 const extra: [string, (c: ReturnType<typeof createClient>) => void][] = [
@@ -28,4 +33,4 @@ for (const t of THEME_INPUTS) {
   const c = createClient(() => NOW, { theme: t.id });
   writeFileSync(`${dir}theme-${t.id}.json`, JSON.stringify(c.getSnapshot("theme"), null, 1) + "\n");
 }
-console.log(`${SCREENS.length + extra.length} app fixtures and ${THEME_INPUTS.length} themes -> ${dir}`);
+console.log(`${SCREENS.length + extra.length} app fixtures, ${TEMPLATES.length} template fixtures and ${THEME_INPUTS.length} themes -> ${dir}`);

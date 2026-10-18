@@ -1,0 +1,1399 @@
+{
+ "protocol": 1,
+ "appName": "Astryx Swift",
+ "nav": [
+  {
+   "id": "t.showcase",
+   "label": "Theme showcase",
+   "icon": "sparkle",
+   "section": "Astryx templates"
+  },
+  {
+   "id": "t.dashboard",
+   "label": "Dashboard",
+   "icon": "chart",
+   "section": "Astryx templates"
+  },
+  {
+   "id": "t.inbox",
+   "label": "Inbox",
+   "icon": "inbox",
+   "section": "Astryx templates"
+  },
+  {
+   "id": "t.kanban",
+   "label": "Kanban board",
+   "icon": "check",
+   "section": "Astryx templates"
+  },
+  {
+   "id": "t.invoice",
+   "label": "Invoice",
+   "icon": "card",
+   "section": "Astryx templates"
+  },
+  {
+   "id": "t.calendar",
+   "label": "Calendar",
+   "icon": "calendar",
+   "section": "Astryx templates"
+  },
+  {
+   "id": "t.chat",
+   "label": "AI chat",
+   "icon": "chat",
+   "section": "Astryx templates"
+  },
+  {
+   "id": "t.checkout",
+   "label": "Checkout",
+   "icon": "cart",
+   "section": "Astryx templates"
+  },
+  {
+   "id": "t.order",
+   "label": "Order detail",
+   "icon": "truck",
+   "section": "Astryx templates"
+  },
+  {
+   "id": "t.settings",
+   "label": "Settings",
+   "icon": "gear",
+   "section": "Astryx templates"
+  },
+  {
+   "id": "overview",
+   "label": "Components",
+   "icon": "grid",
+   "section": "More demos"
+  },
+  {
+   "id": "dashboard",
+   "label": "Dashboard",
+   "icon": "chart",
+   "section": "More demos"
+  },
+  {
+   "id": "inbox",
+   "label": "Inbox",
+   "icon": "inbox",
+   "badge": "3",
+   "section": "More demos"
+  },
+  {
+   "id": "tasks",
+   "label": "Tasks",
+   "icon": "check",
+   "badge": "7",
+   "section": "More demos"
+  },
+  {
+   "id": "people",
+   "label": "People",
+   "icon": "people",
+   "section": "More demos"
+  },
+  {
+   "id": "calendar",
+   "label": "Calendar",
+   "icon": "calendar",
+   "section": "More demos"
+  },
+  {
+   "id": "chat",
+   "label": "Messages",
+   "icon": "chat",
+   "section": "More demos"
+  },
+  {
+   "id": "checkout",
+   "label": "Checkout",
+   "icon": "cart",
+   "section": "More demos"
+  },
+  {
+   "id": "profile",
+   "label": "Profile",
+   "icon": "person",
+   "section": "More demos"
+  },
+  {
+   "id": "settings",
+   "label": "Settings",
+   "icon": "gear",
+   "section": "More demos"
+  }
+ ],
+ "current": "t.dashboard",
+ "screen": {
+  "id": "t.dashboard",
+  "title": "Dashboard",
+  "subtitle": "Astryx's dashboard template, on the shared core",
+  "toolbar": [],
+  "body": {
+   "kind": "template",
+   "template": "dashboard",
+   "view": {
+    "activeUsers": {
+     "title": "Active users",
+     "reloadLabel": "Reload",
+     "points": [
+      {
+       "hour": 0,
+       "label": "Apr 1 14:00",
+       "allUsers": 116,
+       "desktop": 79,
+       "mobile": 37
+      },
+      {
+       "hour": 1,
+       "label": "Apr 1 14:15",
+       "allUsers": 118,
+       "desktop": 80,
+       "mobile": 38
+      },
+      {
+       "hour": 2,
+       "label": "Apr 1 14:30",
+       "allUsers": 117,
+       "desktop": 79,
+       "mobile": 38
+      },
+      {
+       "hour": 3,
+       "label": "Apr 1 14:45",
+       "allUsers": 119,
+       "desktop": 81,
+       "mobile": 38
+      },
+      {
+       "hour": 4,
+       "label": "Apr 1 15:00",
+       "allUsers": 116,
+       "desktop": 79,
+       "mobile": 37
+      },
+      {
+       "hour": 5,
+       "label": "Apr 1 15:15",
+       "allUsers": 113,
+       "desktop": 76,
+       "mobile": 37
+      },
+      {
+       "hour": 6,
+       "label": "Apr 1 15:30",
+       "allUsers": 109,
+       "desktop": 72,
+       "mobile": 37
+      },
+      {
+       "hour": 7,
+       "label": "Apr 1 15:45",
+       "allUsers": 111,
+       "desktop": 74,
+       "mobile": 37
+      },
+      {
+       "hour": 8,
+       "label": "Apr 1 16:00",
+       "allUsers": 110,
+       "desktop": 72,
+       "mobile": 38
+      },
+      {
+       "hour": 9,
+       "label": "Apr 1 16:15",
+       "allUsers": 107,
+       "desktop": 69,
+       "mobile": 38
+      },
+      {
+       "hour": 10,
+       "label": "Apr 1 16:30",
+       "allUsers": 104,
+       "desktop": 66,
+       "mobile": 38
+      },
+      {
+       "hour": 11,
+       "label": "Apr 1 16:45",
+       "allUsers": 101,
+       "desktop": 62,
+       "mobile": 39
+      },
+      {
+       "hour": 12,
+       "label": "Apr 1 17:00",
+       "allUsers": 100,
+       "desktop": 57,
+       "mobile": 43
+      },
+      {
+       "hour": 13,
+       "label": "Apr 1 17:15",
+       "allUsers": 99,
+       "desktop": 54,
+       "mobile": 45
+      },
+      {
+       "hour": 14,
+       "label": "Apr 1 17:30",
+       "allUsers": 97,
+       "desktop": 50,
+       "mobile": 47
+      },
+      {
+       "hour": 15,
+       "label": "Apr 1 17:45",
+       "allUsers": 95,
+       "desktop": 46,
+       "mobile": 49
+      },
+      {
+       "hour": 16,
+       "label": "Apr 1 18:00",
+       "allUsers": 93,
+       "desktop": 41,
+       "mobile": 52
+      },
+      {
+       "hour": 17,
+       "label": "Apr 1 18:15",
+       "allUsers": 91,
+       "desktop": 39,
+       "mobile": 52
+      },
+      {
+       "hour": 18,
+       "label": "Apr 1 18:30",
+       "allUsers": 89,
+       "desktop": 37,
+       "mobile": 52
+      },
+      {
+       "hour": 19,
+       "label": "Apr 1 18:45",
+       "allUsers": 87,
+       "desktop": 36,
+       "mobile": 51
+      },
+      {
+       "hour": 20,
+       "label": "Apr 1 19:00",
+       "allUsers": 85,
+       "desktop": 34,
+       "mobile": 51
+      },
+      {
+       "hour": 21,
+       "label": "Apr 1 19:15",
+       "allUsers": 83,
+       "desktop": 32,
+       "mobile": 51
+      },
+      {
+       "hour": 22,
+       "label": "Apr 1 19:30",
+       "allUsers": 80,
+       "desktop": 30,
+       "mobile": 50
+      },
+      {
+       "hour": 23,
+       "label": "Apr 1 19:45",
+       "allUsers": 77,
+       "desktop": 28,
+       "mobile": 49
+      },
+      {
+       "hour": 24,
+       "label": "Apr 1 20:00",
+       "allUsers": 75,
+       "desktop": 26,
+       "mobile": 49
+      },
+      {
+       "hour": 25,
+       "label": "Apr 1 20:15",
+       "allUsers": 76,
+       "desktop": 26,
+       "mobile": 50
+      },
+      {
+       "hour": 26,
+       "label": "Apr 1 20:30",
+       "allUsers": 76,
+       "desktop": 27,
+       "mobile": 49
+      },
+      {
+       "hour": 27,
+       "label": "Apr 1 20:45",
+       "allUsers": 75,
+       "desktop": 27,
+       "mobile": 48
+      },
+      {
+       "hour": 28,
+       "label": "Apr 1 21:00",
+       "allUsers": 73,
+       "desktop": 27,
+       "mobile": 46
+      },
+      {
+       "hour": 29,
+       "label": "Apr 1 21:15",
+       "allUsers": 71,
+       "desktop": 27,
+       "mobile": 44
+      },
+      {
+       "hour": 30,
+       "label": "Apr 1 21:30",
+       "allUsers": 69,
+       "desktop": 27,
+       "mobile": 42
+      },
+      {
+       "hour": 31,
+       "label": "Apr 1 21:45",
+       "allUsers": 67,
+       "desktop": 28,
+       "mobile": 39
+      },
+      {
+       "hour": 32,
+       "label": "Apr 1 22:00",
+       "allUsers": 65,
+       "desktop": 29,
+       "mobile": 36
+      },
+      {
+       "hour": 33,
+       "label": "Apr 1 22:15",
+       "allUsers": 63,
+       "desktop": 29,
+       "mobile": 34
+      },
+      {
+       "hour": 34,
+       "label": "Apr 1 22:30",
+       "allUsers": 61,
+       "desktop": 30,
+       "mobile": 31
+      },
+      {
+       "hour": 35,
+       "label": "Apr 1 22:45",
+       "allUsers": 60,
+       "desktop": 31,
+       "mobile": 29
+      },
+      {
+       "hour": 36,
+       "label": "Apr 1 23:00",
+       "allUsers": 59,
+       "desktop": 33,
+       "mobile": 26
+      },
+      {
+       "hour": 37,
+       "label": "Apr 1 23:15",
+       "allUsers": 58,
+       "desktop": 34,
+       "mobile": 24
+      },
+      {
+       "hour": 38,
+       "label": "Apr 1 23:30",
+       "allUsers": 57,
+       "desktop": 35,
+       "mobile": 22
+      },
+      {
+       "hour": 39,
+       "label": "Apr 1 23:45",
+       "allUsers": 56,
+       "desktop": 36,
+       "mobile": 20
+      },
+      {
+       "hour": 40,
+       "label": "Apr 2 00:00",
+       "allUsers": 56,
+       "desktop": 38,
+       "mobile": 18
+      },
+      {
+       "hour": 41,
+       "label": "Apr 2 00:15",
+       "allUsers": 56,
+       "desktop": 39,
+       "mobile": 17
+      },
+      {
+       "hour": 42,
+       "label": "Apr 2 00:30",
+       "allUsers": 57,
+       "desktop": 40,
+       "mobile": 17
+      },
+      {
+       "hour": 43,
+       "label": "Apr 2 00:45",
+       "allUsers": 56,
+       "desktop": 40,
+       "mobile": 16
+      },
+      {
+       "hour": 44,
+       "label": "Apr 2 01:00",
+       "allUsers": 56,
+       "desktop": 41,
+       "mobile": 15
+      },
+      {
+       "hour": 45,
+       "label": "Apr 2 01:15",
+       "allUsers": 55,
+       "desktop": 41,
+       "mobile": 14
+      },
+      {
+       "hour": 46,
+       "label": "Apr 2 01:30",
+       "allUsers": 55,
+       "desktop": 41,
+       "mobile": 14
+      },
+      {
+       "hour": 47,
+       "label": "Apr 2 01:45",
+       "allUsers": 54,
+       "desktop": 40,
+       "mobile": 14
+      },
+      {
+       "hour": 48,
+       "label": "Apr 2 02:00",
+       "allUsers": 54,
+       "desktop": 40,
+       "mobile": 14
+      },
+      {
+       "hour": 49,
+       "label": "Apr 2 02:15",
+       "allUsers": 53,
+       "desktop": 39,
+       "mobile": 14
+      },
+      {
+       "hour": 50,
+       "label": "Apr 2 02:30",
+       "allUsers": 53,
+       "desktop": 39,
+       "mobile": 14
+      },
+      {
+       "hour": 51,
+       "label": "Apr 2 02:45",
+       "allUsers": 52,
+       "desktop": 38,
+       "mobile": 14
+      },
+      {
+       "hour": 52,
+       "label": "Apr 2 03:00",
+       "allUsers": 51,
+       "desktop": 37,
+       "mobile": 14
+      },
+      {
+       "hour": 53,
+       "label": "Apr 2 03:15",
+       "allUsers": 50,
+       "desktop": 36,
+       "mobile": 14
+      },
+      {
+       "hour": 54,
+       "label": "Apr 2 03:30",
+       "allUsers": 49,
+       "desktop": 35,
+       "mobile": 14
+      },
+      {
+       "hour": 55,
+       "label": "Apr 2 03:45",
+       "allUsers": 49,
+       "desktop": 35,
+       "mobile": 14
+      },
+      {
+       "hour": 56,
+       "label": "Apr 2 04:00",
+       "allUsers": 48,
+       "desktop": 34,
+       "mobile": 14
+      },
+      {
+       "hour": 57,
+       "label": "Apr 2 04:15",
+       "allUsers": 48,
+       "desktop": 33,
+       "mobile": 15
+      },
+      {
+       "hour": 58,
+       "label": "Apr 2 04:30",
+       "allUsers": 49,
+       "desktop": 33,
+       "mobile": 16
+      },
+      {
+       "hour": 59,
+       "label": "Apr 2 04:45",
+       "allUsers": 49,
+       "desktop": 32,
+       "mobile": 17
+      },
+      {
+       "hour": 60,
+       "label": "Apr 2 05:00",
+       "allUsers": 50,
+       "desktop": 31,
+       "mobile": 19
+      },
+      {
+       "hour": 61,
+       "label": "Apr 2 05:15",
+       "allUsers": 51,
+       "desktop": 30,
+       "mobile": 21
+      },
+      {
+       "hour": 62,
+       "label": "Apr 2 05:30",
+       "allUsers": 52,
+       "desktop": 29,
+       "mobile": 23
+      },
+      {
+       "hour": 63,
+       "label": "Apr 2 05:45",
+       "allUsers": 54,
+       "desktop": 28,
+       "mobile": 26
+      },
+      {
+       "hour": 64,
+       "label": "Apr 2 06:00",
+       "allUsers": 56,
+       "desktop": 27,
+       "mobile": 29
+      },
+      {
+       "hour": 65,
+       "label": "Apr 2 06:15",
+       "allUsers": 58,
+       "desktop": 26,
+       "mobile": 32
+      },
+      {
+       "hour": 66,
+       "label": "Apr 2 06:30",
+       "allUsers": 61,
+       "desktop": 26,
+       "mobile": 35
+      },
+      {
+       "hour": 67,
+       "label": "Apr 2 06:45",
+       "allUsers": 64,
+       "desktop": 27,
+       "mobile": 37
+      },
+      {
+       "hour": 68,
+       "label": "Apr 2 07:00",
+       "allUsers": 67,
+       "desktop": 28,
+       "mobile": 39
+      },
+      {
+       "hour": 69,
+       "label": "Apr 2 07:15",
+       "allUsers": 70,
+       "desktop": 30,
+       "mobile": 40
+      },
+      {
+       "hour": 70,
+       "label": "Apr 2 07:30",
+       "allUsers": 73,
+       "desktop": 33,
+       "mobile": 40
+      },
+      {
+       "hour": 71,
+       "label": "Apr 2 07:45",
+       "allUsers": 76,
+       "desktop": 37,
+       "mobile": 39
+      },
+      {
+       "hour": 72,
+       "label": "Apr 2 08:00",
+       "allUsers": 80,
+       "desktop": 43,
+       "mobile": 37
+      },
+      {
+       "hour": 73,
+       "label": "Apr 2 08:15",
+       "allUsers": 85,
+       "desktop": 49,
+       "mobile": 36
+      },
+      {
+       "hour": 74,
+       "label": "Apr 2 08:30",
+       "allUsers": 90,
+       "desktop": 55,
+       "mobile": 35
+      },
+      {
+       "hour": 75,
+       "label": "Apr 2 08:45",
+       "allUsers": 95,
+       "desktop": 61,
+       "mobile": 34
+      },
+      {
+       "hour": 76,
+       "label": "Apr 2 09:00",
+       "allUsers": 99,
+       "desktop": 66,
+       "mobile": 33
+      },
+      {
+       "hour": 77,
+       "label": "Apr 2 09:15",
+       "allUsers": 102,
+       "desktop": 69,
+       "mobile": 33
+      },
+      {
+       "hour": 78,
+       "label": "Apr 2 09:30",
+       "allUsers": 104,
+       "desktop": 72,
+       "mobile": 32
+      },
+      {
+       "hour": 79,
+       "label": "Apr 2 09:45",
+       "allUsers": 104,
+       "desktop": 72,
+       "mobile": 32
+      },
+      {
+       "hour": 80,
+       "label": "Apr 2 10:00",
+       "allUsers": 106,
+       "desktop": 74,
+       "mobile": 32
+      },
+      {
+       "hour": 81,
+       "label": "Apr 2 10:15",
+       "allUsers": 109,
+       "desktop": 76,
+       "mobile": 33
+      },
+      {
+       "hour": 82,
+       "label": "Apr 2 10:30",
+       "allUsers": 112,
+       "desktop": 78,
+       "mobile": 34
+      },
+      {
+       "hour": 83,
+       "label": "Apr 2 10:45",
+       "allUsers": 114,
+       "desktop": 80,
+       "mobile": 34
+      },
+      {
+       "hour": 84,
+       "label": "Apr 2 11:00",
+       "allUsers": 116,
+       "desktop": 81,
+       "mobile": 35
+      },
+      {
+       "hour": 85,
+       "label": "Apr 2 11:15",
+       "allUsers": 117,
+       "desktop": 81,
+       "mobile": 36
+      },
+      {
+       "hour": 86,
+       "label": "Apr 2 11:30",
+       "allUsers": 119,
+       "desktop": 83,
+       "mobile": 36
+      },
+      {
+       "hour": 87,
+       "label": "Apr 2 11:45",
+       "allUsers": 119,
+       "desktop": 82,
+       "mobile": 37
+      },
+      {
+       "hour": 88,
+       "label": "Apr 2 12:00",
+       "allUsers": 120,
+       "desktop": 83,
+       "mobile": 37
+      },
+      {
+       "hour": 89,
+       "label": "Apr 2 12:15",
+       "allUsers": 115,
+       "desktop": 78,
+       "mobile": 37
+      },
+      {
+       "hour": 90,
+       "label": "Apr 2 12:30",
+       "allUsers": 111,
+       "desktop": 74,
+       "mobile": 37
+      },
+      {
+       "hour": 91,
+       "label": "Apr 2 12:45",
+       "allUsers": 110,
+       "desktop": 73,
+       "mobile": 37
+      },
+      {
+       "hour": 92,
+       "label": "Apr 2 13:00",
+       "allUsers": 113,
+       "desktop": 76,
+       "mobile": 37
+      },
+      {
+       "hour": 93,
+       "label": "Apr 2 13:15",
+       "allUsers": 116,
+       "desktop": 79,
+       "mobile": 37
+      },
+      {
+       "hour": 94,
+       "label": "Apr 2 13:30",
+       "allUsers": 118,
+       "desktop": 81,
+       "mobile": 37
+      },
+      {
+       "hour": 95,
+       "label": "Apr 2 14:00",
+       "allUsers": 120,
+       "desktop": 83,
+       "mobile": 37
+      }
+     ],
+     "series": [
+      {
+       "key": "allUsers",
+       "name": "All Users",
+       "color": "blue"
+      },
+      {
+       "key": "desktop",
+       "name": "Desktop",
+       "color": "orange"
+      },
+      {
+       "key": "mobile",
+       "name": "Mobile",
+       "color": "purple"
+      }
+     ],
+     "xDomain": [
+      0,
+      23
+     ],
+     "xTicks": [
+      {
+       "at": 0,
+       "label": "Apr 1 14:00"
+      },
+      {
+       "at": 32,
+       "label": "Apr 1 22:00"
+      },
+      {
+       "at": 64,
+       "label": "Apr 2 06:00"
+      },
+      {
+       "at": 95,
+       "label": "Apr 2 14:00"
+      }
+     ],
+     "yDomain": [
+      0,
+      120
+     ],
+     "yTicks": [
+      0,
+      20,
+      40,
+      60,
+      80,
+      100,
+      120
+     ]
+    },
+    "metrics": [
+     {
+      "label": "Monthly Visitors",
+      "value": "27.3 k",
+      "change": "+18.2%",
+      "positive": true,
+      "caption": "Last 30 days vs. Previous",
+      "sparkline": [
+       48,
+       46,
+       44,
+       42,
+       40,
+       18,
+       16,
+       38,
+       36,
+       34,
+       32,
+       30,
+       12,
+       10,
+       28,
+       26,
+       28,
+       32,
+       36,
+       14,
+       12,
+       40,
+       44,
+       48,
+       52,
+       56,
+       28,
+       24,
+       58,
+       62
+      ]
+     },
+     {
+      "label": "Monthly Page Views",
+      "value": "48.2 k",
+      "change": "+12.5%",
+      "positive": true,
+      "caption": "Last 30 days vs. Previous",
+      "sparkline": [
+       36,
+       38,
+       35,
+       37,
+       36,
+       14,
+       12,
+       38,
+       36,
+       34,
+       37,
+       35,
+       12,
+       10,
+       36,
+       34,
+       36,
+       35,
+       38,
+       14,
+       12,
+       40,
+       44,
+       50,
+       54,
+       56,
+       26,
+       22,
+       58,
+       60
+      ]
+     },
+     {
+      "label": "Avg. Session",
+      "value": "4.5 min",
+      "change": "-14.3%",
+      "positive": false,
+      "caption": "Last 30 days vs. Previous",
+      "sparkline": [
+       58,
+       56,
+       60,
+       58,
+       62,
+       30,
+       26,
+       60,
+       58,
+       62,
+       60,
+       58,
+       28,
+       24,
+       56,
+       54,
+       50,
+       46,
+       42,
+       18,
+       14,
+       38,
+       36,
+       34,
+       32,
+       30,
+       10,
+       8,
+       28,
+       26
+      ]
+     },
+     {
+      "label": "Bounce Rate",
+      "value": "42.3%",
+      "change": "-8.7%",
+      "positive": false,
+      "caption": "Last 30 days vs. Previous",
+      "sparkline": [
+       52,
+       56,
+       50,
+       54,
+       58,
+       62,
+       60,
+       54,
+       52,
+       56,
+       50,
+       54,
+       60,
+       58,
+       50,
+       48,
+       46,
+       44,
+       40,
+       46,
+       44,
+       38,
+       36,
+       34,
+       36,
+       32,
+       38,
+       36,
+       30,
+       28
+      ]
+     }
+    ],
+    "demographics": {
+     "title": "Demographics",
+     "moreLabel": "View more",
+     "cards": [
+      {
+       "title": "Region",
+       "segments": [
+        {
+         "label": "NORAM",
+         "value": 38,
+         "color": "blue",
+         "share": "38.00"
+        },
+        {
+         "label": "EMEA",
+         "value": 28,
+         "color": "orange",
+         "share": "28.00"
+        },
+        {
+         "label": "APAC",
+         "value": 22,
+         "color": "green",
+         "share": "22.00"
+        },
+        {
+         "label": "LATAM",
+         "value": 8,
+         "color": "purple",
+         "share": "8.00"
+        },
+        {
+         "label": "Other",
+         "value": 4,
+         "color": "neutral",
+         "share": "4.00"
+        }
+       ]
+      },
+      {
+       "title": "Role",
+       "segments": [
+        {
+         "label": "Engineer",
+         "value": 45,
+         "color": "blue",
+         "share": "45.00"
+        },
+        {
+         "label": "Manager",
+         "value": 20,
+         "color": "orange",
+         "share": "20.00"
+        },
+        {
+         "label": "Designer",
+         "value": 15,
+         "color": "green",
+         "share": "15.00"
+        },
+        {
+         "label": "Data Scientist",
+         "value": 12,
+         "color": "purple",
+         "share": "12.00"
+        },
+        {
+         "label": "Other",
+         "value": 8,
+         "color": "neutral",
+         "share": "8.00"
+        }
+       ]
+      }
+     ]
+    },
+    "engagement": {
+     "title": "Engagement",
+     "moreLabel": "View more",
+     "pages": {
+      "title": "Top pages",
+      "linkLabel": "All pages",
+      "linkHref": "#",
+      "headers": {
+       "page": "Page",
+       "views": "Views",
+       "newUsers": "New Users",
+       "avgTime": "Avg. Time"
+      },
+      "rows": [
+       {
+        "id": "1",
+        "page": "/home",
+        "views": 8420,
+        "max": 8420,
+        "barLabel": "/home views",
+        "viewsLabel": "8,420 views",
+        "newUsers": "62.3%",
+        "avgTime": "3:42"
+       },
+       {
+        "id": "2",
+        "page": "/products",
+        "views": 6150,
+        "max": 8420,
+        "barLabel": "/products views",
+        "viewsLabel": "6,150 views",
+        "newUsers": "45.1%",
+        "avgTime": "4:15"
+       },
+       {
+        "id": "3",
+        "page": "/pricing",
+        "views": 4830,
+        "max": 8420,
+        "barLabel": "/pricing views",
+        "viewsLabel": "4,830 views",
+        "newUsers": "38.7%",
+        "avgTime": "2:58"
+       },
+       {
+        "id": "4",
+        "page": "/blog",
+        "views": 3920,
+        "max": 8420,
+        "barLabel": "/blog views",
+        "viewsLabel": "3,920 views",
+        "newUsers": "71.4%",
+        "avgTime": "5:30"
+       },
+       {
+        "id": "5",
+        "page": "/docs",
+        "views": 3410,
+        "max": 8420,
+        "barLabel": "/docs views",
+        "viewsLabel": "3,410 views",
+        "newUsers": "29.8%",
+        "avgTime": "6:12"
+       },
+       {
+        "id": "6",
+        "page": "/about",
+        "views": 2980,
+        "max": 8420,
+        "barLabel": "/about views",
+        "viewsLabel": "2,980 views",
+        "newUsers": "55.6%",
+        "avgTime": "2:15"
+       },
+       {
+        "id": "7",
+        "page": "/contact",
+        "views": 2540,
+        "max": 8420,
+        "barLabel": "/contact views",
+        "viewsLabel": "2,540 views",
+        "newUsers": "48.2%",
+        "avgTime": "1:48"
+       },
+       {
+        "id": "8",
+        "page": "/changelog",
+        "views": 2210,
+        "max": 8420,
+        "barLabel": "/changelog views",
+        "viewsLabel": "2,210 views",
+        "newUsers": "22.1%",
+        "avgTime": "4:55"
+       },
+       {
+        "id": "9",
+        "page": "/support",
+        "views": 1870,
+        "max": 8420,
+        "barLabel": "/support views",
+        "viewsLabel": "1,870 views",
+        "newUsers": "59.3%",
+        "avgTime": "3:22"
+       },
+       {
+        "id": "10",
+        "page": "/careers",
+        "views": 1520,
+        "max": 8420,
+        "barLabel": "/careers views",
+        "viewsLabel": "1,520 views",
+        "newUsers": "83.1%",
+        "avgTime": "2:34"
+       }
+      ]
+     },
+     "events": {
+      "title": "Top events",
+      "linkLabel": "All events",
+      "linkHref": "#",
+      "headers": {
+       "event": "Event",
+       "count": "Count",
+       "users": "Users",
+       "newUsers": "New Users"
+      },
+      "rows": [
+       {
+        "id": "1",
+        "event": "page_view",
+        "count": 18420,
+        "max": 18420,
+        "barLabel": "18420",
+        "countLabel": "18,420",
+        "usersLabel": "12,300",
+        "newUsersLabel": "4,920"
+       },
+       {
+        "id": "2",
+        "event": "session_start",
+        "count": 14850,
+        "max": 18420,
+        "barLabel": "14850",
+        "countLabel": "14,850",
+        "usersLabel": "9,870",
+        "newUsersLabel": "3,950"
+       },
+       {
+        "id": "3",
+        "event": "first_visit",
+        "count": 8230,
+        "max": 18420,
+        "barLabel": "8230",
+        "countLabel": "8,230",
+        "usersLabel": "8,230",
+        "newUsersLabel": "8,230"
+       },
+       {
+        "id": "4",
+        "event": "user_engagement",
+        "count": 6120,
+        "max": 18420,
+        "barLabel": "6120",
+        "countLabel": "6,120",
+        "usersLabel": "4,510",
+        "newUsersLabel": "1,580"
+       },
+       {
+        "id": "5",
+        "event": "click",
+        "count": 3540,
+        "max": 18420,
+        "barLabel": "3540",
+        "countLabel": "3,540",
+        "usersLabel": "2,680",
+        "newUsersLabel": "940"
+       },
+       {
+        "id": "6",
+        "event": "scroll",
+        "count": 2910,
+        "max": 18420,
+        "barLabel": "2910",
+        "countLabel": "2,910",
+        "usersLabel": "2,140",
+        "newUsersLabel": "750"
+       },
+       {
+        "id": "7",
+        "event": "form_submit",
+        "count": 1870,
+        "max": 18420,
+        "barLabel": "1870",
+        "countLabel": "1,870",
+        "usersLabel": "1,350",
+        "newUsersLabel": "540"
+       },
+       {
+        "id": "8",
+        "event": "video_play",
+        "count": 1240,
+        "max": 18420,
+        "barLabel": "1240",
+        "countLabel": "1,240",
+        "usersLabel": "980",
+        "newUsersLabel": "390"
+       },
+       {
+        "id": "9",
+        "event": "search",
+        "count": 960,
+        "max": 18420,
+        "barLabel": "960",
+        "countLabel": "960",
+        "usersLabel": "720",
+        "newUsersLabel": "290"
+       },
+       {
+        "id": "10",
+        "event": "share",
+        "count": 580,
+        "max": 18420,
+        "barLabel": "580",
+        "countLabel": "580",
+        "usersLabel": "410",
+        "newUsersLabel": "160"
+       }
+      ]
+     }
+    }
+   }
+  }
+ },
+ "toast": null,
+ "dialog": null,
+ "theme": {
+  "id": "astryx",
+  "label": "Theme",
+  "setId": "settings.theme",
+  "options": [
+   {
+    "value": "astryx",
+    "label": "Astryx"
+   },
+   {
+    "value": "ocean",
+    "label": "Ocean"
+   },
+   {
+    "value": "ember",
+    "label": "Ember"
+   },
+   {
+    "value": "grape",
+    "label": "Grape"
+   }
+  ]
+ },
+ "surface": {
+  "id": "app.surface",
+  "label": "Show",
+  "value": "native",
+  "options": [
+   {
+    "value": "native",
+    "label": "Native",
+    "description": "SwiftUI, on the shared core in Hermes"
+   },
+   {
+    "value": "web",
+    "label": "Web on Hermes",
+    "description": "The refactored web page, on the same shared core"
+   },
+   {
+    "value": "webOwn",
+    "label": "Web, own core",
+    "description": "The refactored web page, on a core of its own in the page: no Hermes"
+   },
+   {
+    "value": "stock",
+    "label": "Stock Astryx",
+    "description": "Astryx as it is today: its own template and its own state"
+   },
+   {
+    "value": "compare",
+    "label": "Native and web",
+    "description": "Native and web on Hermes, side by side"
+   },
+   {
+    "value": "all",
+    "label": "All four",
+    "description": "All four drawings at once"
+   }
+  ],
+  "stockTemplate": "dashboard",
+  "stockLabel": "Astryx as it is today: its own template and its own state"
+ }
+}
