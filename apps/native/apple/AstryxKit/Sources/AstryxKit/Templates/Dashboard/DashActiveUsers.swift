@@ -50,9 +50,12 @@ private struct DashLineChart: View {
     @State private var selected: Double?
     @Environment(\.ax) private var ax
 
+    /// The model's domain widened to hold every point, as Recharts does with a numeric axis
+    /// (its domain grows to the data unless `allowDataOverflow` is set), so all points show.
     private var xRange: ClosedRange<Double> {
-        let lo = chart.xDomain.first ?? 0
-        let hi = chart.xDomain.count > 1 ? chart.xDomain[1] : lo + 1
+        let hours = chart.points.map(\.hour)
+        let lo = Swift.min(chart.xDomain.first ?? 0, hours.min() ?? 0)
+        let hi = Swift.max(chart.xDomain.count > 1 ? chart.xDomain[1] : lo + 1, hours.max() ?? lo + 1)
         return lo...Swift.max(hi, lo + 1)
     }
     private var yRange: ClosedRange<Double> {
@@ -60,7 +63,7 @@ private struct DashLineChart: View {
         let hi = chart.yDomain.count > 1 ? chart.yDomain[1] : lo + 1
         return lo...Swift.max(hi, lo + 1)
     }
-    /// Points inside the domain: the stock page's x axis shows only these of the day.
+    /// Points inside the range (all of them, since the range grows to hold them).
     private var visible: [DashModel.ActiveUsers.Point] {
         chart.points.filter { xRange.contains($0.hour) }
     }
