@@ -38,8 +38,9 @@ struct OrderScreen: View {
                     content
                 }
             } else {
-                // The header stays at the top while the page scrolls under it, as the web's does.
-                LazyVStack(alignment: .leading, spacing: 0, pinnedViews: [.sectionHeaders]) {
+                // Beside the panel the header stays at the top while the page scrolls under it, as the
+                // web's does; at phone width the web lets it scroll away, and so does this.
+                LazyVStack(alignment: .leading, spacing: 0, pinnedViews: narrow ? [] : [.sectionHeaders]) {
                     Section {
                         content
                     } header: {

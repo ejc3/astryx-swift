@@ -48,7 +48,9 @@ export function StackNode({ node }: { node: Of<"stack"> }) {
 
 export function GridNode({ node }: { node: Of<"grid"> }) {
   return (
-    <Grid columns={{ minWidth: node.minColumnWidth, repeat: "fit" }} gap={GAP[node.gap]} align="start">
+    // `max` is only the way to ask Astryx for a track floor of min(100%, minWidth): a column never
+    // outgrows its container, and no count of columns is ever reached that it would cap.
+    <Grid columns={{ minWidth: node.minColumnWidth, max: 99, repeat: "fit" }} gap={GAP[node.gap]} align="start">
       <Children nodes={node.children} />
     </Grid>
   );

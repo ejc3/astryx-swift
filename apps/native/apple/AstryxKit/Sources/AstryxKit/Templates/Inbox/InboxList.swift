@@ -64,11 +64,10 @@ struct InboxRowView: View {
 
     var body: some View {
         // The unread dot sits in a gutter left of the checkbox (the web's row-status column).
-        HStack(alignment: layout.isStacked ? .top : .center, spacing: ax.space(3)) {
+        HStack(alignment: .center, spacing: ax.space(3)) {
             Circle()
                 .fill(row.status == nil ? Color.clear : ax.accent)
                 .frame(width: InboxColumns.dot, height: InboxColumns.dot)
-                .padding(.top, layout.isStacked ? ax.space(2) : 0)
                 .accessibilityHidden(true)
             if !layout.isStacked {
                 InboxCheckbox(checked: selected, label: row.selectionLabel, selected: words.selected, notSelected: words.notSelected, action: onToggle)
@@ -86,7 +85,7 @@ struct InboxRowView: View {
             .accessibilityAddTraits(isOpen ? .isSelected : [])
         }
         .padding(.horizontal, ax.space(4))
-        .padding(.vertical, layout.isStacked ? ax.space(3) : ax.space(2))
+        .padding(.vertical, ax.space(2))
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(background)
         .overlay(alignment: .trailing) { hoverActions.padding(.trailing, ax.space(4)) }
@@ -122,37 +121,34 @@ struct InboxRowView: View {
 
     private var weight: String { row.isUnread ? "font-weight-semibold" : "font-weight-normal" }
 
+    /// The core's stacked mode (`inbox.tsx`): the sender (semibold while unread) over the subject
+    /// (secondary, regular, one line) on the left, the time at the end. No preview, no chips.
     private var stacked: some View {
-        VStack(alignment: .leading, spacing: ax.hair) {
-            HStack(alignment: .firstTextBaseline, spacing: ax.space(2)) {
+        HStack(alignment: .center, spacing: ax.space(2)) {
+            VStack(alignment: .leading, spacing: ax.hair) {
                 Text(row.sender)
                     .font(ax.font("font-size-base", 14, weight: weight))
                     .foregroundStyle(ax.text)
                     .lineLimit(1)
-                Spacer(minLength: ax.space(2))
+                Text(row.subject)
+                    .font(ax.fontBase)
+                    .foregroundStyle(ax.textSecondary)
+                    .lineLimit(1)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            HStack(spacing: ax.space(1)) {
                 if row.hasAttachments {
                     Image(systemName: "paperclip").font(ax.fontSmall).foregroundStyle(ax.iconSecondary)
                 }
                 Text(row.receivedAt)
-                    .font(ax.font("font-size-sm", 12, weight: weight).monospacedDigit())
+                    .font(ax.font("font-size-base", 14, weight: weight).monospacedDigit())
                     .foregroundStyle(ax.textSecondary)
                     .lineLimit(1)
             }
-            Text(row.subject)
-                .font(ax.font("font-size-base", 14, weight: "font-weight-medium"))
-                .foregroundStyle(ax.text)
-                .lineLimit(1)
-            Text(row.preview)
-                .font(ax.fontSmall)
-                .foregroundStyle(ax.textSecondary)
-                .lineLimit(2)
-            if row.priority != nil || !row.tags.isEmpty {
-                InboxChips(priority: row.priority, tags: row.tags).padding(.top, ax.space(1))
-            }
+            .fixedSize()
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
-
     private var wide: some View {
         HStack(spacing: ax.space(3)) {
             HStack(spacing: ax.space(2)) {
@@ -209,20 +205,35 @@ struct InboxRowView: View {
 struct InboxListColumn: View {
     let model: InboxModel
     let layout: InboxLayout
+    /// The page's masthead, when the list is the page's one scroll (a phone): it then scrolls
+    /// with the rows, as the first rows of the list, instead of sitting above a list that
+    /// scrolls inside the page.
+    var header: AnyView? = nil
     @Environment(\.ax) private var ax
     @Environment(\.axSend) private var send
     @Environment(\.axStatic) private var isStatic
+    @Environment(\.axWidth) private var width
+    /// Where the tab strip's content ends, in the strip's own space, while it is drawn.
+    @State private var tabsEnd: CGFloat = 0
 
     private var selected: Set<String> { Set(model.selectedKeys) }
 
+    /// The masthead and the strip scroll with the rows: only on a device, with rows to scroll.
+    private var integrated: Bool { header != nil && !isStatic && !model.rows.isEmpty }
+
     var body: some View {
         VStack(spacing: 0) {
-            if layout.hasSelection { bulkBand } else { tabStrip }
-            if model.rows.isEmpty {
-                empty
-            } else {
-                if !layout.isStacked { columnHeader }
+            if integrated {
                 rows
+            } else {
+                if let header { header }
+                if layout.hasSelection { bulkBand } else { tabStrip }
+                if model.rows.isEmpty {
+                    empty
+                } else {
+                    if !layout.isStacked { columnHeader }
+                    rows
+                }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
@@ -256,7 +267,8 @@ struct InboxListColumn: View {
     // MARK: Tabs and band
 
     private var tabStrip: some View {
-        AXHScroll {
+        let space = "inboxTabs"
+        return AXHScroll {
             HStack(spacing: ax.space(1)) {
                 ForEach(model.tabs) { tab in
                     Button {
@@ -272,11 +284,12 @@ struct InboxListColumn: View {
                                     .accessibilityLabel("\(badge)\(model.text.unreadSuffix)")
                             }
                         }
-                        .padding(.horizontal, ax.space(3))
+                        // The 2 pt bar sits under the label and the badge, not the tab's padding.
                         .frame(minHeight: max(38 * min(ax.scale, 1.4), InboxTarget.side))
                         .overlay(alignment: .bottom) {
                             Rectangle().fill(tab.value == model.tab ? ax.accent : .clear).frame(height: 2)
                         }
+                        .padding(.horizontal, ax.space(3))
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
@@ -284,6 +297,19 @@ struct InboxListColumn: View {
                 }
             }
             .padding(.horizontal, ax.space(1))
+            .onGeometryChange(for: CGFloat.self) { $0.frame(in: .named(space)).maxX } action: { tabsEnd = $0 }
+        }
+        .coordinateSpace(name: space)
+        // A strip that runs past the edge fades out there, as the web's scroller does.
+        .mask(alignment: .trailing) {
+            if tabsEnd > width + 1 {
+                HStack(spacing: 0) {
+                    Rectangle()
+                    LinearGradient(colors: [.black, .clear], startPoint: .leading, endPoint: .trailing).frame(width: ax.space(8))
+                }
+            } else {
+                Rectangle()
+            }
         }
         .overlay(alignment: .bottom) { InboxHairline() }
     }
@@ -388,13 +414,22 @@ struct InboxListColumn: View {
             }
         } else {
             List(selection: openSelection) {
+                if integrated {
+                    Group {
+                        if let header { header }
+                        if layout.hasSelection { bulkBand } else { tabStrip }
+                    }
+                    .listRowInsets(EdgeInsets())
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
+                }
                 ForEach(model.rows) { row in
                     rowView(row)
                         .tag(row.id)
                         .listRowInsets(EdgeInsets())
                         .listRowSeparator(.hidden)
                         .listRowBackground(Color.clear)
-                        .modifier(InboxTrailingSwipe(row: row.id, actions: layout.actions(of: row).filter { !model.isInert($0.id) && $0.id != "reply" }))
+                        .modifier(InboxTrailingSwipe(row: row.id, actions: layout.actions(of: row).filter { $0.id != "reply" }))
                         .swipeActions(edge: .leading, allowsFullSwipe: true) {
                             ForEach(layout.actions(of: row).filter { $0.id == "reply" }) { action in
                                 Button {

@@ -88,7 +88,8 @@ private struct SettingsGroup<Fields: View>: View {
                 stack.frame(maxWidth: .infinity, alignment: .topLeading)
             }
         } else {
-            VStack(alignment: .leading, spacing: ax.space(4)) {
+            // Stacked, the web's grid keeps its 40 point gap (gap 10) between the heading and the fields.
+            VStack(alignment: .leading, spacing: ax.space(10)) {
                 heading
                 stack
             }

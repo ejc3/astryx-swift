@@ -37,7 +37,7 @@ public struct Icon: Codable, Sendable, Hashable, RawRepresentable {
     public static let symbols: [String: String] = [
         "home": "house", "chart": "chart.bar", "inbox": "tray", "check": "checkmark",
         "people": "person.2", "gear": "gearshape", "cart": "cart", "calendar": "calendar",
-        "chat": "bubble.left.and.bubble.right", "person": "person", "star": "star",
+        "chat": "bubble.left", "person": "person", "star": "star",
         "star-fill": "star.fill", "archive": "archivebox", "trash": "trash",
         "search": "magnifyingglass", "plus": "plus", "chevron-left": "chevron.left",
         "chevron-right": "chevron.right", "arrow-up": "arrow.up", "arrow-down": "arrow.down",

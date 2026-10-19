@@ -248,6 +248,7 @@ struct SurfaceLayout: View {
             // the cell; the cell is what the layout gives it.
             Color.clear
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .modifier(WebExtendsUnderBars(extends: !showsCaption))
                 .overlay(alignment: .topLeading) {
                     switch drawing {
                     case .web: web
@@ -283,6 +284,26 @@ struct SurfaceLayout: View {
         .background(ax.surface)
         .overlay(alignment: .bottom) { Rectangle().fill(ax.border).frame(height: 1) }
         .accessibilityElement(children: .combine)
+    }
+}
+
+/// A web drawing alone on a phone runs to the display's edges, under the navigation bar and the
+/// home indicator, as the SwiftUI drawing's scroll view does (HIG Layout: content extends to the
+/// edges, bars float over it). The page insets itself by `env(safe-area-inset-*)` (it sets
+/// `viewport-fit=cover`) and scrolls under the bars.
+private struct WebExtendsUnderBars: ViewModifier {
+    let extends: Bool
+
+    func body(content: Content) -> some View {
+        #if os(iOS)
+        if extends {
+            content.ignoresSafeArea(.container, edges: [.top, .bottom])
+        } else {
+            content
+        }
+        #else
+        content
+        #endif
     }
 }
 
@@ -563,16 +584,50 @@ struct ScreenView: View {
     @Environment(\.ax) private var ax
     @Environment(\.axSend) private var send
     @Environment(\.dynamicTypeSize) private var typeSize
+    @Environment(\.horizontalSizeClass) private var sizeClass
 
-    /// The page repeats the title and subtitle unless the system's title carries them. The
-    /// bar's large title keeps the subtitle to one line, so at accessibility sizes the page
-    /// draws both, wrapping.
-    private var showsHeader: Bool {
-        if inlineToolbar { return true }
-        if typeSize.isAccessibilitySize { return true }
-        if #available(iOS 26, macOS 26, *) { return false }
+    /// On a phone the bar has room for short words; an action with a long one goes in a menu at
+    /// the bar's trailing end, with its words and glyph (an icon alone does not say it).
+    private var overflowButtons: [ButtonNode] {
+        #if os(iOS)
+        guard sizeClass == .compact else { return [] }
+        return app.screen.toolbar.filter { ToolbarButton.isLong($0) }
+        #else
+        return []
+        #endif
+    }
+    private var barButtons: [ButtonNode] {
+        let overflow = Set(overflowButtons.map(\.id))
+        return app.screen.toolbar.filter { !overflow.contains($0.id) }
+    }
+
+    /// Whether the navigation bar carries the title: it does wherever there is a bar (not in a
+    /// picture with no window), unless the page draws it itself at accessibility sizes, where the
+    /// bar's subtitle cannot wrap.
+    private var barShowsTitle: Bool {
+        if inlineToolbar { return false }
+        #if os(iOS)
+        if #available(iOS 26, *), typeSize.isAccessibilitySize { return false }
+        #endif
         return true
     }
+
+    /// Whether the bar's subtitle carries the subtitle too (iOS and macOS 26, and the Mac before).
+    private var barShowsSubtitle: Bool {
+        guard barShowsTitle else { return false }
+        #if os(macOS)
+        return true
+        #else
+        if #available(iOS 26, *) { return !typeSize.isAccessibilitySize }
+        return false
+        #endif
+    }
+
+    /// The page draws a heading only for what the bar does not say: a page header that repeats
+    /// the navigation title is left out (the title in the bar is the heading), and the subtitle
+    /// is drawn where the bar has none (before the glass design on a phone) or cannot wrap it.
+    private var showsHeader: Bool { !barShowsTitle || !barShowsSubtitle }
+    private var headerShowsTitle: Bool { !barShowsTitle }
 
     var body: some View {
         Group {
@@ -585,12 +640,17 @@ struct ScreenView: View {
         // The page is the surface, white in the light themes, as the web's content area is: the
         // translucent tokens (bubbles, columns, chips) then come out as they do there.
         .background(ax.surface)
-        .modifier(ScreenTitle(screen: app.screen, large: largeTitle && scrolls, pageDrawsTitle: !inlineToolbar && typeSize.isAccessibilitySize))
+        // A screen that scrolls inside itself (the AI chat) has no scroll view for a large title to
+        // collapse with: its title is the inline one.
+        .modifier(ScreenTitle(screen: app.screen, large: largeTitle && scrolls && !bodyScrollsItself, pageDrawsTitle: !inlineToolbar && typeSize.isAccessibilitySize))
         .toolbar {
             if !inlineToolbar {
                 ToolbarItemGroup(placement: .primaryAction) {
-                    ForEach(app.screen.toolbar, id: \.id) { button in
+                    ForEach(barButtons, id: \.id) { button in
                         ToolbarButton(node: button)
+                    }
+                    if !overflowButtons.isEmpty {
+                        ToolbarOverflowMenu(nodes: overflowButtons)
                     }
                 }
             }
@@ -607,7 +667,9 @@ struct ScreenView: View {
     /// A template that scrolls inside itself (the AI chat: its conversation scrolls above a pinned
     /// composer, as the web's ChatLayout does) is given the window's height and no outer scroll.
     private var bodyScrollsItself: Bool {
-        if case .template(let node) = app.screen.body { return node.template == "chat" }
+        // The chat (a conversation above a pinned composer), the inbox (one list under its masthead)
+        // and the kanban board (columns under a pinned toolbar) size themselves to the window.
+        if case .template(let node) = app.screen.body { return ["chat", "inbox", "kanban"].contains(node.template) }
         return false
     }
 
@@ -641,13 +703,15 @@ struct ScreenView: View {
     private var header: some View {
         HStack(alignment: .top, spacing: ax.space(4)) {
             VStack(alignment: .leading, spacing: ax.space(1)) {
-                Text(app.screen.title)
-                    .font(ax.heading(1))
-                    .foregroundStyle(ax.text)
-                    .lineLimit(4)
-                    .minimumScaleFactor(0.5)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .accessibilityAddTraits(.isHeader)
+                if headerShowsTitle {
+                    Text(app.screen.title)
+                        .font(ax.heading(1))
+                        .foregroundStyle(ax.text)
+                        .lineLimit(4)
+                        .minimumScaleFactor(0.5)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityAddTraits(.isHeader)
+                }
                 // Wraps between words at any size; a word longer than the screen shrinks to fit
                 // before it would be broken in two.
                 Text(app.screen.subtitle)
@@ -667,14 +731,29 @@ struct ScreenView: View {
     }
 }
 
-/// A toolbar button of the screen, as the platform's own button: it shows its words beside the
-/// glyph (an icon alone does not say "Follow" or "Fill with test data"), and a primary action is
-/// the prominent style. Every one is also a command in the menu bar (see `AstryxCommands`).
-private struct ToolbarButton: View {
+/// A toolbar button of the screen, as the platform's own button: it shows its words (an icon
+/// alone does not say "Follow" or "Today"), and a primary action is the prominent style. On a
+/// phone's bar the words stand alone, without the glyph, to fit; only a plus, the standard Add
+/// symbol, stays an icon. Every one is also a command in the menu bar (see `AstryxCommands`).
+struct ToolbarButton: View {
     let node: ButtonNode
     @Environment(\.ax) private var ax
     @Environment(\.axSend) private var send
     @Environment(\.horizontalSizeClass) private var sizeClass
+
+    /// More words than a phone's bar has room for: these go in the overflow menu.
+    static func isLong(_ node: ButtonNode) -> Bool {
+        node.label.count > 14
+    }
+
+
+    private var compact: Bool {
+        #if os(macOS)
+        false
+        #else
+        sizeClass == .compact
+        #endif
+    }
 
     var body: some View {
         let button = Button(role: node.variant == .destructive ? .destructive : nil) {
@@ -689,10 +768,12 @@ private struct ToolbarButton: View {
         .help(node.label)
         .disabled(node.disabled ?? false)
         .tint(node.variant == .destructive ? ax.danger : ax.accent)
-        if wordsShown {
+        // On a phone's bar the words alone: a glyph rarely says the action ("+" reads as Add, not
+        // Follow or Invite), and the words are what the web page shows.
+        if !compact {
             styled(button.labelStyle(.titleAndIcon))
         } else {
-            styled(button.labelStyle(.iconOnly))
+            styled(button.labelStyle(.titleOnly))
         }
     }
 
@@ -704,14 +785,33 @@ private struct ToolbarButton: View {
             button
         }
     }
+}
 
-    /// Always on the Mac; on a phone's navigation bar the glyph alone, as before.
-    private var wordsShown: Bool {
-        #if os(macOS)
-        true
-        #else
-        sizeClass != .compact
-        #endif
+/// A phone's bar menu for the actions whose words are too long for the bar: each with its words
+/// and glyph, as a menu item.
+private struct ToolbarOverflowMenu: View {
+    let nodes: [ButtonNode]
+    @Environment(\.axSend) private var send
+
+    var body: some View {
+        Menu {
+            ForEach(nodes, id: \.id) { node in
+                Button(role: node.variant == .destructive ? .destructive : nil) {
+                    send(.press(id: node.id))
+                } label: {
+                    if let icon = node.icon {
+                        Label(node.label, systemImage: icon.symbol)
+                    } else {
+                        Text(node.label)
+                    }
+                }
+                .disabled(node.disabled ?? false)
+            }
+        } label: {
+            Image(systemName: "ellipsis.circle")
+        }
+        // The menu has no title of its own: it is named for what it holds.
+        .accessibilityLabel(nodes.map(\.label).joined(separator: ", "))
     }
 }
 

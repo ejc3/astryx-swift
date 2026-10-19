@@ -47,14 +47,17 @@ struct KanbanScreen: View {
     @Environment(\.axWidth) private var width
     @Environment(\.dynamicTypeSize) private var typeSize
     @State private var drag = KanbanDragState()
+    /// The toolbar's own height, so the board takes exactly the rest of the window.
+    @State private var toolbarHeight: CGFloat = 66
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             toolbar
                 .padding(ax.space(4))
                 .overlay(alignment: .bottom) { InboxHairline() }
+                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { toolbarHeight = $0 }
             board
-                .modifier(KanbanFill())
+                .modifier(KanbanFill(above: toolbarHeight))
         }
         .frame(maxWidth: .infinity, alignment: .topLeading)
         // A card landing somewhere (dropped, or moved from its menu) is felt as a tap.
@@ -102,9 +105,10 @@ struct KanbanScreen: View {
             Image(systemName: "plus")
                 .font(.system(size: ax.fontSize("font-size-lg", 17) * 0.95, weight: .semibold))
                 .foregroundStyle(ax.onAccent)
-                .frame(width: chromeTarget, height: chromeTarget)
+                .frame(width: 32 * min(ax.scale, 1.4), height: 32 * min(ax.scale, 1.4))
                 .background(RoundedRectangle(cornerRadius: ax.radiusElement, style: .continuous).fill(ax.accent))
                 .contentShape(Rectangle())
+                .axTapTarget(keepLayout: true)
         }
         .buttonStyle(.plain)
         
@@ -141,6 +145,7 @@ struct KanbanScreen: View {
                         HStack(spacing: ax.space(2)) {
                             sprintPicker
                             Spacer(minLength: 0)
+                            rule
                             tools
                             add
                         }
@@ -150,6 +155,7 @@ struct KanbanScreen: View {
                         HStack(spacing: ax.space(2)) {
                             sprintPicker
                             Spacer(minLength: 0)
+                            rule
                             tools
                             addIcon
                         }
@@ -190,7 +196,11 @@ struct KanbanScreen: View {
             .menuStyle(.button)
             .buttonStyle(.plain)
             .menuIndicator(.hidden)
+            #if os(iOS)
+            .fixedSize(horizontal: false, vertical: true)
+            #else
             .fixedSize(horizontal: !typeSize.isAccessibilitySize, vertical: true)
+            #endif
             .accessibilityLabel(model.words.sprint)
             .accessibilityValue(current)
         }
@@ -198,15 +208,22 @@ struct KanbanScreen: View {
 
     private func sprintLabel(_ text: String) -> some View {
         HStack(spacing: ax.space(2)) {
-            Text(text).font(ax.fontLabel).foregroundStyle(ax.text).lineLimit(typeSize.isAccessibilitySize ? nil : 1)
+            Text(text).font(showFieldFont(ax)).foregroundStyle(ax.text).lineLimit(typeSize.isAccessibilitySize ? nil : 1)
             if typeSize.isAccessibilitySize { Spacer(minLength: 0) }
             Image(systemName: "chevron.up.chevron.down")
                 .font(.system(size: ax.fontSize("font-size-xs", 10), weight: .semibold))
                 .foregroundStyle(ax.iconSecondary)
         }
         .padding(.horizontal, ax.space(3))
-        .frame(minHeight: axControlHeight(ax))
+        // Astryx's md selector (32); the tap region reaches 44 on a touch screen.
+        .frame(minHeight: 32 * min(ax.scale, 1.4))
+        #if os(iOS)
+        // On a phone it gives way before the toolbar's other controls do, from 200 down to 120.
+        .frame(minWidth: typeSize.isAccessibilitySize ? 200 : 120, idealWidth: typeSize.isAccessibilitySize ? 200 : 120, maxWidth: typeSize.isAccessibilitySize ? .infinity : 200, alignment: .leading)
+        #else
         .frame(minWidth: 200, alignment: .leading)
+        #endif
+        .axTapTarget(keepLayout: true)
     }
 
     // MARK: Board
@@ -217,7 +234,7 @@ struct KanbanScreen: View {
     @ViewBuilder
     private var board: some View {
         let gap = ax.space(4)
-        let column: CGFloat = width < 600 ? max(width - 2 * ax.space(4) - 24, 220) : columnWidth
+        let column: CGFloat = columnWidth
         if isStatic {
             columns(width: column, gap: gap)
                 .padding(ax.space(4))
@@ -250,13 +267,17 @@ struct KanbanScreen: View {
 /// The board takes the height the window has left under the toolbar (the web's columns are
 /// `height: 100%`); drawn to an image it takes a window's worth.
 struct KanbanFill: ViewModifier {
+    /// The toolbar's height, above the board.
+    var above: CGFloat = 66
     @Environment(\.axStatic) private var isStatic
 
     func body(content: Content) -> some View {
         if isStatic {
             content.frame(minHeight: 560, alignment: .top)
         } else {
-            content.containerRelativeFrame(.vertical, alignment: .top) { height, _ in max(height - 66, 420) }
+            // Exactly the height the window has left, so the page itself has nothing to scroll
+            // and the toolbar stays where it is.
+            content.containerRelativeFrame(.vertical, alignment: .top) { height, _ in max(height - above, 420) }
         }
     }
 }
@@ -269,7 +290,7 @@ struct KanbanToolButton: View {
     @State private var hovering = false
 
     var body: some View {
-        let side = max(axMinTarget, 32 * min(ax.scale, 1.4))
+        let side = 32 * min(ax.scale, 1.4)
         Button {} label: {
             Image(systemName: symbol)
                 .font(.system(size: min(ax.fontSize("font-size-base", 14), 24)))

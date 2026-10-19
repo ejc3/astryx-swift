@@ -2,7 +2,7 @@ import SwiftUI
 
 /// The conversation: dividers, system lines and messages, in the model's order. The sizes follow the
 /// stock page (ChatLayout, spacious): 16 between messages, a 36 point avatar, parts 4 apart, and
-/// a message that is at most 80 percent of the column it sits in.
+/// the person's own message at most 80 percent of the column it sits in.
 struct TChatConversation: View {
     let items: [TChatItem]
     /// Opens the artifact (panel or dialog, the caller knows which).
@@ -73,9 +73,10 @@ private struct TChatMessageView: View {
         // The room this message has: the whole line for the person's own, what is left of it
         // beside the avatar for the assistant's.
         let column = mine ? width : width - avatarSide - ax.space(2)
-        // At accessibility sizes a message takes the whole line; the margin that tells the two
-        // sides apart would cost the text a fifth of its room.
-        let cap = typeSize.isAccessibilitySize ? column : column * 0.8
+        // The person's own message is at most 80 percent of the line, the margin that tells the two
+        // sides apart (at accessibility sizes it takes the whole line, as the margin would cost the
+        // text a fifth of its room). The assistant's runs the full column beside its avatar.
+        let cap = mine && !typeSize.isAccessibilitySize ? column * 0.8 : column
         HStack(alignment: .top, spacing: ax.space(2)) {
             if mine { Spacer(minLength: 0) }
             if !mine, let avatar = message.avatar {
@@ -346,13 +347,15 @@ private struct TChatDoubleCheck: View {
     @Environment(\.ax) private var ax
 
     var body: some View {
-        let size = ax.fontSize("font-size-xs", 10)
+        // Drawn in the 12 point caption box (scaled like the text), about as wide as the web's 9 point mark.
+        let box = ax.fontSize("font-size-sm", 12)
+        let size = box * 0.62
         ZStack {
             Image(systemName: "checkmark").offset(x: -size * 0.28)
             Image(systemName: "checkmark").offset(x: size * 0.28)
         }
-        .font(.system(size: size, weight: .regular))
-        .frame(width: size * 1.6)
+        .font(.system(size: size, weight: .semibold))
+        .frame(width: box)
         .accessibilityHidden(true)
     }
 }
@@ -499,8 +502,8 @@ private struct TChatToolRow: View {
         Text(call.target)
             .font(ax.fontSmall)
             .foregroundStyle(ax.textSecondary)
-            .lineLimit(typeSize.isAccessibilitySize ? nil : 1)
-            .truncationMode(.middle)
+            // The path wraps rather than being cut in the middle, so no word of it is lost.
+            .fixedSize(horizontal: false, vertical: true)
             .modifier(line)
     }
 

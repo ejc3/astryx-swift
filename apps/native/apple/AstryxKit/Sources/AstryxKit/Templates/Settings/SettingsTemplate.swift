@@ -91,10 +91,12 @@ private struct SettingsSectionMenu: View {
                     .foregroundStyle(ax.iconSecondary)
             }
             .padding(.horizontal, ax.space(3))
-            .frame(minHeight: axControlHeight(ax))
+            // Astryx's 32 point control; the hit region reaches 44 on a touch screen.
+            .frame(minHeight: cosFieldHeight(ax))
             .background(RoundedRectangle(cornerRadius: ax.radiusElement, style: .continuous).fill(ax.surface))
             .overlay(RoundedRectangle(cornerRadius: ax.radiusElement, style: .continuous).strokeBorder(ax.border, lineWidth: 1))
             .contentShape(Rectangle())
+            .axTapTarget(keepLayout: true)
         }
         .menuStyle(.button)
         .buttonStyle(.plain)

@@ -47,10 +47,12 @@ struct AXStack: View {
         }
     }
 
-    /// Whether the row flows (wraps) instead of squeezing: its children are controls, marks or
-    /// text, and with `spread` none of them is text that could shrink beside the others.
+    /// Whether the row flows (wraps) instead of squeezing, as the web's `flex-wrap` row does. With
+    /// `spread` the children may be text too: a text at its one-line width that does not fit
+    /// beside the next child takes a line of its own and the next child wraps below it, rather
+    /// than the text giving up half its room to a spacer and wrapping early.
     private var flows: Bool {
-        if node.align == .spread { return node.children.allSatisfy(\.isControl) }
+        if node.align == .spread { return node.children.allSatisfy { $0.isControl || $0.isTextish } }
         return node.children.allSatisfy(\.isAtomic)
     }
 
@@ -141,7 +143,7 @@ struct AXSplit: View {
                             send(.press(id: backId))
                         } label: {
                             HStack(spacing: ax.space(2)) {
-                                Image(systemName: "chevron.left")
+                                Image(systemName: "chevron.left").font(ax.iconFont)
                                 if let label = node.backLabel { Text(label) }
                             }
                         }
@@ -169,7 +171,7 @@ struct AXCard: View {
         VStack(alignment: .leading, spacing: ax.space(4)) {
             if node.title != nil || node.subtitle != nil || node.action != nil {
                 HStack(alignment: .center, spacing: ax.space(2)) {
-                    VStack(alignment: .leading, spacing: ax.hair) {
+                    VStack(alignment: .leading, spacing: ax.space(1)) {
                         if let title = node.title {
                             Text(title)
                                 .font(ax.heading(3))
@@ -180,7 +182,8 @@ struct AXCard: View {
                             Text(subtitle).font(ax.fontSmall).foregroundStyle(ax.textSecondary)
                         }
                     }
-                    Spacer(minLength: 0)
+                    // The titles take the room the action leaves; a spacer would halve it.
+                    .frame(maxWidth: .infinity, alignment: .leading)
                     if let action = node.action { AXButton(node: action, small: true) }
                 }
             }
@@ -309,7 +312,9 @@ struct FlowLayout: Layout {
         var line = Line()
         for item in items {
             let needed = line.items.isEmpty ? item.width : line.width + spacing + item.width
-            if needed > limit, !line.items.isEmpty {
+            // Two points of slack: badge widths are measured a fraction wider than the web's, and
+            // a row that the web fits to the pixel must not wrap here.
+            if needed > limit + 2, !line.items.isEmpty {
                 lines.append(line)
                 line = Line()
             }
@@ -342,6 +347,16 @@ extension Node {
     var isText: Bool {
         switch self {
         case .text, .heading: true
+        default: false
+        }
+    }
+
+    /// Text, or a column of text and small marks (a title above its description): a good item
+    /// of a spread row, sized at its one-line width and wrapped when it alone is wider.
+    var isTextish: Bool {
+        switch self {
+        case .text, .heading: true
+        case .stack(let stack): stack.axis == .vertical && stack.children.allSatisfy { $0.isTextish || $0.isAtomic }
         default: false
         }
     }

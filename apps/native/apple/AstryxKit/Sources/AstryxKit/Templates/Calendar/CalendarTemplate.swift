@@ -40,13 +40,13 @@ private struct TCalMonth: View {
     /// The room for the grid: the width less both paddings.
     private var room: CGFloat { width - 2 * pagePad - 2 * inset }
 
-    /// The side of a day's cell. On the Mac it is the stock's 32; on a touch screen the grid fills
-    /// its room within 44 to 64 points a cell, so a day is a full target.
+    /// The side of a day's cell. On the Mac it is the stock's 32; on a touch screen it is the 44
+    /// point target and no more (the grid sits at the left as the web's does, not stretched to fill).
     private var cell: CGFloat {
         #if os(macOS)
         return 32 * min(ax.scale, 1.4)
         #else
-        return min(max(room / 7, axMinTarget), 64)
+        return axMinTarget
         #endif
     }
 
@@ -158,8 +158,13 @@ private struct TCalMonth: View {
                 Text(name)
                     .font(ax.fontSmall)
                     .foregroundStyle(ax.textSecondary)
+                    #if os(iOS)
+                    // The stock row is 32 high, its names centered (not a whole cell tall).
+                    .frame(width: cell, height: 32 * min(ax.scale, 1.4), alignment: .center)
+                    #else
                     .padding(.top, ax.hair)
                     .frame(width: cell, height: cell, alignment: .top)
+                    #endif
             }
         }
         .padding(.bottom, ax.space(1))
@@ -249,8 +254,15 @@ private struct TCalDayCell: View {
         .accessibilityAddTraits(selected ? [.isSelected, .isButton] : .isButton)
     }
 
-    /// The selected circle sits 2 points in from the cell on the Mac's 32 (the stock's 28), 3 on a touch screen's.
-    private var ring: CGFloat { side > 36 ? 3 : 2 }
+    /// The painted circle is the stock's 28 points in every cell: 2 points in from the Mac's 32, and
+    /// on a touch screen's 44 point cell (the tap target) 8.
+    private var ring: CGFloat {
+        #if os(iOS)
+        max(0, (side - 28 * min(ax.scale, 1.4)) / 2)
+        #else
+        side > 36 ? 3 : 2
+        #endif
+    }
 
     /// A day of a neighboring month is the secondary text at 30 percent, as the stock Calendar paints it
     /// (inactive content is exempt from the contrast minimum).

@@ -109,7 +109,8 @@ struct ShowIconButton: View {
     @State private var hovering = false
 
     var body: some View {
-        let side = max(axMinTarget, 32 * min(ax.scale, 1.4))
+        // Drawn at Astryx's 32; `axTapTarget` gives touch its 44 pt region.
+        let side = 32 * min(ax.scale, 1.4)
         Button(action: action) {
             Image(systemName: symbol)
                 .font(.system(size: ax.fontSize("font-size-base", 14) * 1.1))
@@ -136,7 +137,7 @@ extension ShowModel {
         case "close": "xmark"
         case "card": "creditcard"
         case "smartphone": "iphone"
-        case "wallet": "wallet.pass"
+        case "wallet": "wallet.bifold"
         case "banknote": "banknote"
         case "folder": "folder"
         case "mapPin": "mappin.and.ellipse"
@@ -150,13 +151,58 @@ extension ShowModel {
 
 // MARK: Text fields
 
-/// A field's height: Astryx's `lg` (36) or `sm` (32) on the Mac; on a touch screen the 44 pt target.
+/// A field's height as Astryx draws it: `lg` (36) or `sm` (32 on the Mac, 28 on a phone). A touch
+/// screen still gets its 44 pt hit region around the drawn box (`showFieldHit`).
 func showFieldHeight(_ ax: AXStyle, small: Bool = false) -> CGFloat {
     #if os(macOS)
     (small ? 32 : 36) * min(ax.scale, 1.4)
     #else
-    max(axMinTarget, (small ? 32 : 40) * min(ax.scale, 1.4))
+    (small ? 28 : 36) * min(ax.scale, 1.4)
     #endif
+}
+
+/// The text size inside a field: Astryx's touch rule `max(1rem, var(--text-body-size))` on a
+/// touch screen, the body size on the Mac.
+func showFieldFont(_ ax: AXStyle) -> Font {
+    #if os(iOS)
+    .system(size: max(16, ax.fontSize("font-size-base", 14)), weight: ax.weight(Int(ax.size("font-weight-normal", 400))))
+    #else
+    ax.fontBase
+    #endif
+}
+
+/// A checkbox or radio mark: Astryx's 18 pt, and on a touch screen its coarse-pointer 24 pt.
+func showMarkSide(_ ax: AXStyle) -> CGFloat {
+    #if os(iOS)
+    24 * min(ax.scale, 1.5)
+    #else
+    18 * min(ax.scale, 1.5)
+    #endif
+}
+
+/// The box of a checkbox at `showMarkSide` (the shared `AXCheckmark` keeps 18 pt).
+struct ShowCheckbox: View {
+    let checked: Bool
+    @Environment(\.ax) private var ax
+
+    var body: some View {
+        let side = showMarkSide(ax)
+        RoundedRectangle(cornerRadius: ax.radiusInner + 1, style: .continuous)
+            .fill(checked ? ax.accent : ax.surface)
+            .overlay(
+                RoundedRectangle(cornerRadius: ax.radiusInner + 1, style: .continuous)
+                    .strokeBorder(checked ? ax.accent : ax.borderStrong, lineWidth: 1.5)
+            )
+            .overlay {
+                if checked {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: side * 0.6, weight: .bold))
+                        .foregroundStyle(ax.onAccent)
+                }
+            }
+            .frame(width: side, height: side)
+            .accessibilityHidden(true)
+    }
 }
 
 enum ShowKeyboard { case text, email, digits }
@@ -189,6 +235,7 @@ struct ShowTextField: View {
     /// Astryx's `sm` field (32) rather than `lg`.
     var small = false
     @State private var text: String
+    @FocusState private var focused: Bool
     @Environment(\.ax) private var ax
     @Environment(\.axStatic) private var isStatic
 
@@ -204,15 +251,16 @@ struct ShowTextField: View {
                 if let icon { Image(systemName: icon).foregroundStyle(ax.iconSecondary).accessibilityHidden(true) }
                 if isStatic {
                     Text(text.isEmpty ? placeholder : text)
-                        .font(ax.fontBase)
+                        .font(showFieldFont(ax))
                         .foregroundStyle(text.isEmpty ? ax.textDisabled : ax.text)
                         .lineLimit(1)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 } else {
                     TextField(label, text: $text, prompt: Text(placeholder).foregroundColor(ax.textDisabled))
                         .textFieldStyle(.plain)
-                        .font(ax.fontBase)
+                        .font(showFieldFont(ax))
                         .foregroundStyle(ax.text)
+                        .focused($focused)
                         .showKeyboard(keyboard)
                         .accessibilityLabel(label)
                 }
@@ -221,6 +269,7 @@ struct ShowTextField: View {
             .frame(minHeight: showFieldHeight(ax, small: small))
             .background(RoundedRectangle(cornerRadius: ax.radiusElement, style: .continuous).fill(ax.surface))
             .overlay(RoundedRectangle(cornerRadius: ax.radiusElement, style: .continuous).strokeBorder(ax.borderStrong, lineWidth: 1))
+            .showFieldHit(ax, small: small) { focused = true }
         }
         .syncedText(id: id, value: value, text: $text)
     }
@@ -253,7 +302,7 @@ struct ShowMenuField<Choices: View>: View {
         HStack(spacing: ax.space(2)) {
             if let icon { Image(systemName: icon).foregroundStyle(ax.iconSecondary) }
             Text(text)
-                .font(ax.fontBase)
+                .font(showFieldFont(ax))
                 .foregroundStyle(placeholder ? ax.textSecondary : ax.text)
                 .lineLimit(typeSize.isAccessibilitySize ? nil : 1)
             if !compact { Spacer(minLength: ax.space(2)) }
@@ -267,5 +316,24 @@ struct ShowMenuField<Choices: View>: View {
         .background(RoundedRectangle(cornerRadius: ax.radiusElement, style: .continuous).fill(ax.surface))
         .overlay(RoundedRectangle(cornerRadius: ax.radiusElement, style: .continuous).strokeBorder(ax.borderStrong, lineWidth: 1))
         .contentShape(Rectangle())
+        .axTapTarget(keepLayout: true)
+    }
+}
+
+extension View {
+    /// Reaches the field's tap out to the 44 pt region on a touch screen without growing the
+    /// drawn box: the hit area is padded by what the box lacks, and the padding is taken back.
+    @ViewBuilder
+    func showFieldHit(_ ax: AXStyle, small: Bool, tap: @escaping () -> Void) -> some View {
+        #if os(iOS)
+        let extra = max((axMinTarget - showFieldHeight(ax, small: small)) / 2, 0)
+        self
+            .padding(.vertical, extra)
+            .contentShape(Rectangle())
+            .onTapGesture(perform: tap)
+            .padding(.vertical, -extra)
+        #else
+        self
+        #endif
     }
 }

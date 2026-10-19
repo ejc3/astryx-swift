@@ -95,7 +95,7 @@ struct CheckoutCartStep: View {
                 VStack(alignment: .leading, spacing: ax.hair) {
                     Text(item.name).font(ax.fontLabel).foregroundStyle(ax.text)
                         .fixedSize(horizontal: false, vertical: true)
-                    if item.isLimited { AXBadge(text: model.words.cart.limited, tone: .success) }
+                    if item.isLimited { COSGreenBadge(text: model.words.cart.limited) }
                     Text(item.lineTotal).font(ax.fontStrong).foregroundStyle(ax.text)
                 }
             } else {
@@ -103,7 +103,7 @@ struct CheckoutCartStep: View {
                     HStack(alignment: .firstTextBaseline, spacing: ax.space(2)) {
                         Text(item.name).font(ax.fontLabel).foregroundStyle(ax.text)
                             .fixedSize(horizontal: false, vertical: true)
-                        if item.isLimited { AXBadge(text: model.words.cart.limited, tone: .success) }
+                        if item.isLimited { COSGreenBadge(text: model.words.cart.limited) }
                     }
                     Spacer(minLength: ax.space(2))
                     Text(item.lineTotal).font(ax.fontStrong).foregroundStyle(ax.text)
@@ -167,14 +167,16 @@ struct CheckoutCartStep: View {
     }
 
     private var applyButton: some View {
+        // Level with the box beside it: as tall as the field.
         COSButton(label: model.words.cart.apply, variant: .secondary) { actions.press("apply") }
+            .frame(minHeight: cosFieldHeight(ax))
     }
 }
 
-/// A quantity, 0 to 10, as the web field: a number you can type. On the Mac the number sits in a
-/// box with the system's up and down arrows at its right (HIG Steppers: a text field beside a
-/// stepper); on a touch screen it is minus, the number and plus. VoiceOver adjusts it with swipes
-/// up and down.
+/// A quantity, 0 to 10, as the web field: a number you can type. The number sits in a box, with the
+/// system's stepper beside it (HIG Steppers: a text field beside a stepper): on the Mac the up and
+/// down arrows at the box's right, on a touch screen the system's minus and plus capsule after it.
+/// VoiceOver adjusts it with swipes up and down.
 struct CheckoutQuantity: View {
     /// The spoken name, "Quantity of <name>", and the field's own name ("Quantity").
     let label: String
@@ -198,7 +200,7 @@ struct CheckoutQuantity: View {
     }
 
     var body: some View {
-        let side = axControlHeight(ax)
+        let side = cosFieldHeight(ax)
         let shape = RoundedRectangle(cornerRadius: ax.radiusElement, style: .continuous)
         #if os(macOS)
         HStack(spacing: 0) {
@@ -213,18 +215,24 @@ struct CheckoutQuantity: View {
         .overlay(shape.strokeBorder(ax.border, lineWidth: 1))
         .modifier(quantityBehaviour)
         #else
-        HStack(spacing: 0) {
-            stepper("minus", enabled: qty > 0) { change(max(qty - 1, 0)) }
+        // A 56 point number box, then the system's stepper with its label hidden.
+        HStack(spacing: ax.space(2)) {
             number
-                .multilineTextAlignment(.center)
-                .frame(width: 40 * min(ax.scale, 1.4), height: side)
-            stepper("plus", enabled: qty < 10) { change(min(qty + 1, 10)) }
+                .padding(.horizontal, ax.space(3))
+                .frame(width: 56 * min(ax.scale, 1.4), height: side, alignment: .leading)
+                .background(shape.fill(ax.surface))
+                .overlay(shape.strokeBorder(ax.borderStrong, lineWidth: 1))
+                .contentShape(shape)
+                .cosTapWithSlop(cosFieldSlop(ax)) { if !isStatic { focusNumber() } }
+            stepper
         }
-        .background(shape.fill(ax.surface))
-        .overlay(shape.strokeBorder(ax.border, lineWidth: 1))
         .fixedSize()
         .modifier(quantityBehaviour)
         #endif
+    }
+
+    private func focusNumber() {
+        if let focus, let focusKey { focus.wrappedValue = focusKey } else { ownFocus = true }
     }
 
     /// Typing sends the new number; the model's own change shows in the box; VoiceOver adjusts.
@@ -245,7 +253,7 @@ struct CheckoutQuantity: View {
                     .modifier(CheckoutQuantityFocus(binding: focus, key: focusKey, own: $ownFocus))
             }
         }
-        .font(ax.fontBase.monospacedDigit())
+        .font(cosFieldFont(ax).monospacedDigit())
         .foregroundStyle(ax.text)
     }
 
@@ -263,17 +271,23 @@ struct CheckoutQuantity: View {
         }
     }
     #else
-    private func stepper(_ symbol: String, enabled: Bool, action: @escaping () -> Void) -> some View {
-        let side = axControlHeight(ax)
-        return Button(action: action) {
-            Image(systemName: symbol)
-                .font(.system(size: ax.fontSize("font-size-sm", 12), weight: .semibold))
-                .foregroundStyle(enabled ? ax.text : ax.textDisabled)
-                .frame(width: side, height: side)
-                .contentShape(Rectangle())
+    /// The system's minus and plus capsule; a picture, which cannot draw a `Stepper`, gets the
+    /// same two segments by hand.
+    @ViewBuilder
+    private var stepper: some View {
+        if isStatic {
+            HStack(spacing: 0) {
+                Image(systemName: "minus").frame(width: 47, height: cosFieldHeight(ax))
+                Rectangle().fill(ax.border).frame(width: 1, height: 18)
+                Image(systemName: "plus").frame(width: 47, height: cosFieldHeight(ax))
+            }
+            .font(.system(size: ax.fontSize("font-size-base", 14), weight: .medium))
+            .foregroundStyle(ax.text)
+            .background(Capsule().fill(ax.color("color-neutral")))
+        } else {
+            Stepper(label, value: Binding(get: { qty }, set: { change($0) }), in: 0...10)
+                .labelsHidden()
         }
-        .buttonStyle(.plain)
-        .disabled(!enabled)
     }
     #endif
 }
@@ -402,6 +416,15 @@ struct CheckoutDeliveryStep: View {
         }
     }
 
+    /// Astryx's radio is 24 on a touch screen (`any-pointer: coarse`) and 18 elsewhere.
+    private var radioSide: CGFloat {
+        #if os(iOS)
+        24 * min(ax.scale, 1.5)
+        #else
+        18 * min(ax.scale, 1.5)
+        #endif
+    }
+
     private var methods: some View {
         let d = model.delivery
         return VStack(alignment: .leading, spacing: ax.space(2)) {
@@ -416,7 +439,7 @@ struct CheckoutDeliveryStep: View {
                             Circle()
                                 .strokeBorder(selected ? ax.accent : ax.borderStrong, lineWidth: selected ? 5 : 1.5)
                                 .background(Circle().fill(ax.surface))
-                                .frame(width: 18 * min(ax.scale, 1.5), height: 18 * min(ax.scale, 1.5))
+                                .frame(width: radioSide, height: radioSide)
                             VStack(alignment: .leading, spacing: ax.hair) {
                                 Text(option.label).font(ax.fontLabel).foregroundStyle(ax.text)
                                 Text(option.window).font(ax.fontSmall).foregroundStyle(ax.textSecondary)

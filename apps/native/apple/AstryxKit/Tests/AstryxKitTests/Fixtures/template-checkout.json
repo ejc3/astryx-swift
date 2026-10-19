@@ -396,7 +396,8 @@
       "total": "Total",
       "qty": "Qty"
      }
-    }
+    },
+    "headingRepeatsTitle": true
    }
   }
  },

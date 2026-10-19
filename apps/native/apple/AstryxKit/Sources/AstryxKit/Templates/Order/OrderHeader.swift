@@ -50,15 +50,17 @@ struct OrderHeader: View {
                 if typeSize.isAccessibilitySize {
                     VStack(spacing: ax.space(2)) { restock; edit }.environment(\.axFillButtons, true)
                 } else {
-                    HStack(spacing: ax.space(2)) { restock; edit }
+                    // Fill the row as the web's flex does: each button its own width, and the rest
+                    // of the room shared equally between them.
+                    OrderShareRow(spacing: ax.space(2)) { restock; edit }
                 }
             }
             HStack(spacing: ax.space(2)) {
                 OrderTabs(model: model)
-                    .environment(\.axWidth, max(width - max(cosTouch, 36 * min(ax.scale, 1.4)) - ax.space(2), 0))
+                    .environment(\.axWidth, max(width - cosFieldHeight(ax) - ax.space(2), 0))
                 COSIconButton(
                     label: panelShown ? model.words.hidePanel : model.words.showPanel,
-                    symbol: "rectangle.split.3x1"
+                    symbol: "rectangle.split.3x1", glyph: 13
                 ) {
                     send(.press(id: narrow ? "tpl.order.panel:dialog" : "tpl.order.panel:side"))
                 }
@@ -118,6 +120,30 @@ struct OrderHeader: View {
                 .foregroundStyle(ax.textSecondary)
                 .padding(.vertical, -(cosTouch - 20) / 2)
             }
+        }
+    }
+}
+
+/// A row of buttons that fill it the way flex items do: each is as wide as its label needs, and
+/// what is left over is shared equally (so the buttons are not equal halves unless their labels are).
+private struct OrderShareRow: Layout {
+    let spacing: CGFloat
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let ideal = subviews.map { $0.sizeThatFits(.unspecified) }
+        let natural = ideal.reduce(0) { $0 + $1.width } + spacing * CGFloat(max(subviews.count - 1, 0))
+        return CGSize(width: proposal.width ?? natural, height: ideal.map(\.height).max() ?? 0)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        let ideal = subviews.map { $0.sizeThatFits(.unspecified) }
+        let gaps = spacing * CGFloat(max(subviews.count - 1, 0))
+        let extra = max(0, bounds.width - gaps - ideal.reduce(0) { $0 + $1.width }) / CGFloat(max(subviews.count, 1))
+        var x = bounds.minX
+        for (view, size) in zip(subviews, ideal) {
+            let w = size.width + extra
+            view.place(at: CGPoint(x: x, y: bounds.minY), anchor: .topLeading, proposal: ProposedViewSize(width: w, height: bounds.height))
+            x += w + spacing
         }
     }
 }

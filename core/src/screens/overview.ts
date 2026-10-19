@@ -74,7 +74,7 @@ export function dashboard(s: State): Screen {
       card("Recent activity", [{ kind: "list", empty: "No activity yet.", items: ACTIVITY.map((a, i) => ({ id: `a${i}`, title: `${person(a.who).name.split(" ")[0]} ${a.did}`, meta: a.minutesAgo < 60 ? `${a.minutesAgo}m ago` : `${Math.floor(a.minutesAgo / 60)}h ago`, leading: { icon: a.icon, tone: a.tone }, emphasized: false, selected: false })) }]),
     ),
     card("Latest orders", [{
-      kind: "table", empty: "No orders.",
+      kind: "table", stackBelow: 600, empty: "No orders.",
       columns: [{ id: "id", label: "Order", align: "start", sort: null }, { id: "customer", label: "Customer", align: "start", sort: null }, { id: "status", label: "Status", align: "start", sort: null }, { id: "total", label: "Total", align: "end", sort: null }],
       rows: ORDERS.map((o) => ({ id: o.id, selected: false, cells: [{ text: o.id }, { text: o.customer, secondary: o.daysAgo === 0 ? "Today" : o.daysAgo === 1 ? "Yesterday" : `${o.daysAgo} days ago` }, { text: o.status, badge: { text: o.status, tone: statusTone[o.status]! } }, { text: money(o.cents), align: "end" }] })),
     }], { action: button("navigate:people", "View customers", "ghost", "chevron-right") }),

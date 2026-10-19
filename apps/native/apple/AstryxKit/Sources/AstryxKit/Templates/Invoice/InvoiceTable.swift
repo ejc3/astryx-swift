@@ -346,7 +346,7 @@ struct InvoiceFilterEditor: View {
                     .onChange(of: current?.text ?? "") { _, core in adopt(core) }
             }
         }
-        .font(ax.fontBase)
+        .font(showFieldFont(ax))
         .padding(.horizontal, ax.space(3))
         .frame(minHeight: 36 * min(ax.scale, 1.4))
         .background(shape.fill(ax.surface))

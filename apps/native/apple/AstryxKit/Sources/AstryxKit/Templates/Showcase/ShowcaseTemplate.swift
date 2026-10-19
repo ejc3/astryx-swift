@@ -327,13 +327,15 @@ private struct ShowQuantity: View {
 
     var body: some View {
         Text(ShowCount.text(value))
-            .font(ax.fontBase.monospacedDigit())
+            .font(showFieldFont(ax).monospacedDigit())
             .foregroundStyle(ax.text)
             .padding(.horizontal, ax.space(3))
             .frame(width: 72, alignment: .leading)
-            .frame(minHeight: max(axMinTarget, 28 * min(ax.scale, 1.4)))
+            .frame(minHeight: 28 * min(ax.scale, 1.4))
             .background(RoundedRectangle(cornerRadius: ax.radiusElement, style: .continuous).fill(ax.surface))
             .overlay(RoundedRectangle(cornerRadius: ax.radiusElement, style: .continuous).strokeBorder(ax.borderStrong, lineWidth: 1))
+            .contentShape(Rectangle())
+            .axTapTarget(keepLayout: true)
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(label)
             .accessibilityValue(ShowCount.text(value))

@@ -209,7 +209,7 @@ private struct ShowChatComposer: View {
         VStack(alignment: .leading, spacing: ax.space(1)) {
             if isStatic {
                 Text(text.isEmpty ? composer.placeholder : text)
-                    .font(ax.fontBase)
+                    .font(showFieldFont(ax))
                     .foregroundStyle(text.isEmpty ? ax.textDisabled : ax.text)
                     .padding(.horizontal, ax.space(2))
                     .padding(.top, ax.space(2))
@@ -217,7 +217,7 @@ private struct ShowChatComposer: View {
             } else {
                 TextField(composer.placeholder, text: $text, prompt: Text(composer.placeholder).foregroundColor(ax.textDisabled))
                     .textFieldStyle(.plain)
-                    .font(ax.fontBase)
+                    .font(showFieldFont(ax))
                     .foregroundStyle(ax.text)
                     .submitLabel(.send)
                     .onSubmit(submit)
@@ -241,7 +241,7 @@ private struct ShowChatComposer: View {
 
     /// The round send button: the accent, pale while there is nothing to send.
     private var sendButton: some View {
-        let side = max(axMinTarget, 32 * min(ax.scale, 1.4))
+        let side = 32 * min(ax.scale, 1.4)
         return Button(action: submit) {
             Image(systemName: "arrow.up")
                 .font(.system(size: ax.fontSize("font-size-base", 14), weight: .semibold))

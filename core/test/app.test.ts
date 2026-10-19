@@ -268,3 +268,11 @@ test("a done checkout step can be pressed to go back to it", () => {
   c.dispatch({ type: "press", id: "checkout.goto:0" });
   assert.equal(app(c).screen.subtitle, "Step 1 of 4: Cart");
 });
+
+test("every table names the width below which its rows stack into records", () => {
+  const c = createClient(clock);
+  for (const screen of ["people", "dashboard"] as const) {
+    const table = nodes(go(c, screen).screen.body).find((n) => n.kind === "table") as Extract<Node, { kind: "table" }>;
+    assert.ok(table.stackBelow > 360 && table.stackBelow < 900, `${screen}: ${table.stackBelow}`);
+  }
+});

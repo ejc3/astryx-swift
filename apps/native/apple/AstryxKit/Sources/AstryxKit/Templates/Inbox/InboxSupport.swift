@@ -195,7 +195,7 @@ struct InboxCheckbox: View {
 
     var body: some View {
         Button(action: action) {
-            AXCheckmark(checked: checked)
+            ShowCheckbox(checked: checked)
                 .frame(minWidth: 28, minHeight: 28)
                 .contentShape(Rectangle())
                 .inboxHitTarget(size: 28)

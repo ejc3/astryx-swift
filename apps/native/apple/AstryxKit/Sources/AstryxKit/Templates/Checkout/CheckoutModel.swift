@@ -23,6 +23,8 @@ struct CheckoutModel: Decodable, Sendable {
     let confirmation: String
     /// The words only the native drawing writes.
     let words: Words
+    /// The page's heading says what the navigation title says: leave it out (nil in older snapshots).
+    let headingRepeatsTitle: Bool?
 
     struct Step: Decodable, Sendable {
         let label: String

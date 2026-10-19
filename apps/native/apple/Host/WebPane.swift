@@ -22,6 +22,7 @@ final class WebBridge: NSObject, WKScriptMessageHandler {
         config.userContentController = content
         addScenarioDriver(to: config)
         webView = WKWebView(frame: .zero, configuration: config)
+        webView.letPageUseTheSafeArea()
         super.init()
         content.add(WeakHandler(self), name: "astryx")
         #if DEBUG
@@ -79,6 +80,19 @@ func addScenarioDriver(to config: WKWebViewConfiguration) {
 }
 
 extension WKWebView {
+    /// The page runs to the display's edges, under the navigation bar and the home indicator, and
+    /// scrolls under them as the SwiftUI drawing does. It asks for that with `viewport-fit=cover`
+    /// and insets itself by `env(safe-area-inset-*)`; the scroll view adds none of its own on top
+    /// (`.automatic` leaves the page's own scrollers to the page, and the document's inset to the
+    /// safe area the web view reports).
+    @MainActor
+    func letPageUseTheSafeArea() {
+        #if os(iOS)
+        scrollView.contentInsetAdjustmentBehavior = .automatic
+        scrollView.automaticallyAdjustsScrollIndicatorInsets = true
+        #endif
+    }
+
     /// Performs a scenario step's gestures in the page, as a person would; throws what the page threw.
     @MainActor
     func performGestures(_ gestures: Any) async throws {
@@ -149,6 +163,7 @@ final class StockBridge {
         config.setURLSchemeHandler(BundledPages(), forURLScheme: "astryx")
         addScenarioDriver(to: config)
         webView = WKWebView(frame: .zero, configuration: config)
+        webView.letPageUseTheSafeArea()
         #if DEBUG
         if #available(macOS 13.3, iOS 16.4, *) { webView.isInspectable = true }
         #endif
@@ -203,6 +218,7 @@ final class OwnCoreBridge {
         config.setURLSchemeHandler(BundledPages(), forURLScheme: "astryx")
         addScenarioDriver(to: config)
         webView = WKWebView(frame: .zero, configuration: config)
+        webView.letPageUseTheSafeArea()
         #if DEBUG
         if #available(macOS 13.3, iOS 16.4, *) { webView.isInspectable = true }
         #endif

@@ -35,8 +35,8 @@ struct CheckoutScreen: View {
     @Environment(\.axSend) private var send
     @FocusState private var focus: String?
 
-    /// The template owns its outer padding, as the web page's `LayoutContent padding={4}` does.
-    private var pad: CGFloat { ax.space(4) }
+    /// The template owns its outer padding, as the stock page pads itself (24).
+    private var pad: CGFloat { ax.space(6) }
     private var inner: CGFloat { max(width - 2 * pad, 0) }
     private var narrow: Bool { inner <= checkoutNarrowWidth }
     private var actions: CheckoutSender { CheckoutSender(send: send) }
@@ -82,10 +82,13 @@ struct CheckoutScreen: View {
     private var page: some View {
         VStack(alignment: .leading, spacing: ax.space(6)) {
             HStack(spacing: ax.space(2)) {
-                Text(model.words.title)
-                    .font(ax.heading(1))
-                    .foregroundStyle(ax.text)
-                    .accessibilityAddTraits(.isHeader)
+                // The navigation title already says "Checkout": the page leaves its heading out.
+                if model.headingRepeatsTitle != true {
+                    Text(model.words.title)
+                        .font(ax.heading(1))
+                        .foregroundStyle(ax.text)
+                        .accessibilityAddTraits(.isHeader)
+                }
                 Spacer(minLength: ax.space(2))
                 HStack(spacing: ax.space(1) + 2) {
                     Image(systemName: "lock").font(ax.fontSmall).foregroundStyle(ax.iconSecondary)

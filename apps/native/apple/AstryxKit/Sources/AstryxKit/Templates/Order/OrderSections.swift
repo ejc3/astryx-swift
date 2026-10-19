@@ -34,10 +34,12 @@ private struct SectionHeader<Badge: View, Buttons: View>: View {
             }
         } else {
             ViewThatFits(in: .horizontal) {
-                HStack(spacing: ax.space(2)) {
+                // The title, then the buttons at the far end: one gap between the title and the first
+                // button (the buttons' own gap is theirs), so the row keeps to one line where it can.
+                HStack(spacing: 0) {
                     titleRow
                     Spacer(minLength: ax.space(2))
-                    buttons
+                    HStack(spacing: ax.space(2)) { buttons }
                 }
                 VStack(alignment: .leading, spacing: ax.space(2)) {
                     titleRow
@@ -111,17 +113,21 @@ struct OrderItems: View {
                             COSThumbnail(src: product.image, name: product.name, side: 64)
                             details
                             Spacer(minLength: ax.space(2))
+                            // The amount and the unit price are centered on the row, as the web's are.
                             VStack(alignment: .trailing, spacing: 0) {
                                 Text(product.amount).font(amountFont).foregroundStyle(ax.text)
                                 Text(COSPart.join(product.unit)).font(ax.fontSmall).foregroundStyle(ax.textSecondary)
                             }
                             .lineLimit(1)
+                            .frame(maxHeight: .infinity, alignment: .center)
                         }
                         .padding(.vertical, rowPad)
                         .accessibilityElement(children: .combine)
                     }
                 }
             }
+            // The list sits 4 points in from the section, as the web's spacious list does.
+            .padding(.horizontal, ax.space(1))
         }
     }
 }
@@ -208,13 +214,16 @@ struct OrderTimeline: View {
     private func note(_ item: OrderModel.Activity) -> some View {
         VStack(alignment: .leading, spacing: ax.space(1)) {
             Text(item.user).font(ax.fontStrong).foregroundStyle(ax.text)
+                .axLeading(ax, size: ax.fontSize("font-size-base", 14), ratio: ax.bodyLeading)
             Text(item.text).font(ax.fontBase).foregroundStyle(ax.text)
+                .axLeading(ax, size: ax.fontSize("font-size-base", 14), ratio: ax.bodyLeading)
             if let changes = item.changes {
                 VStack(alignment: .leading, spacing: ax.space(1)) {
                     ForEach(Array(changes.enumerated()), id: \.offset) { _, change in
                         HStack(alignment: .firstTextBaseline, spacing: ax.space(2)) {
                             Image(systemName: "square.and.pencil").font(ax.fontSmall).foregroundStyle(ax.iconSecondary)
                             Text(change).font(ax.fontSmall).foregroundStyle(ax.textSecondary)
+                                .axLeading(ax, size: ax.fontSize("font-size-sm", 12), ratio: ax.supportingLeading)
                         }
                     }
                 }

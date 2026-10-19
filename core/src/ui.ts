@@ -67,7 +67,8 @@ export type Node =
   | { kind: "kbd"; keys: string[] }
   | { kind: "metric"; label: string; value: string; delta?: { text: string; tone: Tone; up: boolean }; trend?: number[] }
   | { kind: "bars"; label: string; bars: { label: string; value: number; valueText: string; highlight: boolean }[] }
-  | { kind: "table"; columns: { id: string; label: string; align: "start" | "end"; sort: "asc" | "desc" | "none" | null; sortId?: string }[]; rows: { id: string; cells: Cell[]; selected: boolean; selectId?: string }[]; empty: string }
+  /** `stackBelow`: the table's own width, in points or CSS pixels, below which each row stacks into a record (its first cell as the heading, the other columns as label and value lines). */
+  | { kind: "table"; stackBelow: number; columns: { id: string; label: string; align: "start" | "end"; sort: "asc" | "desc" | "none" | null; sortId?: string }[]; rows: { id: string; cells: Cell[]; selected: boolean; selectId?: string }[]; empty: string }
   | { kind: "list"; items: ListItem[]; empty: string }
   | { kind: "tabs"; id: string; tabs: (Option & { count?: string })[]; value: string }
   | { kind: "stepper"; steps: { label: string; state: "done" | "current" | "upcoming"; selectId?: string }[] }

@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// The width below which a table stacks its rows instead of laying out columns.
+/// The width below which a table stacks its rows when the core gives none (`stackBelow`).
 private let tableWideFrom: CGFloat = 520
 
 /// The columns of a table row: an optional fixed leading column (the checkbox), then the first
@@ -58,6 +58,11 @@ struct AXTable: View {
     @Environment(\.axBleed) private var bleed
 
     private var selectable: Bool { node.rows.contains { $0.selectId != nil } }
+    /// The table's own width (a table in a card reaches the card's edges) is under the width the
+    /// core names, below which each row stacks into a record.
+    private var stacked: Bool { width + 2 * bleed < CGFloat(node.stackBelow ?? Double(tableWideFrom)) }
+    /// The columns that can be sorted, for the stacked form's Sort menu.
+    private var sortable: [TableNode.Column] { node.columns.filter { $0.sortId != nil } }
     /// How far cell text is from the table's edge: the card's padding when there is one.
     private var inset: CGFloat { bleed > 0 ? bleed : ax.space(4) }
     /// The leading column that holds a checkbox.
@@ -71,10 +76,10 @@ struct AXTable: View {
                     .foregroundStyle(ax.textSecondary)
                     .frame(maxWidth: .infinity)
                     .padding(ax.space(6))
-            } else if width >= tableWideFrom {
-                wide
-            } else {
+            } else if stacked {
                 narrow
+            } else {
+                wide
             }
         }
         // A table in a card reaches the card's edges, so its dividers do.
@@ -162,10 +167,13 @@ struct AXTable: View {
 
     // MARK: Narrow
 
+    /// Stacked: the first cell is the record's heading, every other column a label and value
+    /// line. With no header row to sort by, a Sort pull-down lists the sortable columns.
     private var narrow: some View {
         VStack(spacing: 0) {
+            if !sortable.isEmpty { sortMenu }
             ForEach(Array(node.rows.enumerated()), id: \.element.id) { index, row in
-                if index > 0 { Rectangle().fill(ax.border).frame(height: 1) }
+                if index > 0 || !sortable.isEmpty { Rectangle().fill(ax.border).frame(height: 1) }
                 VStack(alignment: .leading, spacing: ax.space(2)) {
                     HStack(alignment: .top, spacing: ax.space(3)) {
                         if let selectId = row.selectId { checkbox(row: row, selectId: selectId) }
@@ -185,11 +193,53 @@ struct AXTable: View {
                     }
                 }
                 .padding(.horizontal, inset)
-                .padding(.vertical, ax.space(3))
+                // The first record sits under the card's header, whose own padding is the gap.
+                .padding(.top, index == 0 && sortable.isEmpty ? 0 : ax.space(3))
+                .padding(.bottom, ax.space(3))
                 .background(row.selected ? ax.accentSoft : .clear)
             }
         }
     }
+
+    /// The pull-down that stands for the header buttons: each sortable column, the current one
+    /// checked and marked with its direction. Choosing one sends its `sortId`.
+    private var sortMenu: some View {
+        Menu {
+            ForEach(sortable, id: \.id) { column in
+                Button {
+                    if let sortId = column.sortId { send(.press(id: sortId)) }
+                } label: {
+                    let sorted = column.sort == .asc || column.sort == .desc
+                    if sorted {
+                        Label(column.label, systemImage: column.sort == .asc ? "arrow.up" : "arrow.down")
+                    } else {
+                        Text(column.label)
+                    }
+                }
+            }
+        } label: {
+            HStack(spacing: ax.space(1)) {
+                Text(sortTitle).font(ax.fontLabel).foregroundStyle(ax.text)
+                Image(systemName: "arrow.up.arrow.down").font(ax.iconFont).foregroundStyle(ax.iconSecondary)
+            }
+            .contentShape(Rectangle())
+            .axTapTarget(keepLayout: true)
+        }
+        .menuStyle(.button)
+        .buttonStyle(.plain)
+        .menuIndicator(.hidden)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, inset)
+        .padding(.bottom, ax.space(2))
+        .accessibilityLabel(sortTitle)
+    }
+
+    /// "Sort", with the column and direction in use: the label is the core's column label.
+    private var sortTitle: String {
+        guard let active = sortable.first(where: { $0.sort == .asc || $0.sort == .desc }) else { return sortLabel }
+        return "\(sortLabel): \(active.label)"
+    }
+    private var sortLabel: String { node.sortLabel ?? "Sort" }
 }
 
 /// One table cell: text, optionally an avatar, a second line or a badge. The text is medium
@@ -224,7 +274,8 @@ struct AXCellView: View {
     }
 
     private var font: Font {
-        if prominent { return ax.fontStrong }
+        // A stacked record's heading is the table's first cell: medium, as the web's.
+        if prominent { return ax.fontLabel.monospacedDigit() }
         let base = (cell.secondary != nil || cell.avatar != nil) ? ax.fontLabel : ax.fontBase
         return base.monospacedDigit()
     }
@@ -273,6 +324,7 @@ struct AXList: View {
                     .font(item.emphasized ? ax.fontStrong : ax.fontBase)
                     .foregroundStyle(ax.text)
                     .lineLimit(2)
+                    .multilineTextAlignment(.leading)
                     .axLeading(ax, size: ax.fontSize("font-size-base", 14), ratio: ax.bodyLeading)
                 if let subtitle = item.subtitle {
                     Text(subtitle)
@@ -282,7 +334,9 @@ struct AXList: View {
                         .axLeading(ax, size: ax.fontSize("font-size-xs", 10), ratio: ax.supportingLeading)
                 }
             }
-            Spacer(minLength: ax.space(2))
+            // The text takes all the room the trailing badge leaves; a spacer beside it would
+            // halve what it is offered and wrap it early.
+            .frame(maxWidth: .infinity, alignment: .leading)
             if item.trailing != nil || item.meta != nil {
                 VStack(alignment: .trailing, spacing: ax.hair) {
                     if let trailing = item.trailing {
@@ -293,6 +347,8 @@ struct AXList: View {
                             .axLeading(ax, size: ax.fontSize("font-size-xs", 10), ratio: ax.supportingLeading)
                     }
                 }
+                .fixedSize()
+                .layoutPriority(1)
             }
         }
         .padding(.horizontal, ax.space(2))
@@ -366,7 +422,7 @@ struct AXCalendar: View {
         let ink: Color = day.selected ? ax.onAccent : day.inMonth ? ax.text : ax.textInactive
         let content = VStack(spacing: 2) {
             Text(day.label)
-                .font(ax.fontSmall.monospacedDigit().weight(day.today && !day.selected ? .bold : .regular))
+                .font(ax.fontSmall.monospacedDigit().weight(day.today ? .bold : .regular))
                 .foregroundStyle(day.today && !day.selected ? ax.tone(.accent).text : ink)
                 .lineLimit(1)
                 .minimumScaleFactor(0.5)

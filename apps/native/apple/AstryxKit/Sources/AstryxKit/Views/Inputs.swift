@@ -1,7 +1,8 @@
 import SwiftUI
 
 /// A label above a control, with the core's hint between them (Astryx's `description`) and the
-/// core's error below the control (its `status`). The label is secondary text, regular weight.
+/// core's error below the control (its `status`). The label is secondary text, medium weight
+/// (Astryx's `FieldLabel`).
 struct AXField<Content: View>: View {
     let label: String
     var hint: String? = nil
@@ -13,7 +14,7 @@ struct AXField<Content: View>: View {
     var body: some View {
         VStack(alignment: .leading, spacing: ax.space(1)) {
             if !label.isEmpty {
-                Text(label).font(ax.fontBase).foregroundStyle(ax.textSecondary)
+                Text(label).font(ax.fontLabel).foregroundStyle(ax.textSecondary)
                     .axLeading(ax, size: ax.fontSize("font-size-base", 14), ratio: ax.bodyLeading)
             }
             if let hint {
@@ -75,13 +76,20 @@ struct AXTextInput: View {
     @Environment(\.ax) private var ax
     @Environment(\.axStatic) private var isStatic
     @Environment(\.axInRow) private var inRow
+    @FocusState private var focused: Bool
 
-    /// A single-line field is `axControlHeight` high (32 on the Mac), its text centered.
-    private var fieldPadding: CGFloat {
-        #if os(macOS)
-        ax.space(1)
+    /// A single-line field is `axFieldHeight` high (32, with taps reaching 44 on a touch screen),
+    /// its text centered; a tall one pads as Astryx's TextArea does (4 above and below, 8 at the
+    /// sides).
+    private var multiline: Bool { node.multiline == true }
+    /// The box's inset: a single line has none above and below (the height centers it); a tall
+    /// one on a touch screen is Astryx's TextArea, and on the Mac as it was.
+    private var areaInset: CGSize {
+        if !multiline { return CGSize(width: ax.space(3), height: 0) }
+        #if os(iOS)
+        return CGSize(width: ax.space(2), height: ax.space(1))
         #else
-        ax.space(2) + 2
+        return CGSize(width: ax.space(3), height: ax.space(2))
         #endif
     }
 
@@ -95,20 +103,24 @@ struct AXTextInput: View {
             HStack(alignment: node.multiline == true ? .top : .center, spacing: ax.space(2)) {
                 if let icon = node.icon {
                     Image(systemName: icon.symbol)
+                        .font(ax.iconFont)
                         .foregroundStyle(ax.iconSecondary)
-                        .padding(.top, node.multiline == true ? ax.space(1) : 0)
+                        .padding(.top, multiline ? ax.space(1) : 0)
                 }
                 field
             }
-            .padding(.horizontal, ax.space(3))
-            .padding(.vertical, node.multiline == true ? ax.space(2) : fieldPadding)
-            .frame(minHeight: axControlHeight(ax))
-            .frame(width: inRow && node.multiline != true ? 223 * min(ax.scale, 1.4) : nil)
+            .padding(.horizontal, areaInset.width)
+            .padding(.vertical, areaInset.height)
+            .frame(minHeight: multiline ? 0 : axFieldHeight(ax))
+            .frame(width: inRow && !multiline ? 223 * min(ax.scale, 1.4) : nil)
             .background(RoundedRectangle(cornerRadius: radius, style: .continuous).fill(ax.surface))
             .overlay(
                 RoundedRectangle(cornerRadius: radius, style: .continuous)
                     .strokeBorder(node.error == nil ? ax.borderStrong : ax.danger, lineWidth: 1)
             )
+            // Drawn 32 high, the taps around it reach 44: a tap there (or beside the text, in the
+            // box) focuses the field.
+            .axTapTarget(keepLayout: true) { focused = true }
         }
         .syncedText(id: node.id, value: node.value, text: $text)
     }
@@ -123,36 +135,60 @@ struct AXTextInput: View {
         if isStatic {
             let shown = node.secure == true ? String(repeating: "\u{2022}", count: text.count) : text
             Text(shown.isEmpty ? node.placeholder : shown)
-                .font(ax.fontBase)
+                .font(ax.fieldFont)
                 .foregroundStyle(shown.isEmpty ? ax.textDisabled : ax.text)
-                .frame(maxWidth: .infinity, minHeight: node.multiline == true ? 60 * min(ax.scale, 1.4) : 0, alignment: .topLeading)
-        } else if node.multiline == true {
-            TextEditor(text: $text)
-                .scrollContentBackground(.hidden)
-                .font(ax.fontBase)
-                .foregroundStyle(ax.text)
-                .frame(minHeight: 60 * min(ax.scale, 1.4))
-                .overlay(alignment: .topLeading) {
-                    if text.isEmpty {
-                        Text(node.placeholder)
-                            .font(ax.fontBase)
-                            .foregroundStyle(ax.textDisabled)
-                            .padding(.leading, 5)
-                            .allowsHitTesting(false)
-                    }
-                }
-                .accessibilityLabel(node.label)
+                .frame(maxWidth: .infinity, minHeight: multiline ? rowsHeight : 0, alignment: .topLeading)
+        } else if multiline {
+            multilineField
         } else if node.secure == true {
             SecureField(node.label, text: $text, prompt: Text(node.placeholder).foregroundColor(ax.textDisabled))
                 .textFieldStyle(.plain)
-                .font(ax.fontBase)
+                .font(ax.fieldFont)
                 .foregroundStyle(ax.text)
+                .focused($focused)
         } else {
             TextField(node.label, text: $text, prompt: Text(node.placeholder).foregroundColor(ax.textDisabled))
                 .textFieldStyle(.plain)
-                .font(ax.fontBase)
+                .font(ax.fieldFont)
                 .foregroundStyle(ax.text)
+                .focused($focused)
         }
+    }
+
+    /// Astryx's TextArea shows `rows={3}`: three lines of body leading.
+    private var rowsHeight: CGFloat { 3 * ax.fieldFontSize * ax.bodyLeading }
+
+    @ViewBuilder
+    private var multilineField: some View {
+        #if os(iOS)
+        // A vertical TextField keeps the text at the box's own inset and three lines high,
+        // where a TextEditor takes all the height it is offered and insets its text.
+        TextField(node.label, text: $text, prompt: Text(node.placeholder).foregroundColor(ax.textDisabled), axis: .vertical)
+            .textFieldStyle(.plain)
+            .lineLimit(3, reservesSpace: true)
+            .lineSpacing(ax.lineSpacing(size: ax.fieldFontSize, ratio: ax.bodyLeading))
+            .font(ax.fieldFont)
+            .foregroundStyle(ax.text)
+            .focused($focused)
+            .frame(maxWidth: .infinity, alignment: .topLeading)
+        #else
+        TextEditor(text: $text)
+            .scrollContentBackground(.hidden)
+            .font(ax.fieldFont)
+            .foregroundStyle(ax.text)
+            .frame(minHeight: 60 * min(ax.scale, 1.4))
+            .overlay(alignment: .topLeading) {
+                if text.isEmpty {
+                    Text(node.placeholder)
+                        .font(ax.fieldFont)
+                        .foregroundStyle(ax.textDisabled)
+                        .padding(.leading, 5)
+                        .allowsHitTesting(false)
+                }
+            }
+            .focused($focused)
+            .accessibilityLabel(node.label)
+        #endif
     }
 }
 
@@ -166,7 +202,7 @@ struct AXSwitch: View {
 
     private var labels: some View {
         VStack(alignment: .leading, spacing: ax.hair) {
-            Text(node.label).font(ax.fontBase).foregroundStyle(ax.textSecondary)
+            Text(node.label).font(ax.fontLabel).foregroundStyle(ax.textSecondary)
                 .axLeading(ax, size: ax.fontSize("font-size-base", 14), ratio: ax.bodyLeading)
             if let description = node.description {
                 Text(description).font(ax.fontSmall).foregroundStyle(ax.textSecondary)
@@ -176,8 +212,8 @@ struct AXSwitch: View {
 
     var body: some View {
         HStack(alignment: .center, spacing: ax.space(3)) {
-            labels
-            Spacer(minLength: ax.space(3))
+            // The words take the room the switch leaves; a spacer would halve it.
+            labels.frame(maxWidth: .infinity, alignment: .leading)
             if isStatic {
                 StaticSwitch(on: node.on)
             } else {
@@ -196,13 +232,21 @@ struct AXSwitch: View {
     }
 }
 
+/// The side of a checkbox box or radio circle: Astryx's 24 on a touch screen
+/// (`@media (any-pointer: coarse)`), 18 on the Mac.
+#if os(iOS)
+let axCheckSide: CGFloat = 24
+#else
+let axCheckSide: CGFloat = 18
+#endif
+
 /// The box of a checkbox, drawn with the tokens (the platforms have no shared checkbox).
 struct AXCheckmark: View {
     let checked: Bool
     @Environment(\.ax) private var ax
 
     var body: some View {
-        let side = 18 * min(ax.scale, 1.5)
+        let side = axCheckSide * min(ax.scale, 1.5)
         RoundedRectangle(cornerRadius: ax.radiusInner + 1, style: .continuous)
             .fill(checked ? ax.accent : ax.surface)
             .overlay(
@@ -245,7 +289,7 @@ struct AXCheckControl: View {
         let binding = Binding(get: { checked }, set: { _ in toggle() })
         Group {
             if let title {
-                Toggle(isOn: binding) { Text(title).font(ax.fontBase).foregroundStyle(ax.text) }
+                Toggle(isOn: binding) { Text(title).font(ax.fontBase).foregroundStyle(ax.textSecondary) }
             } else {
                 Toggle(label, isOn: binding).labelsHidden()
             }
@@ -261,10 +305,13 @@ struct AXCheckControl: View {
         Button(action: toggle) {
             HStack(spacing: ax.space(2)) {
                 AXCheckmark(checked: checked)
-                if let title { Text(title).font(ax.fontBase).foregroundStyle(ax.text) }
-                Spacer(minLength: 0)
+                // The label is secondary, regular (Astryx's CheckboxInput).
+                if let title {
+                    Text(title).font(ax.fontBase).foregroundStyle(ax.textSecondary)
+                    Spacer(minLength: 0)
+                }
             }
-            .frame(minHeight: axMinTarget)
+            // Drawn at its own size (24 on a touch screen); the taps around it reach 44.
             .contentShape(Rectangle())
             .axTapTarget(keepLayout: true)
         }
@@ -302,11 +349,14 @@ struct AXRadio: View {
                     Button {
                         send(.set(id: node.id, value: .string(option.value)))
                     } label: {
+                        let side = axCheckSide * min(ax.scale, 1.5)
                         HStack(alignment: .top, spacing: ax.space(3)) {
+                            // The chosen circle is a thick accent ring round a white dot: the ring is
+                            // 5 of 18 at the Mac's size, in the same proportion at 24.
                             Circle()
-                                .strokeBorder(selected ? ax.accent : ax.borderStrong, lineWidth: selected ? 5 : 1.5)
+                                .strokeBorder(selected ? ax.accent : ax.borderStrong, lineWidth: selected ? side * 5 / 18 : 1.5)
                                 .background(Circle().fill(ax.surface))
-                                .frame(width: 18 * min(ax.scale, 1.5), height: 18 * min(ax.scale, 1.5))
+                                .frame(width: side, height: side)
                                 .padding(.top, 1)
                             VStack(alignment: .leading, spacing: ax.hair) {
                                 Text(option.label).font(ax.fontBase).foregroundStyle(ax.text)
@@ -315,11 +365,15 @@ struct AXRadio: View {
                                         .multilineTextAlignment(.leading)
                                 }
                             }
-                            Spacer(minLength: 0)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                         }
                         .padding(.vertical, ax.space(1))
+                        #if os(macOS)
                         .frame(minHeight: axMinTarget)
+                        #endif
                         .contentShape(Rectangle())
+                        // Drawn at its own size; the taps around it reach 44 on a touch screen.
+                        .axTapTarget(keepLayout: true)
                     }
                     .buttonStyle(.plain)
                     .accessibilityElement(children: .combine)
@@ -356,6 +410,10 @@ struct AXSegmented: View {
             .pickerStyle(.segmented)
             .labelsHidden()
             .tint(ax.accent)
+            #if os(iOS)
+            // Astryx's segmented control hugs its labels.
+            .fixedSize()
+            #endif
             }
         }
     }
@@ -385,7 +443,7 @@ struct AXSelect: View {
             } label: {
                 HStack(spacing: ax.space(2)) {
                     Text(node.options.first { $0.value == node.value }?.label ?? node.value)
-                        .font(ax.fontBase)
+                        .font(ax.fieldFont)
                         .foregroundStyle(ax.text)
                     if !inRow { Spacer(minLength: 0) }
                     Image(systemName: "chevron.up.chevron.down")
@@ -393,12 +451,14 @@ struct AXSelect: View {
                         .foregroundStyle(ax.iconSecondary)
                 }
                 .padding(.horizontal, ax.space(3))
-                .frame(minHeight: axControlHeight(ax))
+                .frame(minHeight: axFieldHeight(ax))
                 .background(RoundedRectangle(cornerRadius: ax.radiusElement, style: .continuous).fill(ax.surface))
                 .overlay(RoundedRectangle(cornerRadius: ax.radiusElement, style: .continuous).strokeBorder(ax.borderStrong, lineWidth: 1))
                 .contentShape(Rectangle())
                 // In a row the select hugs its value, as in a flex row.
                 .fixedSize(horizontal: inRow, vertical: false)
+                // Drawn 32 high; the taps around it reach 44.
+                .axTapTarget(keepLayout: true)
             }
             .menuStyle(.button)
             .buttonStyle(.plain)
@@ -438,7 +498,7 @@ struct AXSlider: View {
                     .accessibilityLabel(node.label)
                     .accessibilityValue(node.valueText)
                 }
-                Text(node.valueText).font(ax.fontBase.monospacedDigit()).foregroundStyle(ax.textSecondary)
+                Text(node.valueText).font(ax.fontBase.monospacedDigit()).foregroundStyle(ax.text)
                     .accessibilityHidden(true)
             }
         }
@@ -457,14 +517,8 @@ struct AXTabs: View {
     @Environment(\.ax) private var ax
     @Environment(\.axSend) private var send
 
-    /// Astryx's tab is 36 high; on a touch screen it is at least the 44 pt target.
-    private var tabHeight: CGFloat {
-        #if os(macOS)
-        36 * min(ax.scale, 1.4)
-        #else
-        axMinTarget
-        #endif
-    }
+    /// Astryx's tab is 36 high; on a touch screen the taps around it reach 44.
+    private var tabHeight: CGFloat { 36 * min(ax.scale, 1.4) }
 
     var body: some View {
         AXHScroll {
@@ -483,20 +537,19 @@ struct AXTabs: View {
                                 AXBadge(text: count, tone: .neutral)
                             }
                         }
-                        .padding(.horizontal, ax.space(3))
                         .frame(minHeight: tabHeight)
+                        // The underline is as wide as the label, not the tab's side padding.
                         .overlay(alignment: .bottom) {
                             Rectangle().fill(selected ? ax.accent : .clear).frame(height: 2)
                         }
+                        .padding(.horizontal, ax.space(3))
                         .contentShape(Rectangle())
+                        .axTapTarget(keepLayout: true)
                     }
                     .buttonStyle(.plain)
                     .accessibilityAddTraits(selected ? [.isSelected, .isButton] : .isButton)
                 }
             }
-        }
-        .overlay(alignment: .bottom) {
-            Rectangle().fill(ax.border).frame(height: 1).allowsHitTesting(false)
         }
     }
 }

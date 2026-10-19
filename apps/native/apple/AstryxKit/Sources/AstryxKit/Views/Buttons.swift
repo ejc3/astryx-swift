@@ -15,7 +15,7 @@ struct AXButton: View {
             send(.press(id: node.id))
         } label: {
             HStack(spacing: ax.space(2)) {
-                if let icon = node.icon { Image(systemName: icon.symbol) }
+                if let icon = node.icon { Image(systemName: icon.symbol).font(ax.iconFont) }
                 // A label is one line until the text is so large that one line cannot hold it.
                 Text(node.label).lineLimit(typeSize.isAccessibilitySize ? nil : 1)
                     .multilineTextAlignment(.center)
@@ -36,14 +36,10 @@ struct AXButtonStyle: ButtonStyle {
     var small = false
     @Environment(\.isEnabled) private var isEnabled
 
-    /// Astryx's `size-element-md` (32), `sm` (28); on a touch screen the md button is 36 with its
-    /// tap region reaching 44.
+    /// Astryx's `size-element-md` (32), `sm` (28), on a touch screen too: the tap region reaches
+    /// 44 without the button being drawn any taller.
     private var height: CGFloat {
-        #if os(macOS)
         (small ? 28 : 32) * min(ax.scale, 1.4)
-        #else
-        (small ? 28 : 36) * min(ax.scale, 1.4)
-        #endif
     }
 
     func makeBody(configuration: Configuration) -> some View {
@@ -59,7 +55,7 @@ struct AXButtonStyle: ButtonStyle {
             .background(shape.fill(background))
             .opacity(isEnabled ? (configuration.isPressed ? 0.75 : 1) : 0.5)
             .contentShape(shape)
-            // The button is drawn 32 pt high (36 on a touch screen); the taps around it still count.
+            // The button is drawn 32 pt high; the taps around it still count (44 x 44).
             .axTapTarget(keepLayout: true)
     }
 
@@ -94,17 +90,15 @@ struct AXIconButton: View {
 
     var body: some View {
         let selected = node.selected ?? false
-        #if os(macOS)
         let side = (small ? 28 : 32) * min(ax.scale, 1.4)
-        #else
-        let side = (small ? 28 : 36) * min(ax.scale, 1.4)
-        #endif
         Button {
             send(.press(id: node.id))
         } label: {
             Image(systemName: node.icon.symbol)
-                .font(.system(size: ax.fontSize("font-size-lg", 17) * (small ? 0.8 : 0.95)))
-                .foregroundStyle(selected ? ax.text : ax.iconSecondary)
+                // Astryx's ghost icon button: the primary text color, a glyph of about 12 in a 32 box
+                // (9 in the small one).
+                .font(.system(size: ax.fontSize("font-size-base", 14) * (small ? 0.78 : 0.9)))
+                .foregroundStyle(ax.text)
                 .frame(width: side, height: side)
                 .background(RoundedRectangle(cornerRadius: ax.radiusElement, style: .continuous).fill(selected ? ax.color("color-neutral") : .clear))
                 .contentShape(Rectangle())

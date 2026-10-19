@@ -77,14 +77,27 @@ struct InboxScreen: View {
         #endif
     }
 
+    /// On a phone the list is the page's one scroll: the masthead and the tab strip are its first
+    /// rows, so a single list scrolls under the navigation bar and the home indicator, instead of
+    /// a list scrolling inside a page that scrolls.
+    private var listIsThePage: Bool {
+        #if os(iOS)
+        !isStatic && !sideBySide && !paneAlone && !model.rows.isEmpty
+        #else
+        false
+        #endif
+    }
+
     var body: some View {
         // The template owns its padding: the header's is 16, and the list runs flat on the page
         // under it, as in the web's layout (no card, no border).
         VStack(alignment: .leading, spacing: 0) {
-            masthead
-                .padding(ax.space(4))
+            if !listIsThePage {
+                masthead
+                    .padding(ax.space(4))
+            }
             surface
-                .modifier(InboxFill())
+                .modifier(InboxFill(wholePage: listIsThePage))
         }
         .frame(maxWidth: .infinity, alignment: .topLeading)
         .sheet(isPresented: Binding(
@@ -120,8 +133,8 @@ struct InboxScreen: View {
             }
             .buttonStyle(AXButtonStyle(variant: .primary, ax: ax, fills: fills))
         }
-        // The subtitle and the two buttons in a row; else the buttons under the subtitle; else
-        // (and at accessibility sizes at once) a column of full-width buttons.
+        // The web's order, now that the page has no H1: the subtitle and Refresh on one row,
+        // Compose under them; else (and at accessibility sizes at once) a column of full-width buttons.
         let stacked = VStack(alignment: .leading, spacing: ax.space(2)) {
             subtitle
             refresh(fills: true)
@@ -132,10 +145,9 @@ struct InboxScreen: View {
                 stacked
             } else {
                 ViewThatFits(in: .horizontal) {
-                    HStack(spacing: ax.space(3)) { subtitle.axOneLine(); Spacer(minLength: ax.space(2)); refresh(fills: false).axOneLine(); compose(fills: false).axOneLine() }
-                    VStack(alignment: .leading, spacing: ax.space(2)) {
-                        subtitle
-                        HStack(spacing: ax.space(2)) { refresh(fills: false).axOneLine(); compose(fills: false).axOneLine() }
+                    VStack(alignment: .leading, spacing: ax.space(3)) {
+                        HStack(spacing: ax.space(3)) { subtitle.axOneLine(); Spacer(minLength: ax.space(2)); refresh(fills: false).axOneLine() }
+                        compose(fills: false).axOneLine()
                     }
                     stacked
                 }
@@ -166,7 +178,7 @@ struct InboxScreen: View {
                     .background(ax.card)
             }
         } else {
-            InboxListColumn(model: model, layout: layout)
+            InboxListColumn(model: model, layout: layout, header: listIsThePage ? AnyView(masthead.padding(ax.space(4))) : nil)
                 .environment(\.axWidth, inner)
                 .clipped()
         }
@@ -205,10 +217,14 @@ struct InboxScreen: View {
 /// The surface fills the window's height under the header when it scrolls inside itself; drawn to
 /// an image it takes the room its content needs, at least a window's worth.
 struct InboxFill: ViewModifier {
+    /// The list carries the masthead too and so takes the window's whole height (a phone).
+    var wholePage = false
     @Environment(\.axStatic) private var isStatic
 
     func body(content: Content) -> some View {
-        if isStatic {
+        if wholePage {
+            content.containerRelativeFrame(.vertical, alignment: .top) { height, _ in max(height, 460) }
+        } else if isStatic {
             content.frame(minHeight: 560, alignment: .top)
         } else {
             content.containerRelativeFrame(.vertical, alignment: .top) { height, _ in max(height - 70, 460) }

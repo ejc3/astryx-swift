@@ -70,7 +70,7 @@ struct ShowInventory: View {
     // MARK: Search and filters
 
     private var viewButtonsWidth: CGFloat {
-        CGFloat(inventory.viewButtons.count) * max(axMinTarget, 32 * min(ax.scale, 1.4)) + ax.space(1)
+        CGFloat(inventory.viewButtons.count) * 32 * min(ax.scale, 1.4) + ax.space(1)
     }
 
     /// A filter menu's width, estimated from its words: icon, text, chevron and padding. It only
@@ -286,7 +286,7 @@ struct ShowInventory: View {
             send(.set(id: "tpl.showcase.select.\(row.id)", value: .bool(!on)))
         } label: {
             // A 26 pt box in a 28 pt column, with a larger area to tap.
-            AXCheckmark(checked: on).padding(ax.space(1)).contentShape(Rectangle()).axTapTarget(keepLayout: true)
+            ShowCheckbox(checked: on).padding(ax.space(1)).contentShape(Rectangle()).axTapTarget(keepLayout: true)
         }
         .buttonStyle(.plain)
         .accessibilityLabel(row.selectLabel)

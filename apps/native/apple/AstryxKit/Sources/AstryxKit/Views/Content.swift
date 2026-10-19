@@ -114,6 +114,8 @@ struct AXToken: View {
         .padding(.leading, ax.space(2))
         .padding(.trailing, node.removeId == nil ? ax.space(2) : ax.space(1))
         .padding(.vertical, ax.space(1))
+        // Astryx's Token is 24 high.
+        .frame(minHeight: 24 * min(ax.scale, 1.6))
         .background(RoundedRectangle(cornerRadius: ax.radiusInner, style: .continuous).fill(colors.muted))
     }
 }
@@ -150,13 +152,20 @@ struct AXKbd: View {
     var body: some View {
         HStack(spacing: ax.space(1)) {
             ForEach(Array(node.keys.enumerated()), id: \.offset) { _, key in
+                // Astryx's Kbd: 20 high, 12 medium in the body face, a neutral key with a 2 pt
+                // edge along its bottom in the emphasized border.
                 Text(key)
-                    .font(ax.font("font-size-sm", 12, weight: "font-weight-medium", design: .monospaced))
+                    .font(ax.font("font-size-sm", 12, weight: "font-weight-medium"))
                     .foregroundStyle(ax.text)
-                    .padding(.horizontal, ax.space(half: 1))
-                    .padding(.vertical, ax.hair)
-                    .frame(minWidth: 22)
-                    .background(RoundedRectangle(cornerRadius: ax.radiusInner + 1, style: .continuous).fill(ax.color("color-neutral")))
+                    .padding(.horizontal, ax.space(1))
+                    .frame(minWidth: 20, minHeight: 20 * min(ax.scale, 1.6))
+                    .background(
+                        ZStack(alignment: .bottom) {
+                            Rectangle().fill(ax.color("color-neutral"))
+                            Rectangle().fill(ax.borderStrong).frame(height: 2)
+                        }
+                        .clipShape(RoundedRectangle(cornerRadius: ax.radiusInner, style: .continuous))
+                    )
             }
         }
         .accessibilityElement(children: .combine)
@@ -178,10 +187,10 @@ struct AXAvatar: View {
         self.status = status; self.statusLabel = statusLabel
     }
 
-    private var diameter: CGFloat {
-        let base: CGFloat = switch size { case .sm: 24; case .md: 36; case .lg: 48 }
-        return base * min(ax.scale, 1.6)
-    }
+    /// The size before Dynamic Type grows it.
+    fileprivate var base: CGFloat { switch size { case .sm: 24; case .md: 36; case .lg: 48 } }
+
+    private var diameter: CGFloat { base * min(ax.scale, 1.6) }
 
     var body: some View {
         let tint = ax.person(hue: hue)
@@ -210,19 +219,23 @@ extension AXAvatar {
     /// for anything else (Away included), as the web renderer maps the core's tones.
     @ViewBuilder
     fileprivate func statusDot(_ status: Tone) -> some View {
-        let side = diameter * 0.28
+        // Astryx's tiers (AvatarStatusDot): a 10 dot with a 1 ring up to a 36 avatar, a 20 dot
+        // with a 2 ring up to 72. The ring is inside the dot's size.
+        let small = base <= 36
+        let side: CGFloat = small ? 10 : 20
+        let ring: CGFloat = small ? 1 : 2
         switch status {
         case .success, .danger:
             Circle()
                 .fill(status == .success ? ax.tone(.success).solid : ax.tone(.danger).solid)
                 .frame(width: side, height: side)
-                .overlay(Circle().strokeBorder(ax.surface, lineWidth: 2))
+                .overlay(Circle().strokeBorder(ax.surface, lineWidth: ring))
         default:
             Circle()
                 .fill(ax.surface)
                 .frame(width: side, height: side)
-                .overlay(Circle().strokeBorder(ax.iconSecondary, lineWidth: 1.5))
-                .overlay(Circle().strokeBorder(ax.surface, lineWidth: 2).padding(-2))
+                .overlay(Circle().strokeBorder(ax.surface, lineWidth: ring))
+                .overlay(Circle().strokeBorder(ax.iconSecondary, lineWidth: small ? 1 : 1.5).padding(ring))
         }
     }
 }
@@ -249,7 +262,7 @@ struct AXAvatarGroup: View {
                     .font(.system(size: d * 0.36, weight: .semibold))
                     .foregroundStyle(ax.textSecondary)
                     .frame(minWidth: d, minHeight: d)
-                    .background(Circle().fill(ax.muted))
+                    .background(Circle().fill(ax.color("color-neutral")))
                     .overlay(Circle().strokeBorder(ax.surface, lineWidth: 2))
             }
         }

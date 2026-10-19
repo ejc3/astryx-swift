@@ -1,17 +1,30 @@
 import SwiftUI
 
 /// `chat`: message bubbles and a composer, in one bordered box as tall as 68 % of the window
-/// (420 to 720 pt): the messages scroll inside it, from the bottom, and the composer is pinned
+/// (420 to 720 pt; on a phone the page's height less its gutters, as the web's `flex: 1` box
+/// fills the page): the messages scroll inside it, from the bottom, and the composer is pinned
 /// under them. The composer's text is sent as `set` while typing and its send button, when the
 /// core says it can, as `press` with `sendId`.
 struct AXChat: View {
     let node: ChatNode
     @Environment(\.ax) private var ax
     @Environment(\.axHeight) private var windowHeight
+    @Environment(\.axWidth) private var width
     @Environment(\.axStatic) private var isStatic
 
+    /// The box's height. On a phone it fills the page: the visible height under the navigation
+    /// bar, less the page's gutter above and below, so the composer sits at the bottom.
+    private var boxHeight: CGFloat {
+        #if os(iOS)
+        let gutter = width + 2 * ax.space(4) < 600 ? ax.space(4) : ax.space(6)
+        return max(windowHeight - 2 * gutter, 420)
+        #else
+        return min(max(windowHeight * 0.68, 420), 720)
+        #endif
+    }
+
     var body: some View {
-        let height = min(max(windowHeight * 0.68, 420), 720)
+        let height = boxHeight
         VStack(spacing: 0) {
             if isStatic {
                 // A picture has no scroller: the last messages sit above the composer.
@@ -49,6 +62,27 @@ struct AXChat: View {
     }
 }
 
+/// A box at its content's one-line width, and at `cap` when the content needs more than that (a
+/// wrapped box is as wide as it may be, not as wide as its widest line).
+private struct AXHugOrFill: Layout {
+    let cap: CGFloat
+
+    private func width(_ proposal: ProposedViewSize, _ subview: LayoutSubview) -> CGFloat {
+        let room = min(proposal.width ?? .infinity, cap)
+        return min(subview.sizeThatFits(.unspecified).width, room)
+    }
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        guard let subview = subviews.first else { return .zero }
+        let w = width(proposal, subview)
+        return CGSize(width: w, height: subview.sizeThatFits(ProposedViewSize(width: w, height: nil)).height)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        subviews.first?.place(at: bounds.origin, proposal: ProposedViewSize(width: bounds.width, height: bounds.height))
+    }
+}
+
 /// One message as Astryx's Chat draws it: the avatar (36) beside a column of the sender's name,
 /// the bubble and the time. Your own messages mirror this, with the avatar at the trailing edge.
 /// Both senders' bubbles are `color-neutral`, with primary text.
@@ -63,38 +97,50 @@ private struct AXBubble: View {
         // The bubble is at most 80 % of the column beside the avatar, and at least 280 pt.
         let cap = max(0.8 * (width - 2 * ax.space(4) - avatar - gap), 280)
         HStack(alignment: .top, spacing: gap) {
-            if message.mine { Spacer(minLength: 0) }
             if !message.mine { avatarView }
             VStack(alignment: message.mine ? .trailing : .leading, spacing: ax.space(1)) {
                 Text(message.author)
                     .font(ax.font("font-size-sm", 12, weight: "font-weight-semibold"))
                     .foregroundStyle(ax.textSecondary)
-                Text(message.text)
-                    .font(ax.fontBase)
-                    .foregroundStyle(ax.text)
-                    .lineSpacing(ax.lineSpacing(size: ax.fontSize("font-size-base", 14), ratio: ax.bodyLeading))
-                    .multilineTextAlignment(.leading)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .padding(.horizontal, ax.space(4))
-                    .padding(.vertical, ax.space(3))
-                    .background(
-                        RoundedRectangle(cornerRadius: ax.size("radius-chat", 28), style: .continuous)
-                            .fill(ax.color("color-neutral"))
-                    )
-                    .frame(maxWidth: cap, alignment: message.mine ? .trailing : .leading)
+                // One line when the text fits it; else the bubble takes the whole width it may
+                // have, as a wrapped CSS box takes its max width (no spacer beside it to halve it).
+                AXHugOrFill(cap: cap) { bubble }
                 Text(message.time)
                     .font(ax.fontSmall)
                     .foregroundStyle(ax.textSecondary)
+                    .padding(.top, ax.hair)
             }
             if message.mine { avatarView }
-            if !message.mine { Spacer(minLength: 0) }
         }
         .frame(maxWidth: .infinity, alignment: message.mine ? .trailing : .leading)
         .accessibilityElement(children: .combine)
     }
 
+    private var bubble: some View {
+        Text(message.text)
+            .font(ax.fontBase)
+            .foregroundStyle(ax.text)
+            .lineSpacing(ax.lineSpacing(size: ax.fontSize("font-size-base", 14), ratio: ax.bodyLeading))
+            .multilineTextAlignment(.leading)
+            // Inside the fill, so the pill is as wide as the box it is given, not as its widest line.
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, ax.space(4))
+            .padding(.vertical, ax.space(3))
+            .background(
+                RoundedRectangle(cornerRadius: ax.size("radius-chat", 28), style: .continuous)
+                    .fill(ax.color("color-neutral"))
+            )
+    }
+
     private var avatarView: some View {
         AXAvatar(name: message.author, initials: message.initials, hue: message.hue, size: .md)
+    }
+}
+
+/// A button that draws its label as it is, disabled or not (the plain style dims a disabled one).
+private struct AXUndimmedButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
     }
 }
 
@@ -113,18 +159,18 @@ private struct AXComposer: View {
     var body: some View {
         // Astryx's ChatComposer: a rounded box with a soft shadow, a two-line field with the
         // placeholder at its top left, and the send button at the bottom right.
-        let line = ax.fontSize("font-size-base", 14) * ax.bodyLeading
+        let line = ax.fieldFontSize * ax.bodyLeading
         HStack(alignment: .bottom, spacing: ax.space(2)) {
             if isStatic {
                 Text(text.isEmpty ? composer.placeholder : text)
-                    .font(ax.fontBase)
+                    .font(ax.fieldFont)
                     .foregroundStyle(text.isEmpty ? ax.textDisabled : ax.text)
                     .frame(maxWidth: .infinity, minHeight: 2 * line, alignment: .topLeading)
             } else {
                 TextField(composer.placeholder, text: $text, prompt: Text(composer.placeholder).foregroundColor(ax.textDisabled), axis: .vertical)
                     .textFieldStyle(.plain)
                     .lineLimit(2...6)
-                    .font(ax.fontBase)
+                    .font(ax.fieldFont)
                     .foregroundStyle(ax.text)
                     .submitLabel(.send)
                     .onSubmit { submit() }
@@ -138,11 +184,12 @@ private struct AXComposer: View {
                     .foregroundStyle(ax.onAccent)
                     .frame(width: 32 * min(ax.scale, 1.4), height: 32 * min(ax.scale, 1.4))
                     .background(Circle().fill(ax.accent))
-                    .opacity(composer.canSend ? 1 : 0.45)
+                    .opacity(composer.canSend ? 1 : 0.5)
                     .contentShape(Circle())
                     .axTapTarget(keepLayout: true)
             }
-            .buttonStyle(.plain)
+            // The plain style dims a disabled button too; dimmed once, like Astryx's.
+            .buttonStyle(AXUndimmedButtonStyle())
             .disabled(!composer.canSend)
             .accessibilityLabel(composer.sendLabel)
         }
@@ -250,12 +297,13 @@ private struct AXBoardCard: View {
         .background(
             RoundedRectangle(cornerRadius: ax.radiusContainer, style: .continuous)
                 .fill(ax.card)
-                .shadow(color: ax.shadow, radius: 2, y: 1)
+                .shadow(color: .black.opacity(0.1), radius: 0.5, y: 1)
+                .shadow(color: .black.opacity(0.1), radius: 4, y: 2)
         )
         .overlay(RoundedRectangle(cornerRadius: ax.radiusContainer, style: .continuous).strokeBorder(ax.border, lineWidth: 1))
     }
 
-    /// Astryx's small ghost icon button: no fill, the chevron in the secondary icon color.
+    /// Astryx's small ghost icon button: no fill, the chevron in the primary text color.
     @ViewBuilder
     private func move(_ icon: String, id: String?, label: String) -> some View {
         if let id {

@@ -218,6 +218,7 @@
      "children": [
       {
        "kind": "table",
+       "stackBelow": 640,
        "empty": "No one has that role yet.",
        "columns": [
         {

@@ -168,8 +168,9 @@ extension EnvironmentValues {
     }
 }
 
-/// The hit side of a chat icon control: its drawn size, but never under 44 pt.
-func tChatSide(_ ax: AXStyle) -> CGFloat { Swift.max(axMinTarget, 32 * Swift.min(ax.scale, 1.4)) }
+/// The drawn side of a chat icon control: Astryx's 32 (the hit region reaches 44 on a touch screen
+/// through `axTapTarget`).
+func tChatSide(_ ax: AXStyle) -> CGFloat { 32 * Swift.min(ax.scale, 1.4) }
 
 struct TChatModel: Decodable {
     struct Composer: Decodable {

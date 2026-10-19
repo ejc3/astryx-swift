@@ -11,7 +11,7 @@ struct ShowCheckout: View {
 
     var body: some View {
         // The card is the page's own ground, with no border, as in the stock template.
-        ShowCard(fill: { $0.page }, padding: width < 380 ? ax.space(4) : ax.space(5), stroke: .clear) {
+        ShowCard(fill: { $0.page }, padding: ax.space(5), stroke: .clear) {
             VStack(alignment: .leading, spacing: ax.space(4)) {
                 Text(checkout.heading)
                     .font(ax.heading(2))
@@ -22,7 +22,7 @@ struct ShowCheckout: View {
                     ShowTextField(id: "tpl.showcase.email", label: checkout.email.label, placeholder: checkout.email.placeholder, value: checkout.email.value, keyboard: .email)
                     shippingList
                     paymentCards
-                    ShowTextField(id: "tpl.showcase.card", label: checkout.card.label, placeholder: checkout.card.placeholder, value: checkout.card.value, icon: width < 380 ? nil : "creditcard", keyboard: .digits)
+                    ShowTextField(id: "tpl.showcase.card", label: checkout.card.label, placeholder: checkout.card.placeholder, value: checkout.card.value, icon: "creditcard", keyboard: .digits)
                     expiryAndCVC
                     countryMenu
                 }
@@ -33,10 +33,8 @@ struct ShowCheckout: View {
                         Text(checkout.payLabel)
                     }
                     .frame(maxWidth: .infinity)
-                    #if os(macOS)
                     // Astryx's `lg` button.
                     .frame(minHeight: 40 * min(ax.scale, 1.4))
-                    #endif
                 }
                 .buttonStyle(AXButtonStyle(variant: .primary, ax: ax))
             }
@@ -95,10 +93,10 @@ struct ShowCheckout: View {
 
     private var paymentCards: some View {
         VStack(alignment: .leading, spacing: ax.space(2)) {
-            Text(checkout.payment.label).font(ax.font("font-size-sm", 12, weight: "font-weight-bold")).foregroundStyle(ax.text)
+            Text(checkout.payment.label).font(ax.font("font-size-sm", 12, weight: "font-weight-bold")).foregroundStyle(ax.textSecondary)
                 .axLeading(ax, size: ax.fontSize("font-size-sm", 12), ratio: ax.supportingLeading)
             LazyVGrid(
-                columns: Array(repeating: GridItem(.flexible(minimum: 0), spacing: ax.space(2), alignment: .top), count: ax.scale > 1.2 || width < 380 ? 1 : 3),
+                columns: Array(repeating: GridItem(.flexible(minimum: 0), spacing: ax.space(2), alignment: .top), count: ax.scale > 1.2 ? 1 : 3),
                 spacing: ax.space(2)
             ) {
                 ForEach(checkout.payment.options) { option in
@@ -164,10 +162,10 @@ struct ShowCheckout: View {
         return Button {
             send(.set(id: "tpl.showcase.saveInfo", value: .bool(!on)))
         } label: {
-            HStack(alignment: .top, spacing: ax.space(3)) {
-                AXCheckmark(checked: on).padding(.top, 1)
+            HStack(alignment: .center, spacing: ax.space(3)) {
+                ShowCheckbox(checked: on)
                 VStack(alignment: .leading, spacing: 0) {
-                    Text(checkout.saveInfo.label).font(ax.fontLabel).foregroundStyle(ax.text)
+                    Text(checkout.saveInfo.label).font(ax.fontLabel).foregroundStyle(ax.textSecondary)
                         .axLeading(ax, size: ax.fontSize("font-size-base", 14), ratio: ax.bodyLeading)
                         .multilineTextAlignment(.leading)
                     Text(checkout.saveInfo.description).font(ax.fontSmall).foregroundStyle(ax.textSecondary)
@@ -193,10 +191,11 @@ struct ShowRadioMark: View {
     @Environment(\.ax) private var ax
 
     var body: some View {
+        // 24 on a touch screen, as Astryx's coarse-pointer rule draws it; 18 on the Mac.
         Circle()
-            .strokeBorder(on ? ax.accent : ax.borderStrong, lineWidth: on ? 5 : 1.5)
+            .strokeBorder(on ? ax.accent : ax.borderStrong, lineWidth: on ? 5 * showMarkSide(ax) / 18 : 1.5)
             .background(Circle().fill(ax.surface))
-            .frame(width: 18 * min(ax.scale, 1.5), height: 18 * min(ax.scale, 1.5))
+            .frame(width: showMarkSide(ax), height: showMarkSide(ax))
             .accessibilityHidden(true)
     }
 }

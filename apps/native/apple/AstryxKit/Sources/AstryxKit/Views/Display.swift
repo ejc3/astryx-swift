@@ -6,9 +6,10 @@ struct AXProgress: View {
     @Environment(\.ax) private var ax
 
     var body: some View {
-        VStack(alignment: .leading, spacing: ax.space(1)) {
+        VStack(alignment: .leading, spacing: ax.space(2)) {
             HStack {
-                Text(node.label).font(ax.fontBase).foregroundStyle(ax.text)
+                // Astryx's ProgressBar label is primary, medium weight.
+                Text(node.label).font(ax.fontLabel).foregroundStyle(ax.text)
                 Spacer(minLength: ax.space(2))
                 Text(node.valueText).font(ax.fontBase.monospacedDigit()).foregroundStyle(ax.textSecondary)
             }
@@ -52,6 +53,8 @@ struct AXMetric: View {
                     Text(delta.text).font(ax.fontXSmall)
                 }
                 .foregroundStyle(ax.textTone(delta.tone))
+                // The figure and its change are a stack with gap 2 on the web (4 + this 4).
+                .padding(.top, ax.space(1))
             }
             if let trend = node.trend, trend.count > 1 {
                 Sparkline(values: trend, color: ax.accent)
@@ -112,7 +115,7 @@ struct AXBars: View {
         // A value row and a label row of 12 pt each, with the gap, leave the track for the fills.
         let line = ax.fontSize("font-size-xs", 10) * 1.2
         let track = max(chartHeight - 2 * (line + ax.space(1)), 20)
-        VStack(alignment: .leading, spacing: ax.space(2)) {
+        VStack(alignment: .leading, spacing: ax.space(4)) {
             HStack(alignment: .bottom, spacing: ax.space(1)) {
                 ForEach(Array(node.bars.enumerated()), id: \.offset) { _, bar in
                     VStack(spacing: ax.space(1)) {
@@ -153,24 +156,100 @@ struct AXStepper: View {
     let node: StepperNode
     @Environment(\.ax) private var ax
     @Environment(\.axSend) private var send
+    @Environment(\.axWidth) private var width
+
+    /// Astryx's default `minimumStepWidth`: below this much room per step the stepper collapses
+    /// to its bars and the current step between a previous and a next control.
+    private static let minimumStepWidth: CGFloat = 112
+
+    private var collapsed: Bool { Self.collapses(width: width, steps: node.steps.count) }
+
+    static func collapses(width: CGFloat, steps: Int) -> Bool {
+        steps > 0 && width / CGFloat(steps) < minimumStepWidth
+    }
 
     var body: some View {
-        ViewThatFits(in: .horizontal) {
-            HStack(alignment: .top, spacing: ax.space(2)) {
-                ForEach(Array(node.steps.enumerated()), id: \.offset) { index, step in
-                    stepView(step, index: index, lineLimit: 1)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }
-            }
-            VStack(alignment: .leading, spacing: ax.space(3)) {
-                ForEach(Array(node.steps.enumerated()), id: \.offset) { index, step in
-                    stepView(step, index: index, lineLimit: nil)
-                        .frame(maxWidth: .infinity, alignment: .leading)
+        Group {
+            if collapsed {
+                collapsedBody
+            } else {
+                ViewThatFits(in: .horizontal) {
+                    HStack(alignment: .top, spacing: ax.space(2)) {
+                        ForEach(Array(node.steps.enumerated()), id: \.offset) { index, step in
+                            stepView(step, index: index, lineLimit: 1)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                    }
+                    VStack(alignment: .leading, spacing: ax.space(3)) {
+                        ForEach(Array(node.steps.enumerated()), id: \.offset) { index, step in
+                            stepView(step, index: index, lineLimit: nil)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                    }
                 }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .contain)
+    }
+
+    // MARK: Collapsed
+
+    /// The step the summary names: the current one, else the last done.
+    private var shownIndex: Int {
+        node.steps.firstIndex { $0.state == .current }
+            ?? node.steps.lastIndex { $0.state == .done } ?? 0
+    }
+
+    /// The nearest step to move to in a direction: one the core gave a `selectId`, as Astryx's
+    /// controls skip disabled steps.
+    private func neighbor(_ delta: Int) -> (index: Int, id: String)? {
+        var index = shownIndex + delta
+        while node.steps.indices.contains(index) {
+            if let id = node.steps[index].selectId { return (index, id) }
+            index += delta
+        }
+        return nil
+    }
+
+    private var collapsedBody: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            // The track: one bar for every step.
+            HStack(spacing: ax.space(2)) {
+                ForEach(Array(node.steps.enumerated()), id: \.offset) { _, step in
+                    Capsule()
+                        .fill(step.state == .upcoming ? ax.color("color-neutral") : ax.accent)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 4)
+                }
+            }
+            .accessibilityHidden(true)
+            HStack(spacing: ax.space(2)) {
+                control("chevron-left", target: neighbor(-1))
+                Spacer(minLength: 0)
+                if node.steps.indices.contains(shownIndex) {
+                    let step = node.steps[shownIndex]
+                    HStack(spacing: ax.space(2)) {
+                        marker(step.state, index: shownIndex)
+                        Text(step.label)
+                            .font(step.state == .current ? ax.fontStrong : ax.fontBase)
+                            .foregroundStyle(ax.text)
+                            .lineLimit(1)
+                    }
+                }
+                Spacer(minLength: 0)
+                control("chevron-right", target: neighbor(1))
+            }
+            .padding(.top, ax.space(2))
+        }
+    }
+
+    /// Astryx's ghost icon button, named for the step it goes to, dimmed when there is none.
+    private func control(_ icon: String, target: (index: Int, id: String)?) -> some View {
+        AXIconButton(
+            node: IconButtonNode(id: target?.id ?? "", icon: Icon(rawValue: icon), label: target.map { node.steps[$0.index].label } ?? "", selected: nil),
+            disabled: target == nil
+        )
     }
 
     /// A step: its bar, then its marker and name; a button when the core gave it a `selectId`.
@@ -229,6 +308,8 @@ struct AXBanner: View {
             Image(systemName: bannerSymbol)
                 .font(.system(size: ax.fontSize("font-size-lg", 17)))
                 .foregroundStyle(ax.fillTone(node.tone))
+            // The text takes all the room the dismiss control leaves; a spacer beside it would
+            // halve what it is offered and wrap it early.
             VStack(alignment: .leading, spacing: ax.space(1)) {
                 Text(node.title).font(ax.fontStrong).foregroundStyle(ax.text)
                 Text(node.text).font(ax.fontSmall).foregroundStyle(ax.textSecondary)
@@ -238,7 +319,7 @@ struct AXBanner: View {
                     AXButton(node: action, small: true).padding(.top, ax.space(1))
                 }
             }
-            Spacer(minLength: 0)
+            .frame(maxWidth: .infinity, alignment: .leading)
             if let dismissId = node.dismissId {
                 Button {
                     send(.press(id: dismissId))
@@ -254,7 +335,9 @@ struct AXBanner: View {
                 .accessibilityLabel(node.title)
             }
         }
-        .padding(ax.space(3))
+        // Astryx's Banner pads 12 above and below and 16 at the sides.
+        .padding(.vertical, ax.space(3))
+        .padding(.horizontal, ax.space(4))
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(RoundedRectangle(cornerRadius: ax.radiusContainer, style: .continuous).fill(colors.muted))
         .accessibilityElement(children: .contain)
@@ -276,10 +359,11 @@ struct AXEmpty: View {
     @Environment(\.ax) private var ax
 
     var body: some View {
-        VStack(spacing: ax.space(3)) {
+        // Astryx's EmptyState: gap 16, padding 32 above and below and 24 at the sides.
+        VStack(spacing: ax.space(4)) {
             Image(systemName: node.icon.symbol)
-                .font(.system(size: ax.fontSize("font-size-2xl", 24)))
-                .foregroundStyle(ax.iconSecondary)
+                .font(.system(size: ax.fontSize("font-size-xl", 20)))
+                .foregroundStyle(ax.text)
             VStack(spacing: ax.hair) {
                 Text(node.title).font(ax.heading(3)).foregroundStyle(ax.text)
                 Text(node.text).font(ax.fontBase).foregroundStyle(ax.textSecondary)
@@ -288,7 +372,8 @@ struct AXEmpty: View {
             }
             if let action = node.action { AXButton(node: action) }
         }
-        .padding(ax.space(6))
+        .padding(.vertical, ax.space(8))
+        .padding(.horizontal, ax.space(6))
         .frame(maxWidth: .infinity)
         .accessibilityElement(children: .contain)
     }

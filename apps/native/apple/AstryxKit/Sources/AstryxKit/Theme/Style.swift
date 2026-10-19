@@ -166,6 +166,22 @@ struct AXStyle: Sendable {
     var fontSmall: Font { font("font-size-sm", 12) }
     var fontXSmall: Font { font("font-size-xs", 10) }
     var fontLabel: Font { font("font-size-base", 14, weight: "font-weight-medium") }
+
+    /// The size of the text a field or select shows. Astryx floors it at 1rem on a touch screen
+    /// (`@media (pointer: coarse) { font-size: max(1rem, var(--text-body-size)) }`, so WebKit does
+    /// not zoom the page on focus); on the Mac it is the body size.
+    var fieldFontSize: CGFloat {
+        #if os(iOS)
+        Swift.max(scaled(16), fontSize("font-size-base", 14))
+        #else
+        fontSize("font-size-base", 14)
+        #endif
+    }
+    var fieldFont: Font { .system(size: fieldFontSize, weight: weight(Int(size("font-weight-normal", 400)))) }
+
+    /// An SF Symbol beside a label or in a field: Astryx's icons are a 16 box with about 12 of
+    /// glyph, and an SF Symbol at the label's own size draws about 30 % larger than that.
+    var iconFont: Font { .system(size: fontSize("font-size-base", 14) * 0.86) }
     var fontStrong: Font { font("font-size-base", 14, weight: "font-weight-semibold") }
     func heading(_ level: Int) -> Font {
         let l = min(max(level, 1), 6)

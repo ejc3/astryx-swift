@@ -474,6 +474,11 @@ public struct TableNode: Decodable, Sendable {
     public let columns: [Column]
     public let rows: [Row]
     public let empty: String
+    /// The table's own width below which each row stacks into a record (the core's rule, which
+    /// the web page follows too). Older cores send none: the kit then uses its own width.
+    public let stackBelow: Double?
+    /// The word for the stacked form's sort menu, when the core gives one.
+    public let sortLabel: String?
 }
 
 public struct ListItem: Decodable, Sendable {

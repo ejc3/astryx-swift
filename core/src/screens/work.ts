@@ -141,6 +141,7 @@ export function people(s: State): Screen {
       card(undefined, [
         {
           kind: "table",
+          stackBelow: 640,
           empty: q !== "" ? `No one matches "${p.query.trim()}".` : "No one has that role yet.",
           columns: SORTS.map((c) => ({ id: c.id, label: c.label, align: c.align, sort: p.sort === c.id ? (p.descending ? "desc" : "asc") : "none", sortId: `people.sort:${c.id}` })),
           rows: rows.map((x) => ({

@@ -497,7 +497,7 @@ private struct DashTable: View {
     private func stackedRow(_ row: DashTableData.Row) -> some View {
         VStack(alignment: .leading, spacing: ax.space(2)) {
             HStack(alignment: .firstTextBaseline) {
-                Text(row.name).font(ax.fontLabel).foregroundStyle(ax.text).lineLimit(1).truncationMode(.middle)
+                Text(row.name).font(ax.fontBase).foregroundStyle(ax.text).lineLimit(1).truncationMode(.middle)
                 Spacer(minLength: ax.space(2))
                 Text(row.valueLabel).font(ax.fontSmall.monospacedDigit()).foregroundStyle(ax.textSecondary)
             }

@@ -12,7 +12,7 @@ struct DashActiveUsers: View {
     @Environment(\.axWidth) private var width
     @Environment(\.dynamicTypeSize) private var typeSize
     @Environment(\.accessibilityDifferentiateWithoutColor) private var differentiate
-    @ScaledMetric(relativeTo: .body) private var compactHeight: CGFloat = 220
+    @ScaledMetric(relativeTo: .body) private var compactHeight: CGFloat = 300
     @ScaledMetric(relativeTo: .body) private var regularHeight: CGFloat = 300
 
     private var title: some View {
@@ -140,18 +140,10 @@ private struct DashLineChart: View {
     private var ticks: [DashModel.ActiveUsers.Tick] {
         chart.xTicks.filter { xRange.contains($0.at) }
     }
-    /// The time labels under the chart. At accessibility sizes a label is as wide as a third of a
-    /// phone, so the labels thin out (the middle one on a narrow screen, the two ends on a wider
-    /// one) instead of overprinting each other.
+    /// The time labels under the chart: all of them, as the web draws them at 390 pt. Only at
+    /// accessibility sizes, where a label is as wide as a third of a phone, do the labels thin out
+    /// (the middle one on a narrow screen, the two ends on a wider one) instead of overprinting.
     private var shownTicks: [DashModel.ActiveUsers.Tick] {
-        // On a phone the labels would touch: keep the ends and the one near a third of the way.
-        if !typeSize.isAccessibilitySize, width < 500, ticks.count > 3 {
-            let span = max(xRange.upperBound - xRange.lowerBound, 0.0001)
-            return ticks.filter { tick in
-                let f = (tick.at - xRange.lowerBound) / span
-                return f < 0.01 || f > 0.99 || (f > 0.2 && f < 0.55)
-            }
-        }
         guard typeSize.isAccessibilitySize, ticks.count > 1 else { return ticks }
         if width < 500 {
             let middle = (xRange.lowerBound + xRange.upperBound) / 2

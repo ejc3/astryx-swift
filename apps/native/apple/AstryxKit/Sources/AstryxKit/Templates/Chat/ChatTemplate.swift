@@ -108,7 +108,9 @@ private struct TChatColumn: View {
     @Environment(\.axStatic) private var isStatic
 
     var body: some View {
-        let pad = width < 600 ? ax.space(4) : ax.space(8)
+        // The conversation is held 32 points in at every width, as the web's ChatLayout holds it;
+        // the composer under it keeps its 16.
+        let pad = ax.space(8)
         let conversation = TChatConversation(items: model.items, openArtifact: open)
             .padding(.horizontal, pad)
             .padding(.top, pad)
@@ -154,8 +156,12 @@ private struct TChatComposer: View {
 
     private var canSend: Bool { !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
 
-    /// The side of the small controls: 28 on the Mac, 44 on a touch screen, growing with the text.
-    private var side: CGFloat { Swift.max(axMinTarget, 28 * Swift.min(ax.scale, 1.4)) }
+    /// The side of the small icon buttons: Astryx's 28, growing with the text. On a touch screen the
+    /// hit region still reaches 44 (`axTapTarget`); the drawn control is the web's size.
+    private var side: CGFloat { 28 * Swift.min(ax.scale, 1.4) }
+
+    /// The height of the mode menu and the Send circle: Astryx's 32.
+    private var control: CGFloat { 32 * Swift.min(ax.scale, 1.4) }
 
     var body: some View {
         let shape = RoundedRectangle(cornerRadius: ax.radiusContainer + 16, style: .continuous)
@@ -191,14 +197,14 @@ private struct TChatComposer: View {
     private var field: some View {
         if isStatic {
             Text(text.isEmpty ? composer.placeholder : text)
-                .font(ax.fontBase)
+                .font(cosFieldFont(ax))
                 .foregroundStyle(text.isEmpty ? ax.textSecondary : ax.text)
                 .padding(.horizontal, ax.space(1))
                 .frame(maxWidth: .infinity, minHeight: 22 * min(ax.scale, 1.4), alignment: .topLeading)
         } else {
             TextField(composer.placeholder, text: $text, prompt: Text(composer.placeholder).foregroundColor(ax.textSecondary), axis: .vertical)
                 .textFieldStyle(.plain)
-                .font(ax.fontBase)
+                .font(cosFieldFont(ax))
                 .foregroundStyle(ax.text)
                 .lineLimit(1...6)
                 .focused($focused)
@@ -210,18 +216,20 @@ private struct TChatComposer: View {
         }
     }
 
-    /// Always the accent circle; with nothing to send it is drawn at half strength.
+    /// Always the accent circle; with nothing to send it is drawn at half strength, once (the style
+    /// is our own so the system does not dim a disabled button a second time).
     private var sendButton: some View {
         Button(action: submit) {
             Image(systemName: "arrow.up")
                 .font(.system(size: ax.scaled(16), weight: .medium))
                 .foregroundStyle(ax.onAccent)
-                .frame(width: axControlHeight(ax), height: axControlHeight(ax))
+                .frame(width: control, height: control)
                 .background(Circle().fill(ax.accent))
                 .opacity(canSend ? 1 : 0.5)
                 .contentShape(Circle())
+                .axTapTarget(keepLayout: true)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(TChatSendStyle())
         .disabled(!canSend)
         .accessibilityLabel(words.send)
     }
@@ -244,8 +252,9 @@ private struct TChatComposer: View {
             }
             .foregroundStyle(ax.text)
             .padding(.horizontal, ax.space(3))
-            .frame(minHeight: side)
+            .frame(minHeight: control)
             .contentShape(Rectangle())
+            .axTapTarget(keepLayout: true)
         }
         .menuStyle(.button)
         .buttonStyle(.plain)
@@ -261,6 +270,7 @@ private struct TChatComposer: View {
                 .foregroundStyle(ax.text)
                 .frame(width: side, height: side)
                 .contentShape(Rectangle())
+                .axTapTarget(keepLayout: true)
         }
         .buttonStyle(.plain)
         .accessibilityLabel(label)
@@ -270,6 +280,14 @@ private struct TChatComposer: View {
         guard canSend else { return }
         send(.press(id: "tpl.chat.send"))
         text = ""
+    }
+}
+
+/// A button that draws its label as it is: the plain style dims a disabled button, and the Send
+/// circle already carries its own half-strength fill.
+private struct TChatSendStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label.opacity(configuration.isPressed ? 0.75 : 1)
     }
 }
 
@@ -331,6 +349,7 @@ struct TChatArtifactActions: View {
                 .padding(.horizontal, ax.space(2))
                 .frame(minHeight: tChatSide(ax))
                 .contentShape(Rectangle())
+                .axTapTarget(keepLayout: true)
             }
             .menuStyle(.button)
             .buttonStyle(.plain)
@@ -360,6 +379,7 @@ struct TChatArtifactActions: View {
             .foregroundStyle(ax.iconSecondary)
             .frame(width: tChatSide(ax), height: tChatSide(ax))
             .contentShape(Rectangle())
+            .axTapTarget(keepLayout: true)
     }
 
     private func action(_ symbol: String, label: String, perform: @escaping () -> Void) -> some View {
@@ -417,6 +437,7 @@ struct TChatArtifactDialog: View {
                         .foregroundStyle(ax.iconSecondary)
                         .frame(width: tChatSide(ax), height: tChatSide(ax))
                         .contentShape(Rectangle())
+                        .axTapTarget(keepLayout: true)
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(words.closeDocument)
@@ -454,6 +475,7 @@ struct TChatArtifactDialog: View {
                 .foregroundStyle(ax.iconSecondary)
                 .frame(width: tChatSide(ax), height: tChatSide(ax))
                 .contentShape(Rectangle())
+                .axTapTarget(keepLayout: true)
         }
         .menuStyle(.button)
         .buttonStyle(.plain)
