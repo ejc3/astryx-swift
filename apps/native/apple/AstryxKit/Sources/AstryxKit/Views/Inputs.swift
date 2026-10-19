@@ -107,7 +107,7 @@ struct AXTextInput: View {
             .background(RoundedRectangle(cornerRadius: radius, style: .continuous).fill(ax.surface))
             .overlay(
                 RoundedRectangle(cornerRadius: radius, style: .continuous)
-                    .strokeBorder(node.error == nil ? ax.border : ax.danger, lineWidth: 1)
+                    .strokeBorder(node.error == nil ? ax.borderStrong : ax.danger, lineWidth: 1)
             )
         }
         .syncedText(id: node.id, value: node.value, text: $text)
@@ -395,7 +395,7 @@ struct AXSelect: View {
                 .padding(.horizontal, ax.space(3))
                 .frame(minHeight: axControlHeight(ax))
                 .background(RoundedRectangle(cornerRadius: ax.radiusElement, style: .continuous).fill(ax.surface))
-                .overlay(RoundedRectangle(cornerRadius: ax.radiusElement, style: .continuous).strokeBorder(ax.border, lineWidth: 1))
+                .overlay(RoundedRectangle(cornerRadius: ax.radiusElement, style: .continuous).strokeBorder(ax.borderStrong, lineWidth: 1))
                 .contentShape(Rectangle())
                 // In a row the select hugs its value, as in a flex row.
                 .fixedSize(horizontal: inRow, vertical: false)

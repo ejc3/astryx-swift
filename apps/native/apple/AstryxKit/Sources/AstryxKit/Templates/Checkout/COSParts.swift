@@ -299,7 +299,7 @@ struct COSTextBox: View {
         .background(RoundedRectangle(cornerRadius: radius, style: .continuous).fill(ax.surface))
         .overlay(
             RoundedRectangle(cornerRadius: radius, style: .continuous)
-                .strokeBorder(hasError ? ax.danger : ax.border, lineWidth: 1)
+                .strokeBorder(hasError ? ax.danger : ax.borderStrong, lineWidth: 1)
         )
         .contentShape(RoundedRectangle(cornerRadius: radius, style: .continuous))
         .onTapGesture { if !isStatic { focusField() } }
@@ -404,7 +404,7 @@ struct COSSelect: View {
             .background(RoundedRectangle(cornerRadius: ax.radiusElement, style: .continuous).fill(ax.surface))
             .overlay(
                 RoundedRectangle(cornerRadius: ax.radiusElement, style: .continuous)
-                    .strokeBorder(hasError ? ax.danger : ax.border, lineWidth: 1)
+                    .strokeBorder(hasError ? ax.danger : ax.borderStrong, lineWidth: 1)
             )
             .contentShape(Rectangle())
         }
