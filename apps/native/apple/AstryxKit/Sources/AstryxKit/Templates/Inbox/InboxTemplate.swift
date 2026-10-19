@@ -3,8 +3,10 @@ import SwiftUI
 /// Astryx's inbox template (`table-inbox`), drawn natively from the core's view model
 /// (core/src/templates/inbox/model.ts, its `View` type).
 ///
-/// A mail list with a reading pane. The core decides the layout from the widths this view
-/// reports (`surface`, `list`, `touch`): side by side, or the list and the thread one at a time.
+/// A mail list with a reading pane. Layout is this drawing's own: it measures its width, applies
+/// the core's breakpoints (`mode.rules`) to it, and shows the list beside the open thread or one
+/// at a time (`InboxLayout`). The web page, which draws the same state at another width, lays
+/// itself out separately; the two share only content (the open thread, drafts, ticked rows).
 struct InboxTemplate: View {
     let view: JSONValue
 
@@ -31,9 +33,6 @@ struct InboxScreen: View {
     /// The pane's width once the handle has moved it; until then two thirds of the surface.
     @State private var movedPane: CGFloat?
     @State private var paneAtDragStart: CGFloat?
-    /// How many times in a row this view has had to tell the core its widths again because
-    /// something else (the web drawing shares the core's state) reported different ones.
-    @State private var corrections = 0
 
     private let listMin: CGFloat = 300
     private let paneMin: CGFloat = 440
@@ -43,12 +42,19 @@ struct InboxScreen: View {
 
     private var inner: CGFloat { max(width - 2, 0) }
 
-    /// Whether the list and the pane both fit at their smallest. The core decides the mode from
-    /// the widths it was last told; this view still never draws the two where they do not fit.
+    /// The layout facts that follow from the surface's width alone: single surface or not, and
+    /// which thread is open here.
+    private var surfaceLayout: InboxLayout { InboxLayout(model, surfaceWidth: Double(width), isTouch: isTouchDevice) }
+
+    /// The thread this drawing shows.
+    private var pane: InboxModel.Pane? { surfaceLayout.pane(in: model) }
+
+    /// Whether the list and the pane both fit at their smallest; this view never draws the two
+    /// where they do not fit, whatever the breakpoints say.
     private var fits: Bool { inner >= listMin + paneMin + handleWidth }
-    private var sideBySide: Bool { !model.mode.isSingleSurface && model.pane != nil && fits }
-    /// The open thread alone: the core's single surface, or the core thinks there is room and there is not.
-    private var paneAlone: Bool { model.pane != nil && (model.mode.isPaneFullWidth || (!model.mode.isSingleSurface && !fits)) }
+    private var sideBySide: Bool { !surfaceLayout.isSingleSurface && pane != nil && fits }
+    /// The open thread alone: a single surface, or too little room for both.
+    private var paneAlone: Bool { pane != nil && !sideBySide }
 
     private var paneWidth: CGFloat {
         let widest = max(paneMin, inner - listMin - handleWidth)
@@ -57,6 +63,9 @@ struct InboxScreen: View {
     }
 
     private var listWidth: CGFloat { sideBySide ? max(inner - paneWidth - handleWidth, 0) : inner }
+
+    /// The full layout: the surface's facts, and the list's (stacked and tight rows, the bulk band) from the list's width.
+    private var layout: InboxLayout { surfaceLayout.listed(model, listWidth: Double(listWidth)) }
 
     private var isTouchDevice: Bool {
         #if os(iOS)
@@ -76,10 +85,6 @@ struct InboxScreen: View {
                 .overlay(RoundedRectangle(cornerRadius: ax.radiusContainer, style: .continuous).strokeBorder(ax.border, lineWidth: 1))
         }
         .frame(maxWidth: .infinity, alignment: .topLeading)
-        .onChange(of: width, initial: true) { corrections = 0; report() }
-        .onChange(of: listWidth, initial: true) { corrections = 0; report() }
-        .onChange(of: model.mode.measured) { report() }
-        .onChange(of: model.mode.isTouch) { report() }
         .sheet(isPresented: Binding(
             get: { model.compose.isOpen },
             set: { send(.set(id: inboxAction("composeOpen"), value: .bool($0))) }
@@ -89,31 +94,6 @@ struct InboxScreen: View {
                 .frame(minWidth: 560, minHeight: 520)
                 #endif
         }
-    }
-
-    /// The page tells the core what it has measured; the core decides what that means. The core
-    /// echoes the widths it holds, so a width that differs (another drawing reported last) is
-    /// sent again, a few times at most per size.
-    private func report() {
-        guard corrections < 4 else { return }
-        let held = model.mode.measured
-        let surface = Int(width.rounded())
-        let list = Int(listWidth.rounded())
-        var sent = false
-        if held.surface != surface {
-            send(.set(id: inboxAction("surface"), value: .number(Double(surface))))
-            sent = true
-        }
-        if held.list != list {
-            send(.set(id: inboxAction("list"), value: .number(Double(list))))
-            sent = true
-        }
-        if model.mode.isTouch != isTouchDevice {
-            send(.set(id: inboxAction("touch"), value: .bool(isTouchDevice)))
-            sent = true
-        }
-        guard sent else { corrections = 0; return }
-        corrections += 1
     }
 
     // MARK: Masthead
@@ -148,13 +128,13 @@ struct InboxScreen: View {
 
     @ViewBuilder
     private var surface: some View {
-        if paneAlone, let pane = model.pane {
+        if paneAlone, let pane {
             InboxPaneView(model: model, pane: pane, fullWidth: true)
                 .environment(\.axWidth, inner)
                 .clipped()
-        } else if sideBySide, let pane = model.pane {
+        } else if sideBySide, let pane {
             HStack(spacing: 0) {
-                InboxListColumn(model: model)
+                InboxListColumn(model: model, layout: layout)
                     .environment(\.axWidth, listWidth)
                     .frame(width: listWidth)
                     .clipped()
@@ -166,7 +146,7 @@ struct InboxScreen: View {
                     .background(ax.card)
             }
         } else {
-            InboxListColumn(model: model)
+            InboxListColumn(model: model, layout: layout)
                 .environment(\.axWidth, inner)
                 .clipped()
         }

@@ -25,7 +25,7 @@ final class TemplatesDataAccessibilityTests: XCTestCase {
         XCTAssertEqual(model.text.selected, "selected")
         for id in ["refresh", "archive", "move", "delete", "send", "attach"] { XCTAssertTrue(model.isInert(id), id) }
         XCTAssertFalse(model.isInert("reply"))
-        XCTAssertEqual(model.mode.measured, .init(surface: 0, list: 0))
+        XCTAssertEqual([model.mode.rules.singleSurfaceBelow, model.mode.rules.stackRowsBelow, model.mode.rules.tightenColumnsBelow], [900, 560, 900])
         XCTAssertFalse(model.compose.isDirty)
     }
 
@@ -176,13 +176,8 @@ extension TemplatesDataAccessibilityTests {
     func testLiveScreens() throws {
         guard shots != nil else { throw XCTSkip("AX_SHOTS is not set") }
         var log: [String] = []
-        let narrowList: (inout [String: Any]) -> Void = { view in
-            var mode = view["mode"] as? [String: Any] ?? [:]
-            mode["isStacked"] = true
-            mode["isTight"] = true
-            view["mode"] = mode
-        }
-        let inbox = try patched("template-inbox", narrowList).decode(InboxModel.self)
+        // The list is stacked here because the window's own width leaves it 340 points beside the thread.
+        let inbox = try patched("template-inbox").decode(InboxModel.self)
         try live(InboxScreen(model: inbox), width: 1100, height: 720, name: "live.inbox.mac", log: &log)
         let invoice = try patched("template-invoice").decode(InvoiceModel.self)
         try live(InvoiceScreen(model: invoice), width: 1000, height: 900, name: "live.invoice.mac", log: &log)

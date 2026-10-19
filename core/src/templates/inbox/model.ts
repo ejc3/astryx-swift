@@ -4,8 +4,8 @@
  *
  * What lives here: the tab, which thread is open, the ticked rows, which messages of the open
  * thread are expanded, the attachment viewer, the compose sheet (recipients, Cc/Bcc, subject,
- * body) and the three measurements a host reports about its screen (the surface, the list, and
- * whether the primary pointer can hover). Everything else the JSX shows is worked out in `view`.
+ * body) and the three measurements the web page reports about its screen (the surface, the list,
+ * and whether the primary pointer can hover). Everything else the JSX shows is worked out in `view`.
  *
  * Actions (ids arrive without the "tpl.inbox." prefix):
  *   set  tab               a category: "inbox" | "escalations" | "waiting" | "resolved"
@@ -24,13 +24,21 @@
  *   set  subject | body
  *   press showCc | showBcc
  *   press discard          empty the draft and close the sheet
- *   set  surface | list    widths in px the host measured (0 = not measured yet)
- *   set  touch             true when the primary pointer cannot hover
+ *   set  surface | list    widths in px the web page measured (0 = not measured yet)
+ *   set  touch             true when the web page's primary pointer cannot hover
+ * (A drawing that lays itself out from its own width never sends these three.)
  *
  * Controls the core has no action for (Refresh, archive, move, delete, Send, the composer's
- * tools) are listed in the view's `inert`: a host draws them disabled. `mode.measured` echoes
- * the widths the core holds, so a host that is not the last to have reported them (the web
- * drawing shares this state) can tell and report again.
+ * tools) are listed in the view's `inert`: a host draws them disabled.
+ *
+ * Layout is per drawing; content is shared. Several drawings (native, web) show this one state
+ * at different widths, so the measurements in `layout` are only ever one drawing's: the web
+ * page's, which reports them, and which the view's `mode`, `openId`, `pane`, `rows[].actions`,
+ * `hasSelection` and `receivedWidth` follow. A drawing that lays itself out from its own width
+ * does not send them. It reads `mode.rules` (the breakpoints and the trailing-column widths),
+ * `choice` (what the person opened or closed, which is content), `firstVisibleId`,
+ * `hasSelectedRows`, each row's `actionsWide` and `actionsStacked`, and `panes` (the thread of
+ * every visible row, for whichever one that drawing opens), and decides for itself.
  */
 import { grouped } from "../../format.ts";
 import type { TemplateAction, TemplateModule } from "../types.ts";
@@ -414,8 +422,12 @@ export type RowView = {
   selectionLabel: string;
   priority: TokenView | null;
   tags: string[];
-  /** Hover actions: all four, or archive and delete when rows are stacked. */
+  /** Hover actions in the layout the reported measurements give: all four, or archive and delete when rows are stacked. */
   actions: ActionView[];
+  /** The hover actions of a wide row (all four), whatever was measured. */
+  actionsWide: ActionView[];
+  /** The hover actions of a stacked row (archive and delete), whatever was measured. */
+  actionsStacked: ActionView[];
 };
 
 export type AttachmentView = { id: string; name: string; src: string; previewAlt: string; lightboxAlt: string };
@@ -443,6 +455,19 @@ export type PaneView = {
   openMessages: string[];
   actions: ActionView[];
 };
+
+/** What the person chose, apart from any layout: the content a drawing opens its thread from. */
+export type ChoiceView = {
+  /** The thread the person opened, when it is on this tab; otherwise null. */
+  openIdExplicit: string | null;
+  /** The person closed the thread, and it stays closed. Distinguishes "closed" from "never chosen". */
+  isClosed: boolean;
+  /** The top thread of this tab: what a drawing with room opens when nothing was chosen. */
+  firstVisibleId: string | null;
+};
+
+/** The trailing "Received" column's width, for each kind of row and pointer. */
+export type ReceivedWidths = { wide: { pointer: number; touch: number }; stacked: { pointer: number; touch: number } };
 
 export type ComposeView = {
   isOpen: boolean;
@@ -480,9 +505,25 @@ export type InboxView = {
     isStacked: boolean;
     isTight: boolean;
     isTouch: boolean;
-    /** The widths the core holds (0 = not measured); a host compares them with its own. */
+    /** The widths the core holds (0 = not measured): the web page's. A drawing that lays itself out does not use them. */
     measured: { surface: number; list: number };
+    /** The breakpoints, for a drawing that measures its own width. */
+    rules: {
+      /** The surface is single (list and thread one at a time) below this width. */
+      singleSurfaceBelow: number;
+      /** Rows stack below this list width. */
+      stackRowsBelow: number;
+      /** The tags column goes below this list width. */
+      tightenColumnsBelow: number;
+      receivedWidth: ReceivedWidths;
+    };
   };
+  /** What was opened or closed; a drawing combines it with its own width to pick its open thread. */
+  choice: ChoiceView;
+  /** Whether any visible row is ticked. The bulk band replaces the tabs when this holds and rows are not stacked. */
+  hasSelectedRows: boolean;
+  /** The thread of every visible row, for a drawing that opens a different one than `pane`. */
+  panes: PaneView[];
   /** Ids of the controls with no action behind them; hosts draw these disabled. */
   inert: string[];
   /** Pixel width of the trailing "Received" column. */
@@ -529,33 +570,41 @@ function view(s: InboxState): InboxView {
     priority: priorityToken(item.priority),
     tags: item.tags,
     actions: actionViews(rowActions, item.subject),
+    actionsWide: actionViews(ROW_ACTIONS, item.subject),
+    actionsStacked: actionViews(NARROW_ROW_ACTIONS, item.subject),
   }));
 
-  let pane: PaneView | null = null;
+  const paneOf = (conversation: Conversation, openMessages: string[]): PaneView => ({
+    id: conversation.id,
+    subject: conversation.subject,
+    priority: priorityToken(conversation.priority),
+    tags: conversation.tags,
+    openMessages,
+    actions: actionViews(THREAD_ACTIONS, conversation.subject),
+    messages: threadMessages(conversation).map((message) => {
+      const attachments = message.attachments ?? [];
+      return {
+        id: message.id,
+        sender: message.sender,
+        senderEmail: message.senderEmail,
+        receivedFull: message.receivedFull,
+        body: message.body,
+        attachments: attachments.map((a) => ({ id: a.id, name: a.name, src: a.src, previewAlt: `Preview of ${a.name}`, lightboxAlt: `Attachment: ${a.name}` })),
+        attachmentsLabel: attachments.length === 0 ? [] : [String(attachments.length), " attachment", attachments.length === 1 ? "" : "s"],
+        lightboxIndex: s.lightbox && s.lightbox.id === message.id ? s.lightbox.index : null,
+      };
+    }),
+  });
   const open = d.openConversation;
-  if (open) {
-    pane = {
-      id: open.id,
-      subject: open.subject,
-      priority: priorityToken(open.priority),
-      tags: open.tags,
-      openMessages: s.thread.open,
-      actions: actionViews(THREAD_ACTIONS, open.subject),
-      messages: threadMessages(open).map((message) => {
-        const attachments = message.attachments ?? [];
-        return {
-          id: message.id,
-          sender: message.sender,
-          senderEmail: message.senderEmail,
-          receivedFull: message.receivedFull,
-          body: message.body,
-          attachments: attachments.map((a) => ({ id: a.id, name: a.name, src: a.src, previewAlt: `Preview of ${a.name}`, lightboxAlt: `Attachment: ${a.name}` })),
-          attachmentsLabel: attachments.length === 0 ? [] : [String(attachments.length), " attachment", attachments.length === 1 ? "" : "s"],
-          lightboxIndex: s.lightbox && s.lightbox.id === message.id ? s.lightbox.index : null,
-        };
-      }),
-    };
-  }
+  const pane = open ? paneOf(open, s.thread.open) : null;
+  // A thread the web page does not have open starts with its newest message expanded, as `settle` would give it.
+  const panes = d.visible.map((item) => (item.id === d.openId && pane ? pane : paneOf(item, [item.id])));
+  const chosen = s.chosen;
+  const choice: ChoiceView = {
+    openIdExplicit: chosen.kind === "open" && d.visible.some((item) => item.id === chosen.id) ? chosen.id : null,
+    isClosed: chosen.kind === "closed",
+    firstVisibleId: d.visible[0]?.id ?? null,
+  };
 
   return {
     text: TEXT,
@@ -578,7 +627,19 @@ function view(s: InboxState): InboxView {
       isTight: d.isTight,
       isTouch: s.layout.touch,
       measured: { surface: s.layout.surface, list: s.layout.list },
+      rules: {
+        singleSurfaceBelow: SINGLE_SURFACE_BELOW,
+        stackRowsBelow: STACK_ROWS_BELOW,
+        tightenColumnsBelow: TIGHTEN_COLUMNS_BELOW,
+        receivedWidth: {
+          wide: { pointer: trailingWidth(ROW_ACTIONS.length, false), touch: trailingWidth(ROW_ACTIONS.length, true) },
+          stacked: { pointer: trailingWidth(NARROW_ROW_ACTIONS.length, false), touch: trailingWidth(NARROW_ROW_ACTIONS.length, true) },
+        },
+      },
     },
+    choice,
+    hasSelectedRows: selectedCount > 0,
+    panes,
     inert: INERT,
     receivedWidth: trailingWidth(rowActions.length, s.layout.touch),
     pane,

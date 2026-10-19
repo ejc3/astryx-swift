@@ -206,3 +206,99 @@ test("the controls with no action behind them are listed as inert", () => {
   assert.ok(!v.inert.includes("reply"));
   assert.ok(!v.inert.includes("compose"));
 });
+
+// ----- Layout per drawing, content shared -----
+
+test("the breakpoints are in the view, for a drawing that measures its own width", () => {
+  const { rules } = view(start()).mode;
+  assert.deepEqual([rules.singleSurfaceBelow, rules.stackRowsBelow, rules.tightenColumnsBelow], [900, 560, 900]);
+  assert.deepEqual(rules.receivedWidth.wide, { pointer: Math.max(4 * 28 + 3 * 2, 96) + 24, touch: 4 * 28 + 3 * 2 + 4 + 96 + 24 });
+  assert.deepEqual(rules.receivedWidth.stacked, { pointer: Math.max(2 * 28 + 2, 96) + 24, touch: 2 * 28 + 2 + 4 + 96 + 24 });
+});
+
+test("the received width the measurements give is one of the rules' widths", () => {
+  const s = run(desktop(start()), set("list", 1000));
+  const { receivedWidth } = view(s).mode.rules;
+  assert.equal(view(s).receivedWidth, receivedWidth.wide.pointer);
+  assert.equal(view(run(s, set("touch", true))).receivedWidth, receivedWidth.wide.touch);
+  const stacked = run(s, set("list", 330));
+  assert.equal(view(stacked).receivedWidth, receivedWidth.stacked.pointer);
+  assert.equal(view(run(stacked, set("touch", true))).receivedWidth, receivedWidth.stacked.touch);
+});
+
+test("every row carries its actions for a wide and for a stacked list, whatever was measured", () => {
+  for (const s of [start(), run(desktop(start()), set("list", 330)), run(start(), set("surface", 390), set("list", 388))]) {
+    const row = view(s).rows[0]!;
+    assert.deepEqual(row.actionsWide.map((a) => a.id), ["archive", "move", "delete", "reply"]);
+    assert.deepEqual(row.actionsStacked.map((a) => a.id), ["archive", "delete"]);
+    assert.equal(row.actionsWide[0]?.ariaLabel, "Archive — Checkout returns 502 for EU customers");
+    assert.equal(row.actionsStacked[1]?.ariaLabel, "Delete — Checkout returns 502 for EU customers");
+  }
+});
+
+test("the person's choice is reported apart from any width: never chosen, opened, closed", () => {
+  const fresh = view(start()).choice;
+  assert.deepEqual(fresh, { openIdExplicit: null, isClosed: false, firstVisibleId: "c-01" });
+  const opened = view(run(start(), press("open:c-03"))).choice;
+  assert.deepEqual(opened, { openIdExplicit: "c-03", isClosed: false, firstVisibleId: "c-01" });
+  const closed = view(run(start(), press("close"))).choice;
+  assert.deepEqual(closed, { openIdExplicit: null, isClosed: true, firstVisibleId: "c-01" });
+  // Opening after closing opens again.
+  assert.deepEqual(view(run(start(), press("close"), press("open:c-02"))).choice, { openIdExplicit: "c-02", isClosed: false, firstVisibleId: "c-01" });
+});
+
+test("the choice follows the tab: an opened thread on another tab is not explicit there, the first visible one is that tab's", () => {
+  const s = run(start(), press("open:c-03"), set("tab", "waiting"));
+  assert.deepEqual(view(s).choice, { openIdExplicit: null, isClosed: false, firstVisibleId: "c-05" });
+  assert.equal(view(run(s, set("tab", "inbox"))).choice.openIdExplicit, "c-03");
+});
+
+test("the choice does not depend on what the web page measured", () => {
+  const base = run(start(), press("open:c-02"));
+  const phone = run(base, set("surface", 390), set("list", 388));
+  const desk = run(base, set("surface", 1440), set("list", 480), set("touch", true));
+  assert.deepEqual(view(phone).choice, view(desk).choice);
+  assert.deepEqual(view(run(start(), set("surface", 390))).choice, view(run(start(), set("surface", 1440))).choice);
+});
+
+test("every visible row has its thread in panes, whichever one the web page has open", () => {
+  const phone = view(run(start(), set("surface", 390)));
+  assert.equal(phone.pane, null);
+  assert.deepEqual(phone.panes.map((p) => p.id), phone.rows.map((r) => r.id));
+  const first = phone.panes[0]!;
+  assert.deepEqual(first.messages.map((m) => m.id), ["c-01-r1", "c-01-r2", "c-01"]);
+  assert.deepEqual(first.openMessages, ["c-01"]);
+  assert.deepEqual(view(run(start(), set("tab", "waiting"))).panes.map((p) => p.id), ["c-05", "c-06"]);
+});
+
+test("the pane the web page has open is also the matching entry of panes, with its expanded set", () => {
+  const s = run(start(), press("open:c-01"), set("messages", "c-01-r1,c-01"));
+  const v = view(s);
+  assert.deepEqual(v.panes.find((p) => p.id === "c-01"), v.pane);
+  assert.deepEqual(v.panes.find((p) => p.id === "c-01")?.openMessages, ["c-01-r1", "c-01"]);
+  assert.deepEqual(v.panes.find((p) => p.id === "c-02")?.openMessages, ["c-02"]);
+});
+
+test("a viewer's open attachment shows in the thread's pane even when the web page has another thread open", () => {
+  const s = run(start(), press("open:c-05"), press("lightbox:c-05:1"));
+  const v = view(run(s, set("surface", 390), press("close")));
+  assert.equal(v.pane, null);
+  assert.equal(v.panes.find((p) => p.id === "c-05")?.messages.find((m) => m.id === "c-05")?.lightboxIndex, 1);
+});
+
+test("whether any visible row is ticked is reported apart from the stacking", () => {
+  const ticked = run(desktop(start()), set("list", 330), set("selection", "c-01"));
+  assert.equal(view(ticked).hasSelection, false);
+  assert.equal(view(ticked).hasSelectedRows, true);
+  assert.equal(view(run(ticked, set("tab", "resolved"))).hasSelectedRows, false);
+  assert.equal(view(run(start(), set("selection", "c-01"))).hasSelectedRows, true);
+});
+
+test("the content fields of the view are the same whatever the web page measured", () => {
+  const shared = (s: InboxState) => {
+    const v = view(s);
+    return { choice: v.choice, hasSelectedRows: v.hasSelectedRows, rules: v.mode.rules, rows: v.rows.map((r) => [r.id, r.actionsWide, r.actionsStacked]), selectedKeys: v.selectedKeys, compose: v.compose };
+  };
+  const base = run(start(), press("open:c-02"), set("selection", "c-01,c-02"), press("reply"));
+  assert.deepEqual(shared(run(base, set("surface", 390), set("list", 388))), shared(run(base, set("surface", 1440), set("list", 480), set("touch", true))));
+});

@@ -105,12 +105,14 @@ struct InboxPaneView: View {
             }
             HStack(spacing: ax.space(2)) {
                 Button {
+                    inboxAdopt(pane.id, in: model, send: send)
                     send(.press(id: inboxAction("reply")))
                 } label: {
                     Label(words.reply, systemImage: inboxSymbol("reply"))
                 }
                 .buttonStyle(AXButtonStyle(variant: .primary, ax: ax))
                 Button {
+                    inboxAdopt(pane.id, in: model, send: send)
                     send(.press(id: inboxAction("replyAll")))
                 } label: {
                     Label(words.replyAll, systemImage: inboxSymbol("replyAll"))
@@ -130,6 +132,7 @@ struct InboxPaneView: View {
         var open = Set(pane.openMessages)
         if open.contains(id) { open.remove(id) } else { open.insert(id) }
         let ordered = pane.messages.map(\.id).filter { open.contains($0) }
+        inboxAdopt(pane.id, in: model, send: send)
         send(.set(id: inboxAction("messages"), value: .string(ordered.joined(separator: ","))))
     }
 }

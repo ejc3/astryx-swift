@@ -6,123 +6,143 @@
    "id": "t.showcase",
    "label": "Theme showcase",
    "icon": "sparkle",
-   "section": "Astryx templates"
+   "section": "Astryx templates",
+   "accessibilityLabel": "Theme showcase, Astryx templates"
   },
   {
    "id": "t.dashboard",
    "label": "Dashboard",
    "icon": "chart",
-   "section": "Astryx templates"
+   "section": "Astryx templates",
+   "accessibilityLabel": "Dashboard, Astryx templates"
   },
   {
    "id": "t.inbox",
    "label": "Inbox",
    "icon": "inbox",
-   "section": "Astryx templates"
+   "section": "Astryx templates",
+   "accessibilityLabel": "Inbox, Astryx templates"
   },
   {
    "id": "t.kanban",
    "label": "Kanban board",
    "icon": "check",
-   "section": "Astryx templates"
+   "section": "Astryx templates",
+   "accessibilityLabel": "Kanban board, Astryx templates"
   },
   {
    "id": "t.invoice",
    "label": "Invoice",
    "icon": "card",
-   "section": "Astryx templates"
+   "section": "Astryx templates",
+   "accessibilityLabel": "Invoice, Astryx templates"
   },
   {
    "id": "t.calendar",
    "label": "Calendar",
    "icon": "calendar",
-   "section": "Astryx templates"
+   "section": "Astryx templates",
+   "accessibilityLabel": "Calendar, Astryx templates"
   },
   {
    "id": "t.chat",
    "label": "AI chat",
    "icon": "chat",
-   "section": "Astryx templates"
+   "section": "Astryx templates",
+   "accessibilityLabel": "AI chat, Astryx templates"
   },
   {
    "id": "t.checkout",
    "label": "Checkout",
    "icon": "cart",
-   "section": "Astryx templates"
+   "section": "Astryx templates",
+   "accessibilityLabel": "Checkout, Astryx templates"
   },
   {
    "id": "t.order",
    "label": "Order detail",
    "icon": "truck",
-   "section": "Astryx templates"
+   "section": "Astryx templates",
+   "accessibilityLabel": "Order detail, Astryx templates"
   },
   {
    "id": "t.settings",
    "label": "Settings",
    "icon": "gear",
-   "section": "Astryx templates"
+   "section": "Astryx templates",
+   "accessibilityLabel": "Settings, Astryx templates"
   },
   {
    "id": "overview",
    "label": "Components",
    "icon": "grid",
-   "section": "More demos"
+   "section": "More demos",
+   "accessibilityLabel": "Components, More demos"
   },
   {
    "id": "dashboard",
    "label": "Dashboard",
    "icon": "chart",
-   "section": "More demos"
+   "section": "More demos",
+   "accessibilityLabel": "Dashboard, More demos"
   },
   {
    "id": "inbox",
    "label": "Inbox",
    "icon": "inbox",
    "badge": "3",
-   "section": "More demos"
+   "section": "More demos",
+   "accessibilityLabel": "Inbox, More demos"
   },
   {
    "id": "tasks",
    "label": "Tasks",
    "icon": "check",
    "badge": "7",
-   "section": "More demos"
+   "section": "More demos",
+   "accessibilityLabel": "Tasks, More demos"
   },
   {
    "id": "people",
    "label": "People",
    "icon": "people",
-   "section": "More demos"
+   "section": "More demos",
+   "accessibilityLabel": "People, More demos"
   },
   {
    "id": "calendar",
    "label": "Calendar",
    "icon": "calendar",
-   "section": "More demos"
+   "section": "More demos",
+   "accessibilityLabel": "Calendar, More demos"
   },
   {
    "id": "chat",
    "label": "Messages",
    "icon": "chat",
-   "section": "More demos"
+   "section": "More demos",
+   "accessibilityLabel": "Messages, More demos"
   },
   {
    "id": "checkout",
    "label": "Checkout",
    "icon": "cart",
-   "section": "More demos"
+   "section": "More demos",
+   "accessibilityLabel": "Checkout, More demos"
   },
   {
    "id": "profile",
    "label": "Profile",
    "icon": "person",
-   "section": "More demos"
+   "section": "More demos",
+   "accessibilityLabel": "Profile, More demos"
   },
   {
    "id": "settings",
    "label": "Settings",
    "icon": "gear",
-   "section": "More demos"
+   "section": "More demos",
+   "accessibilityLabel": "Settings, More demos"
   }
  ],
  "current": "overview",
@@ -604,6 +624,92 @@
    }
   ]
  },
+ "scenarios": {
+  "label": "Scenarios",
+  "list": [
+   {
+    "id": "showcase",
+    "title": "Store: pay, ask the chat, manage inventory",
+    "template": "Theme showcase",
+    "steps": "14 steps"
+   },
+   {
+    "id": "dashboard",
+    "title": "Dashboard: chart, views and tables",
+    "template": "Dashboard",
+    "steps": "10 steps"
+   },
+   {
+    "id": "inbox",
+    "title": "Inbox: triage and reply",
+    "template": "Inbox",
+    "steps": "27 steps"
+   },
+   {
+    "id": "kanban",
+    "title": "Board: sprints and moving cards",
+    "template": "Kanban board",
+    "steps": "10 steps"
+   },
+   {
+    "id": "invoice",
+    "title": "Invoice: search, sort and filter lines",
+    "template": "Invoice",
+    "steps": "17 steps"
+   },
+   {
+    "id": "calendar",
+    "title": "Calendar: pick days and page months",
+    "template": "Calendar",
+    "steps": "9 steps"
+   },
+   {
+    "id": "chat",
+    "title": "Chat: ask, edit and open the document",
+    "template": "AI chat",
+    "steps": "13 steps"
+   },
+   {
+    "id": "checkout",
+    "title": "Checkout: from cart to paying",
+    "template": "Checkout",
+    "steps": "16 steps"
+   },
+   {
+    "id": "order",
+    "title": "Order: tabs, menus and panels",
+    "template": "Order detail",
+    "steps": "14 steps"
+   },
+   {
+    "id": "settings",
+    "title": "Settings: edit a profile and search",
+    "template": "Settings",
+    "steps": "12 steps"
+   }
+  ],
+  "drivers": [
+   {
+    "value": "native",
+    "label": "Drive from native",
+    "description": "Each step taps the SwiftUI side; the web drawings follow"
+   },
+   {
+    "value": "web",
+    "label": "Drive from web",
+    "description": "Each step clicks the web page on Hermes; the native side follows"
+   }
+  ],
+  "controls": {
+   "pauseId": "scenario.pause",
+   "resumeId": "scenario.resume",
+   "stopId": "scenario.stop",
+   "pauseLabel": "Pause",
+   "resumeLabel": "Resume",
+   "stopLabel": "Stop"
+  },
+  "playing": null
+ },
  "surface": {
   "id": "app.surface",
   "label": "Show",
@@ -640,6 +746,25 @@
     "description": "All four drawings at once"
    }
   ],
+  "groups": [
+   {
+    "label": "Drawing",
+    "values": [
+     "native",
+     "web",
+     "webOwn",
+     "stock"
+    ]
+   },
+   {
+    "label": "Side by side",
+    "values": [
+     "compare",
+     "all"
+    ]
+   }
+  ],
+  "unavailable": "Needs a wider window",
   "stockTemplate": "components",
   "stockLabel": "Astryx as it is today: its own template and its own state"
  }

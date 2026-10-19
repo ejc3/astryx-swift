@@ -7,8 +7,8 @@ import XCTest
 /// The inbox, kanban and invoice templates: each fixture decodes into its typed model, and each
 /// is drawn to PNGs (phone width and a Mac window, light and dark) with `ImageRenderer`, which
 /// draws no List, ScrollView, TextField or Picker, so the screens are drawn with `axStatic`.
-/// The core only reports measurements once a host has sent them, so the renders that need the
-/// layout a measured host gets (a phone, a window) apply the core's own rules to the fixture's JSON.
+/// The inbox lays itself out from its own width, so the renders need no measurements patched in;
+/// a thread the person opened or closed, and ticked rows, are content and are patched into the JSON.
 @MainActor
 final class TemplatesInboxKanbanInvoiceTests: XCTestCase {
     private var directory: URL? {
@@ -52,7 +52,11 @@ final class TemplatesInboxKanbanInvoiceTests: XCTestCase {
         XCTAssertEqual(inbox.rows.count, 9)
         XCTAssertEqual(inbox.tabs.map(\.value), ["inbox", "escalations", "waiting", "resolved"])
         XCTAssertEqual(inbox.subtitle.joined(), "3 unread of 9 conversations")
-        let pane = try XCTUnwrap(inbox.pane)
+        XCTAssertEqual(inbox.panes.map(\.id), inbox.rows.map(\.id))
+        XCTAssertEqual(inbox.choice, .init(openIdExplicit: nil, isClosed: false, firstVisibleId: "c-01"))
+        XCTAssertEqual(inbox.rows.first?.actionsWide.count, 4)
+        XCTAssertEqual(inbox.rows.first?.actionsStacked.map(\.id), ["archive", "delete"])
+        let pane = try XCTUnwrap(inbox.panes.first)
         XCTAssertEqual(pane.messages.count, 3)
         XCTAssertEqual(pane.openMessages, [pane.id])
         XCTAssertEqual(pane.messages.last?.attachments.count, 1)
@@ -108,42 +112,139 @@ final class TemplatesInboxKanbanInvoiceTests: XCTestCase {
         XCTAssertEqual(invoiceAction("unfilter:category"), "tpl.invoice.unfilter:category")
     }
 
-    // MARK: Layout the core would choose for a measured host
+    // MARK: Content the person chose
 
-    /// The core's `derive` for the inbox (core/src/templates/inbox/model.ts): single surface below
-    /// 900, stacked rows below 560, tighter columns below 900. `thread` keeps a thread open on a
-    /// single surface; `closed` closes it; `selected` ticks rows.
-    private func measured(surface: Double, list: Double, thread: Bool = false, closed: Bool = false, selected: [String] = []) -> (inout JSON) -> Void {
+    /// The person opened a thread (it stays open at any width), closed it, and/or ticked rows:
+    /// content, which the core holds and every drawing shows. The layout is not patched; the
+    /// inbox works that out from its own width.
+    private func chosen(open: String? = nil, closed: Bool = false, selected: [String] = []) -> (inout JSON) -> Void {
+        { view in
+            if var choice = view["choice"] as? JSON {
+                choice["openIdExplicit"] = open ?? NSNull()
+                choice["isClosed"] = closed
+                view["choice"] = choice
+            }
+            if !selected.isEmpty {
+                view["selectedKeys"] = selected
+                view["hasSelectedRows"] = true
+                view["selectionLabel"] = ["\(selected.count)", " ", selected.count == 1 ? "conversation" : "conversations", " ", "selected"]
+            }
+        }
+    }
+
+    /// What the web page, drawing the same state at its own width, leaves in the shared view:
+    /// its measurements and everything the core decided from them. The inbox must not read it.
+    private func measuredByTheWebPage(surface: Int, list: Int) -> (inout JSON) -> Void {
         { view in
             let single = surface < 900
-            let stacked = list < 560
-            let tight = list < 900
             var mode = view["mode"] as? JSON ?? [:]
             mode["isSingleSurface"] = single
-            mode["isPaneFullWidth"] = single && thread
-            mode["isStacked"] = stacked
-            mode["isTight"] = tight
+            mode["isPaneFullWidth"] = single
+            mode["isStacked"] = list < 560
+            mode["isTight"] = list < 900
+            mode["isTouch"] = single
+            mode["measured"] = ["surface": surface, "list": list]
             view["mode"] = mode
-            let closePane = closed || (single && !thread)
-            if closePane {
+            view["hasSelection"] = list >= 560
+            view["receivedWidth"] = single ? 1.0 : 2.0
+            if single {
                 view["openId"] = NSNull()
                 view["pane"] = NSNull()
             }
             if var rows = view["rows"] as? [JSON] {
                 for i in rows.indices {
-                    if closePane { rows[i]["isOpen"] = false }
-                    if let actions = rows[i]["actions"] as? [JSON], stacked {
-                        rows[i]["actions"] = actions.filter { ["archive", "delete"].contains($0["id"] as? String ?? "") }
-                    }
+                    rows[i]["isOpen"] = !single && i == 0
+                    rows[i]["actions"] = list < 560 ? rows[i]["actionsStacked"] as Any : rows[i]["actionsWide"] as Any
                 }
                 view["rows"] = rows
             }
-            if !selected.isEmpty && !stacked {
-                view["selectedKeys"] = selected
-                view["hasSelection"] = true
-                view["selectionLabel"] = ["\(selected.count)", " ", selected.count == 1 ? "conversation" : "conversations", " ", "selected"]
-            }
         }
+    }
+
+    // MARK: The native layout
+
+    private func layout(_ model: InboxModel, width: Double, touch: Bool = false) -> InboxLayout {
+        let surface = InboxLayout(model, surfaceWidth: width, isTouch: touch)
+        // The list is as wide as the surface when it is alone, and 340 or so beside a thread.
+        let list = surface.isSingleSurface || surface.openId == nil ? width - 2 : width - 2 - 661 - 9
+        return surface.listed(model, listWidth: list)
+    }
+
+    func testInboxLayoutFollowsTheNativeWidthOnly() throws {
+        let model = try templateView(try app("template-inbox")).decode(InboxModel.self)
+        // 375: one surface at a time, nothing open by default, stacked rows, no selection band.
+        let phone = layout(model, width: 375)
+        XCTAssertEqual([phone.isSingleSurface, phone.isStacked, phone.isTight], [true, true, true])
+        XCTAssertNil(phone.openId)
+        XCTAssertNil(phone.pane(in: model))
+        // 768 is still a single surface (below 900).
+        let tablet = layout(model, width: 768)
+        XCTAssertEqual([tablet.isSingleSurface, tablet.isStacked, tablet.isTight], [true, false, true])
+        // 1280: list beside the top thread; the list is the room the thread leaves.
+        let desk = layout(model, width: 1280)
+        XCTAssertEqual([desk.isSingleSurface, desk.isStacked, desk.isTight], [false, false, true], "the list beside the thread is 600 wide: rows not stacked, the tags column dropped")
+        XCTAssertEqual(desk.openId, "c-01")
+        XCTAssertEqual(desk.pane(in: model)?.id, "c-01")
+        XCTAssertEqual(layout(model, width: 1039).isStacked, true)
+        // The breakpoints are the core's, applied to the width: 899 and 900.
+        XCTAssertTrue(layout(model, width: 899).isSingleSurface)
+        XCTAssertFalse(layout(model, width: 900).isSingleSurface)
+        // Touch is the platform's and picks no layout.
+        XCTAssertEqual(layout(model, width: 1280, touch: true).isTouch, true)
+        XCTAssertEqual(layout(model, width: 1280, touch: true).openId, desk.openId)
+    }
+
+    func testInboxLayoutIgnoresWhatTheWebPageMeasured() throws {
+        // The web page drew the same state at 390 wide, or at 1440 wide, and the core holds its
+        // measurements (and its decisions from them). The native layout is the same either way.
+        let asPhone = try app("template-inbox", patch: measuredByTheWebPage(surface: 390, list: 388))
+        let asDesk = try app("template-inbox", patch: measuredByTheWebPage(surface: 1440, list: 480))
+        let phoneModel = try templateView(asPhone).decode(InboxModel.self)
+        let deskModel = try templateView(asDesk).decode(InboxModel.self)
+        for width in [375.0, 768, 1039, 1280] {
+            XCTAssertEqual(layout(phoneModel, width: width), layout(deskModel, width: width), "\(width)")
+        }
+        XCTAssertEqual(phoneModel.rows.map(\.actionsWide), deskModel.rows.map(\.actionsWide))
+        XCTAssertEqual(phoneModel.panes, deskModel.panes)
+        XCTAssertEqual(layout(phoneModel, width: 1280).openId, "c-01", "the top thread opens at 1280 even where the web page was single-surface")
+        XCTAssertNil(layout(deskModel, width: 375).openId, "nothing opens at 375 even where the web page had a thread open")
+        // No other part of the screen takes anything but those from the model.
+        XCTAssertEqual(layout(phoneModel, width: 1280).actions(of: phoneModel.rows[0]).count, 4)
+        XCTAssertEqual(layout(deskModel, width: 375).actions(of: deskModel.rows[0]).map(\.id), ["archive", "delete"])
+    }
+
+    func testInboxOpensWhatThePersonChoseAndNothingWhenTheyClosedIt() throws {
+        let opened = try templateView(try app("template-inbox", patch: chosen(open: "c-03"))).decode(InboxModel.self)
+        XCTAssertEqual(layout(opened, width: 375).openId, "c-03", "an opened thread opens on a phone")
+        XCTAssertEqual(layout(opened, width: 1280).openId, "c-03")
+        XCTAssertEqual(layout(opened, width: 375).pane(in: opened)?.id, "c-03")
+        let closed = try templateView(try app("template-inbox", patch: chosen(closed: true))).decode(InboxModel.self)
+        XCTAssertNil(layout(closed, width: 1280).openId, "a closed thread stays closed where there is room")
+        XCTAssertNil(layout(closed, width: 375).openId)
+    }
+
+    func testInboxBulkBandNeedsTickedRowsAndRowsThatAreNotStacked() throws {
+        let ticked = try templateView(try app("template-inbox", patch: chosen(closed: true, selected: ["c-02"]))).decode(InboxModel.self)
+        XCTAssertTrue(layout(ticked, width: 1280).hasSelection)
+        XCTAssertFalse(layout(ticked, width: 375).hasSelection)
+        let none = try templateView(try app("template-inbox")).decode(InboxModel.self)
+        XCTAssertFalse(layout(none, width: 1280).hasSelection)
+    }
+
+    @MainActor
+    func testInboxAdoptsAThreadOnlyWhenItIsNotAlreadyTheChosenOne() throws {
+        final class Sent: @unchecked Sendable { var items: [String] = [] }
+        let box = Sent()
+        let send = AXSender { box.items.append($0.json) }
+        let fresh = try templateView(try app("template-inbox")).decode(InboxModel.self)
+        inboxAdopt("c-01", in: fresh, send: send)
+        XCTAssertEqual(box.items, [#"{"id":"tpl.inbox.open:c-01","type":"press"}"#])
+        box.items = []
+        let opened = try templateView(try app("template-inbox", patch: chosen(open: "c-01"))).decode(InboxModel.self)
+        inboxAdopt("c-01", in: opened, send: send)
+        XCTAssertEqual(box.items, [])
+        inboxAdopt("c-02", in: opened, send: send)
+        XCTAssertEqual(box.items, [#"{"id":"tpl.inbox.open:c-02","type":"press"}"#])
     }
 
     // MARK: Rendering
@@ -195,6 +296,30 @@ final class TemplatesInboxKanbanInvoiceTests: XCTestCase {
             .environment(\.axStatic, true)
     }
 
+    /// The inbox screen alone at 375, 768 and 1280 points: the layout is the screen's own at each
+    /// width, from the same fixture. 375 with a thread opened shows the thread alone.
+    func testRendersInboxAtItsOwnWidths() throws {
+        guard let directory else { throw XCTSkip("AX_SHOTS is not set") }
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let theme = try Library.theme("theme-astryx")
+        let plain = try templateView(try app("template-inbox")).decode(InboxModel.self)
+        let opened = try templateView(try app("template-inbox", patch: chosen(open: "c-02"))).decode(InboxModel.self)
+        let cases: [(String, InboxModel, CGFloat)] = [("w375", plain, 375), ("w768", plain, 768), ("w1280", plain, 1280), ("w375.thread", opened, 375), ("w768.thread", opened, 768)]
+        for (name, model, width) in cases {
+            let screen = InboxScreen(model: model)
+                .environment(\.axWidth, width - 32)
+                .padding(16)
+                .frame(width: width)
+                .fixedSize(horizontal: false, vertical: true)
+                .axTheme(theme, scheme: .light, typeSize: .large)
+                .environment(\.colorScheme, .light)
+                .environment(\.axStatic, true)
+            let data = try png(screen, width: width, height: nil)
+            try data.write(to: directory.appendingPathComponent("inbox.\(name).png"))
+            XCTAssertGreaterThan(data.count, 2_000, name)
+        }
+    }
+
     func testRendersTemplates() throws {
         guard let directory else { throw XCTSkip("AX_SHOTS is not set") }
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
@@ -221,16 +346,9 @@ final class TemplatesInboxKanbanInvoiceTests: XCTestCase {
         }
 
         // Inbox: a phone gets the list alone, a window gets the list beside the open thread.
-        try both("inbox", tag: "astryx",
-                 phonePatch: measured(surface: 361, list: 359),
-                 macPatch: measured(surface: 991, list: 991 - 2 - 661 - 9))
-        try both("inbox", tag: "thread",
-                 phonePatch: measured(surface: 361, list: 359, thread: true),
-                 macPatch: measured(surface: 991, list: 991 - 2 - 661 - 9),
-                 tall: 1500)
-        try both("inbox", tag: "closed",
-                 phonePatch: measured(surface: 361, list: 359),
-                 macPatch: measured(surface: 991, list: 989, closed: true, selected: ["c-02", "c-04"]))
+        try both("inbox", tag: "astryx")
+        try both("inbox", tag: "thread", phonePatch: chosen(open: "c-01"), tall: 1500)
+        try both("inbox", tag: "closed", macPatch: chosen(closed: true, selected: ["c-02", "c-04"]))
 
         // Kanban: four columns in a window, a paged board on a phone; and one with an empty column.
         try both("kanban", tag: "astryx")

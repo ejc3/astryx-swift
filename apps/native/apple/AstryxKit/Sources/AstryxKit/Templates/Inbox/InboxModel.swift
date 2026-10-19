@@ -1,7 +1,13 @@
 import Foundation
 
 /// The inbox template's view model: a mirror of the `View` type of
-/// core/src/templates/inbox/model.ts, field for field.
+/// core/src/templates/inbox/model.ts, for the fields this drawing reads.
+///
+/// Layout is per drawing, content is shared. The core also carries the layout the web page
+/// measured (`mode.isStacked`, `openId`, `pane`, `hasSelection`, a row's `actions`,
+/// `receivedWidth`...); this drawing does not decode them. It lays itself out from its own width
+/// with `InboxLayout`, from `mode.rules`, `choice`, `hasSelectedRows`, each row's `actionsWide`
+/// and `actionsStacked`, and `panes`.
 struct InboxModel: Decodable, Equatable {
     var text: Words
     /// "3 unread of 9 conversations", as separate text pieces; joined to read it.
@@ -11,17 +17,17 @@ struct InboxModel: Decodable, Equatable {
     var rows: [Row]
     /// Every ticked row id, including ones on other tabs.
     var selectedKeys: [String]
-    /// Whether the bulk-selection band replaces the tab strip.
-    var hasSelection: Bool
+    /// Whether any visible row is ticked (the band also needs rows that are not stacked).
+    var hasSelectedRows: Bool
     var selectionLabel: [String]
     var bulkActions: [BulkAction]
-    var openId: String?
+    /// What the person opened or closed: content, the same in every drawing.
+    var choice: Choice
     var mode: Mode
     /// Ids of the controls the core has no action for ("refresh", "archive", "send"...): drawn disabled.
     var inert: [String]
-    /// Pixel width of the web's trailing "Received" column (the web's measurement; not used natively).
-    var receivedWidth: Double
-    var pane: Pane?
+    /// The thread of every visible row; this drawing opens one of them by its own rule.
+    var panes: [Pane]
     var compose: Compose
 
     struct Words: Decodable, Equatable {
@@ -132,13 +138,14 @@ struct InboxModel: Decodable, Equatable {
         var receivedAt: String
         var isUnread: Bool
         var hasAttachments: Bool
-        var isOpen: Bool
         /// The unread status gutter's label, or nil for a read thread.
         var status: String?
         var selectionLabel: String
         var priority: Token?
         var tags: [String]
-        var actions: [RowAction]
+        /// Hover and swipe actions of a wide row, and of a stacked row.
+        var actionsWide: [RowAction]
+        var actionsStacked: [RowAction]
     }
 
     struct Attachment: Decodable, Equatable, Identifiable {
@@ -174,14 +181,30 @@ struct InboxModel: Decodable, Equatable {
     }
 
     struct Mode: Decodable, Equatable {
-        var isSingleSurface: Bool
-        var isPaneFullWidth: Bool
-        var isStacked: Bool
-        var isTight: Bool
-        var isTouch: Bool
-        /// The widths the core holds (0 = not measured yet).
-        var measured: Measured
-        struct Measured: Decodable, Equatable { var surface: Int; var list: Int }
+        var rules: Rules
+
+        /// The breakpoints, in points, that a drawing applies to its own widths.
+        struct Rules: Decodable, Equatable {
+            var singleSurfaceBelow: Int
+            var stackRowsBelow: Int
+            var tightenColumnsBelow: Int
+            var receivedWidth: ReceivedWidths
+        }
+        struct ReceivedWidths: Decodable, Equatable {
+            var wide: Pair
+            var stacked: Pair
+            struct Pair: Decodable, Equatable { var pointer: Double; var touch: Double }
+        }
+    }
+
+    /// The person's choice of thread, apart from any width.
+    struct Choice: Decodable, Equatable {
+        /// The thread the person opened, when it is on this tab.
+        var openIdExplicit: String?
+        /// The person closed the thread; it stays closed (unlike never having chosen one).
+        var isClosed: Bool
+        /// The top thread of the tab: what a drawing with room opens when nothing was chosen.
+        var firstVisibleId: String?
     }
 
     struct Person: Codable, Equatable, Identifiable, Hashable {
