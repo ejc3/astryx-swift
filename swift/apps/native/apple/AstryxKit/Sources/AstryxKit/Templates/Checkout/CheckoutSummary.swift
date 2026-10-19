@@ -8,11 +8,25 @@ struct CheckoutSummary: View {
     let narrow: Bool
     @Environment(\.ax) private var ax
 
+    /// Above and below the collapsed trigger. On a touch screen the 44 point row sits in a card
+    /// 56 high, (56 - 44) / 2 each side; on the Mac the card pads it all round.
+    private var triggerPad: CGFloat {
+        #if os(iOS)
+        6
+        #else
+        ax.space(5)
+        #endif
+    }
+
     var body: some View {
         Group {
             if narrow {
-                COSCollapsible(startsOpen: false, spokenTitle: model.summary.trigger) {
-                    Text(model.summary.trigger).font(ax.fontLabel).foregroundStyle(ax.text)
+                // The closed card is 56 high: the 44 point trigger row inside 6 points above and below
+                // (the card's other padding comes back under the content once it is open).
+                COSCollapsible(startsOpen: false, openBottomInset: ax.space(5) - triggerPad, spokenTitle: model.summary.trigger) {
+                    Text(model.summary.trigger)
+                        .font(ax.font("font-size-lg", 17, weight: "font-weight-semibold"))
+                        .foregroundStyle(ax.text)
                 } content: {
                     bodyContent
                 }
@@ -30,7 +44,8 @@ struct CheckoutSummary: View {
                 }
             }
         }
-        .padding(ax.space(5))
+        .padding(.horizontal, ax.space(5))
+        .padding(.vertical, narrow ? triggerPad : ax.space(5))
         .frame(maxWidth: .infinity, alignment: .topLeading)
         .axSurface(fill: ax.card, radius: ax.radiusContainer)
         .accessibilityElement(children: .contain)

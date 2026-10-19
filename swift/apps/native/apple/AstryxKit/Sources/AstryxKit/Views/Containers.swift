@@ -14,33 +14,45 @@ struct AXStack: View {
             VStack(alignment: horizontalAlignment, spacing: spacing) {
                 NodeChildren(nodes: node.children)
             }
+            .environment(\.axInRow, false)
         case .horizontal:
-            if node.wrap != true, !flows {
-                // Children that can shrink (stacks, inputs, cards) share the row, as in a flex row.
-                HStack(alignment: verticalAlignment, spacing: spacing) {
-                    if node.align == .spread {
-                        ForEach(Array(node.children.enumerated()), id: \.offset) { index, child in
-                            if index > 0 { Spacer(minLength: 0) }
-                            NodeView(node: child)
-                        }
-                    } else {
-                        NodeChildren(nodes: node.children)
+            row(spacing: spacing)
+                .environment(\.axInRow, true)
+        }
+    }
+
+    @ViewBuilder
+    private func row(spacing: CGFloat) -> some View {
+        if node.wrap != true, !flows {
+            // Children that can shrink (stacks, inputs, cards) share the row, as in a flex row.
+            HStack(alignment: verticalAlignment, spacing: spacing) {
+                if node.align == .spread {
+                    ForEach(Array(node.children.enumerated()), id: \.offset) { index, child in
+                        if index > 0 { Spacer(minLength: 0) }
+                        NodeView(node: child)
                     }
-                }
-            } else {
-                // A row of controls keeps each at its own width and flows onto more lines when
-                // they do not fit, as the web's wrapping row does; `spread` puts the room between.
-                FlowLayout(spacing: spacing, crossAlignment: crossFactor, spread: node.align == .spread) {
+                } else {
                     NodeChildren(nodes: node.children)
+                }
+            }
+        } else {
+            // A row of controls keeps each at its own width and flows onto more lines when
+            // they do not fit, as the web's wrapping row does; `spread` puts the room between.
+            // A progress bar is 100 % wide on the web, so it takes a line of its own.
+            FlowLayout(spacing: spacing, crossAlignment: crossFactor, spread: node.align == .spread) {
+                ForEach(Array(node.children.enumerated()), id: \.offset) { _, child in
+                    NodeView(node: child).layoutValue(key: AXFullRowKey.self, value: child.takesTheRow)
                 }
             }
         }
     }
 
-    /// Whether the row flows (wraps) instead of squeezing: its children are controls, marks or
-    /// text, and with `spread` none of them is text that could shrink beside the others.
+    /// Whether the row flows (wraps) instead of squeezing, as the web's `flex-wrap` row does. With
+    /// `spread` the children may be text too: a text at its one-line width that does not fit
+    /// beside the next child takes a line of its own and the next child wraps below it, rather
+    /// than the text giving up half its room to a spacer and wrapping early.
     private var flows: Bool {
-        if node.align == .spread { return node.children.allSatisfy(\.isControl) }
+        if node.align == .spread { return node.children.allSatisfy { $0.isControl || $0.isTextish } }
         return node.children.allSatisfy(\.isAtomic)
     }
 
@@ -82,7 +94,8 @@ struct AXGrid: View {
         // A column never asks for more than the width there is.
         let minimum = max(1, min(CGFloat(node.minColumnWidth), width))
         // Like CSS auto-fit: as many columns as fit, but never more than there are children.
-        let fitting = max(1, Int(((width + gap) / (minimum + gap)).rounded(.down)))
+        // (Two points of slack: the box the web page draws in is a point narrower on each side.)
+        let fitting = max(1, Int(((width - 2 + gap) / (minimum + gap)).rounded(.down)))
         let columns = max(1, min(fitting, node.children.count))
         let columnWidth = (width - gap * CGFloat(columns - 1)) / CGFloat(columns)
         LazyVGrid(
@@ -93,55 +106,57 @@ struct AXGrid: View {
             NodeChildren(nodes: node.children)
         }
         .environment(\.axWidth, max(columnWidth, 0))
+        .environment(\.axInRow, false)
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
 /// `split`: primary and detail side by side when wide. When narrow, only one shows:
-/// the detail (under a back button) if the core says so, else the primary.
+/// the detail (under a back button) if the core says so, else the primary. The breakpoint and
+/// the primary column's width (280 to 380) are the web's (`SPLIT_WIDE`, `.an-split[data-wide]`).
 struct AXSplit: View {
     let node: SplitNode
     @Environment(\.ax) private var ax
     @Environment(\.axSend) private var send
     @Environment(\.axWidth) private var width
 
-    static let wideFrom: CGFloat = 640
+    static let wideFrom: CGFloat = 720
 
     var body: some View {
-        if width >= Self.wideFrom {
-            let gap = ax.space(4)
-            let primaryWidth = min(max(width * 0.4, 280), 420)
-            HStack(alignment: .top, spacing: gap) {
-                NodeView(node: node.primary)
-                    .environment(\.axWidth, primaryWidth)
-                    .frame(width: primaryWidth, alignment: .topLeading)
-                NodeView(node: node.detail)
-                    .environment(\.axWidth, width - primaryWidth - gap)
-                    .frame(maxWidth: .infinity, alignment: .topLeading)
-            }
-        } else if node.showDetailWhenNarrow {
-            VStack(alignment: .leading, spacing: ax.space(3)) {
-                if let backId = node.backId {
-                    Button {
-                        send(.press(id: backId))
-                    } label: {
-                        HStack(spacing: ax.space(1)) {
-                            Image(systemName: "chevron.left")
-                            if let label = node.backLabel { Text(label) }
-                        }
-                        .font(ax.fontLabel)
-                        .foregroundStyle(ax.accent)
-                        .frame(minHeight: axMinTarget)
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(node.backLabel ?? "")
+        Group {
+            if width >= Self.wideFrom {
+                let gap = ax.space(5)
+                let primaryWidth = min(max(width * 0.4, 280), 380)
+                HStack(alignment: .top, spacing: gap) {
+                    NodeView(node: node.primary)
+                        .environment(\.axWidth, primaryWidth)
+                        .frame(width: primaryWidth, alignment: .topLeading)
+                    NodeView(node: node.detail)
+                        .environment(\.axWidth, width - primaryWidth - gap)
+                        .frame(maxWidth: .infinity, alignment: .topLeading)
                 }
-                NodeView(node: node.detail)
+            } else if node.showDetailWhenNarrow {
+                VStack(alignment: .leading, spacing: ax.space(3)) {
+                    if let backId = node.backId {
+                        // Astryx's small ghost button with the chevron before the label.
+                        Button {
+                            send(.press(id: backId))
+                        } label: {
+                            HStack(spacing: ax.space(2)) {
+                                Image(systemName: "chevron.left").font(ax.iconFont)
+                                if let label = node.backLabel { Text(label) }
+                            }
+                        }
+                        .buttonStyle(AXButtonStyle(variant: .ghost, ax: ax, small: true))
+                        .accessibilityLabel(node.backLabel ?? "")
+                    }
+                    NodeView(node: node.detail)
+                }
+            } else {
+                NodeView(node: node.primary)
             }
-        } else {
-            NodeView(node: node.primary)
         }
+        .environment(\.axInRow, false)
     }
 }
 
@@ -152,11 +167,11 @@ struct AXCard: View {
     @Environment(\.axWidth) private var width
 
     var body: some View {
-        let pad = ax.space(4)
+        let pad = ax.space(5)
         VStack(alignment: .leading, spacing: ax.space(4)) {
             if node.title != nil || node.subtitle != nil || node.action != nil {
-                HStack(alignment: .top, spacing: ax.space(3)) {
-                    VStack(alignment: .leading, spacing: ax.hair) {
+                HStack(alignment: .center, spacing: ax.space(2)) {
+                    VStack(alignment: .leading, spacing: ax.space(1)) {
                         if let title = node.title {
                             Text(title)
                                 .font(ax.heading(3))
@@ -167,33 +182,37 @@ struct AXCard: View {
                             Text(subtitle).font(ax.fontSmall).foregroundStyle(ax.textSecondary)
                         }
                     }
-                    Spacer(minLength: 0)
-                    if let action = node.action { AXButton(node: action) }
+                    // The titles take the room the action leaves; a spacer would halve it.
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    if let action = node.action { AXButton(node: action, small: true) }
                 }
             }
             NodeChildren(nodes: node.children)
         }
         .environment(\.axWidth, max(width - 2 * pad - 2, 0))
+        .environment(\.axBleed, pad)
+        .environment(\.axInRow, false)
         .padding(pad)
         .frame(maxWidth: .infinity, alignment: .topLeading)
         .axSurface(fill: ax.card, radius: ax.radiusContainer)
     }
 }
 
-/// `section`: a titled group without a surface of its own.
+/// `section`: a titled group without a surface of its own: a level 4 heading, its description in
+/// supporting text, then the children (Astryx's `Heading level={4}` in a stack with gap 2).
 struct AXSection: View {
     let node: SectionNode
     @Environment(\.ax) private var ax
 
     var body: some View {
-        VStack(alignment: .leading, spacing: ax.space(4)) {
+        VStack(alignment: .leading, spacing: ax.space(2)) {
             VStack(alignment: .leading, spacing: ax.hair) {
                 Text(node.title)
-                    .font(ax.heading(2))
+                    .font(ax.heading(4))
                     .foregroundStyle(ax.text)
                     .accessibilityAddTraits(.isHeader)
                 if let description = node.description {
-                    Text(description).font(ax.fontBase).foregroundStyle(ax.textSecondary)
+                    Text(description).font(ax.fontSmall).foregroundStyle(ax.textSecondary)
                 }
             }
             NodeChildren(nodes: node.children)
@@ -223,6 +242,10 @@ private struct AXSurface: ViewModifier {
             )
     }
 }
+
+/// Set on a child of a wrapping row that takes a whole line, as a 100 %-wide element does in a
+/// flex-wrap row (a progress bar).
+struct AXFullRowKey: LayoutValueKey { static let defaultValue = false }
 
 /// A flex row that wraps. Each child has its natural width; when they all fit on one line the
 /// spare room is shared between the children that can grow (those a wider offer makes wider),
@@ -274,6 +297,10 @@ struct FlowLayout: Layout {
 
     private func arrange(limit: CGFloat, subviews: Subviews) -> [Line] {
         let items: [Item] = subviews.indices.map { index in
+            if subviews[index][AXFullRowKey.self], limit.isFinite {
+                let size = subviews[index].sizeThatFits(ProposedViewSize(width: limit, height: nil))
+                return Item(index: index, width: limit, height: size.height, grows: false)
+            }
             var size = subviews[index].sizeThatFits(.unspecified)
             if limit.isFinite, size.width > limit {
                 size = subviews[index].sizeThatFits(ProposedViewSize(width: limit, height: nil))
@@ -285,7 +312,9 @@ struct FlowLayout: Layout {
         var line = Line()
         for item in items {
             let needed = line.items.isEmpty ? item.width : line.width + spacing + item.width
-            if needed > limit, !line.items.isEmpty {
+            // Two points of slack: badge widths are measured a fraction wider than the web's, and
+            // a row that the web fits to the pixel must not wrap here.
+            if needed > limit + 2, !line.items.isEmpty {
                 lines.append(line)
                 line = Line()
             }
@@ -309,9 +338,25 @@ extension Node {
         }
     }
 
+    /// A node that is 100 % wide on the web, so in a wrapping row it takes a line of its own.
+    var takesTheRow: Bool {
+        if case .progress = self { return true }
+        return false
+    }
+
     var isText: Bool {
         switch self {
         case .text, .heading: true
+        default: false
+        }
+    }
+
+    /// Text, or a column of text and small marks (a title above its description): a good item
+    /// of a spread row, sized at its one-line width and wrapped when it alone is wider.
+    var isTextish: Bool {
+        switch self {
+        case .text, .heading: true
+        case .stack(let stack): stack.axis == .vertical && stack.children.allSatisfy { $0.isTextish || $0.isAtomic }
         default: false
         }
     }

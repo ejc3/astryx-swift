@@ -195,7 +195,7 @@ struct InboxCheckbox: View {
 
     var body: some View {
         Button(action: action) {
-            AXCheckmark(checked: checked)
+            ShowCheckbox(checked: checked)
                 .frame(minWidth: 28, minHeight: 28)
                 .contentShape(Rectangle())
                 .inboxHitTarget(size: 28)
@@ -237,5 +237,35 @@ struct InboxCompactSheet<Content: View>: View {
         #else
         content
         #endif
+    }
+}
+
+/// The widths of the list's columns, shared by a row and the header above it: the web's table
+/// gives From about 160 and the received time about 118, and Subject takes the rest.
+enum InboxColumns {
+    static let dot: CGFloat = 8
+    static let from: CGFloat = 160
+    static let tags: CGFloat = 190
+    static let received: CGFloat = 118
+}
+
+/// A person's avatar in the list: initials in the secondary ink on `color-neutral`, as Astryx's
+/// own avatar draws when it is given no color.
+struct InboxAvatar: View {
+    let name: String
+    let initials: String
+    @Environment(\.ax) private var ax
+
+    var body: some View {
+        let d = 24 * min(ax.scale, 1.6)
+        Text(initials)
+            .font(.system(size: d * 0.38, weight: .medium))
+            .foregroundStyle(ax.textSecondary)
+            .minimumScaleFactor(0.6)
+            .lineLimit(1)
+            .frame(width: d, height: d)
+            .background(Circle().fill(ax.color("color-neutral")))
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(name.isEmpty ? initials : name)
     }
 }

@@ -24,7 +24,7 @@ export function overview(s: State): Screen {
       card("Badges and tokens", [
         wrap("xs", ...tones.map((t) => badge(t[0]!.toUpperCase() + t.slice(1), t))),
         wrap("xs", ...o.tags.map((t): Node => ({ kind: "token", text: t, tone: "accent", removeId: `overview.untag:${t}` }))),
-        o.tags.length === 0 ? text("All tokens removed. Reset brings them back.", "caption") : text(`${plural(o.tags.length, "token")}. Tap × to remove one.`, "caption"),
+        o.tags.length === 0 ? text("All tokens removed. Reset brings them back.", "caption") : text(`${plural(o.tags.length, "token")}. Remove one with ×.`, "caption"),
       ]),
       card("People", [
         h("sm", ...PEOPLE.slice(0, 4).map((p, i): Node => ({ kind: "avatar", name: p.name, initials: initials(p.name), hue: hueOf(p.name), size: (["sm", "md", "lg", "md"] as const)[i]!, ...(p.status === "active" ? { status: "success" as const, statusLabel: "Online" } : p.status === "away" ? { status: "warning" as const, statusLabel: "Away" } : {}) }))),
@@ -50,7 +50,7 @@ export function overview(s: State): Screen {
       card("Empty state", [{ kind: "empty", icon: "sparkle", title: "Nothing here yet", text: "Empty states are nodes too, with a way forward.", action: button("navigate:dashboard", "Open the dashboard", "primary") }]),
     ),
   );
-  return { id: "overview", title: "Components", subtitle: "Astryx's components, drawn natively", toolbar: [button("overview.reset", "Reset", "ghost", "undo")], body };
+  return { id: "overview", title: "Components", subtitle: "Astryx's components, from one core", toolbar: [button("overview.reset", "Reset", "ghost", "undo")], body };
 }
 
 export function dashboard(s: State): Screen {
@@ -74,7 +74,7 @@ export function dashboard(s: State): Screen {
       card("Recent activity", [{ kind: "list", empty: "No activity yet.", items: ACTIVITY.map((a, i) => ({ id: `a${i}`, title: `${person(a.who).name.split(" ")[0]} ${a.did}`, meta: a.minutesAgo < 60 ? `${a.minutesAgo}m ago` : `${Math.floor(a.minutesAgo / 60)}h ago`, leading: { icon: a.icon, tone: a.tone }, emphasized: false, selected: false })) }]),
     ),
     card("Latest orders", [{
-      kind: "table", empty: "No orders.",
+      kind: "table", stackBelow: 600, empty: "No orders.",
       columns: [{ id: "id", label: "Order", align: "start", sort: null }, { id: "customer", label: "Customer", align: "start", sort: null }, { id: "status", label: "Status", align: "start", sort: null }, { id: "total", label: "Total", align: "end", sort: null }],
       rows: ORDERS.map((o) => ({ id: o.id, selected: false, cells: [{ text: o.id }, { text: o.customer, secondary: o.daysAgo === 0 ? "Today" : o.daysAgo === 1 ? "Yesterday" : `${o.daysAgo} days ago` }, { text: o.status, badge: { text: o.status, tone: statusTone[o.status]! } }, { text: money(o.cents), align: "end" }] })),
     }], { action: button("navigate:people", "View customers", "ghost", "chevron-right") }),

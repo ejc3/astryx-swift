@@ -237,10 +237,17 @@ export type CheckoutView = {
   confirmation: string;
   /** The words only the native drawing writes (the web page writes its own inline). */
   words: CheckoutWords;
+  /**
+   * True when the page's own heading says what the screen's navigation title already says: a host
+   * with a title bar draws the title there and leaves the heading out. (The web page keeps its heading.)
+   */
+  headingRepeatsTitle: boolean;
 };
 export type View = CheckoutView;
 
 export type CheckoutWords = CommonWords & {
+  /** The page heading (the stock page writes it inline). */
+  title: string;
   secureCheckout: string;
   progress: string;
   cart: { heading: string; limited: string; remove: string; promoLabel: string; promoPlaceholder: string; apply: string; quantity: string };
@@ -258,8 +265,11 @@ export type CheckoutWords = CommonWords & {
   summary: { title: string; subtotal: string; deliverySuffix: string; tax: string; total: string; qty: string };
 };
 
+const TITLE = "Checkout";
+
 const WORDS: CheckoutWords = {
   ...COMMON_WORDS,
+  title: TITLE,
   secureCheckout: "Secure checkout",
   progress: "Checkout progress",
   cart: {
@@ -321,7 +331,7 @@ const FIELD_ORDER: Record<number, readonly string[]> = {
 export const checkout: TemplateModule<CheckoutState, CheckoutView> = {
   id: "checkout",
   astryx: "checkout-wizard",
-  title: "Checkout",
+  title: TITLE,
   initial: () => ({
     step: 0,
     attempted: [],
@@ -499,6 +509,7 @@ export const checkout: TemplateModule<CheckoutState, CheckoutView> = {
       payment: { cardNumber: s.cardNumber, cardName: s.cardName, expiry: s.expiry, cvc: s.cvc, billingMatches: s.billingMatches },
       confirmation: `This local example completed an order for ${money(total)}. No payment was sent.`,
       words: WORDS,
+      headingRepeatsTitle: WORDS.title === TITLE,
     };
   },
 };

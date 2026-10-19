@@ -23,6 +23,8 @@ struct CheckoutModel: Decodable, Sendable {
     let confirmation: String
     /// The words only the native drawing writes.
     let words: Words
+    /// The page's heading says what the navigation title says: leave it out (nil in older snapshots).
+    let headingRepeatsTitle: Bool?
 
     struct Step: Decodable, Sendable {
         let label: String
@@ -151,6 +153,8 @@ struct CheckoutModel: Decodable, Sendable {
 
         /// The words all three templates share (field marks, the keyboard's buttons, collapsibles).
         let common: COSWords
+        /// The page heading.
+        let title: String
         let secureCheckout: String
         let progress: String
         let cart: Cart
@@ -161,12 +165,13 @@ struct CheckoutModel: Decodable, Sendable {
         let summary: Summary
 
         private enum CodingKeys: String, CodingKey {
-            case secureCheckout, progress, cart, shipping, delivery, payment, confirmed, summary
+            case title, secureCheckout, progress, cart, shipping, delivery, payment, confirmed, summary
         }
 
         init(from decoder: Decoder) throws {
             common = try COSWords(from: decoder)
             let c = try decoder.container(keyedBy: CodingKeys.self)
+            title = try c.decode(String.self, forKey: .title)
             secureCheckout = try c.decode(String.self, forKey: .secureCheckout)
             progress = try c.decode(String.self, forKey: .progress)
             cart = try c.decode(Cart.self, forKey: .cart)

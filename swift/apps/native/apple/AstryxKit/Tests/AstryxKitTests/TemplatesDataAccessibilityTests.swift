@@ -95,7 +95,9 @@ final class TemplatesDataAccessibilityTests: XCTestCase {
     }
 
     func testSeriesDifferByMoreThanHue() {
-        XCTAssertEqual(Set((0..<3).map { DashSeriesLook.dash($0).description }).count, 3)
+        // With Differentiate Without Color on, each series has a pattern of its own; otherwise every line is solid, as on the web.
+        XCTAssertEqual(Set((0..<3).map { DashSeriesLook.dash($0, differentiate: true).description }).count, 3)
+        XCTAssertTrue((0..<3).allSatisfy { DashSeriesLook.dash($0, differentiate: false).isEmpty })
     }
 
     func testTargetsAreBigEnoughForTheirPlatform() {

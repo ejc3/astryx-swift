@@ -41,7 +41,7 @@ final class TemplatesCheckoutOrderSettingsTests: XCTestCase {
         let screen = try XCTUnwrap(fixture["screen"] as? [String: Any])
         let body = try XCTUnwrap(screen["body"] as? [String: Any])
         let current = try XCTUnwrap(current ?? (body["view"] as? [String: Any]))
-        for key in ["words", "inert", "tabs", "itemsLabel", "fieldOrder"] where replaced[key] == nil { replaced[key] = current[key] }
+        for key in ["words", "inert", "tabs", "itemsLabel", "fieldOrder", "headingRepeatsTitle"] where replaced[key] == nil { replaced[key] = current[key] }
         if var steps = replaced["steps"] as? [[String: Any]], let fixtureSteps = current["steps"] as? [[String: Any]] {
             for i in steps.indices where steps[i]["spoken"] == nil {
                 steps[i]["spoken"] = fixtureSteps[i]["spoken"]; steps[i]["state"] = ""
@@ -79,6 +79,7 @@ final class TemplatesCheckoutOrderSettingsTests: XCTestCase {
         XCTAssertEqual(checkout.actions.nextLabel, "Continue")
         XCTAssertNil(checkout.firstInvalidField)
         XCTAssertEqual(checkout.words.cart.heading, "Review your cart")
+        XCTAssertEqual(checkout.headingRepeatsTitle, true)
         XCTAssertEqual(checkout.words.common.done, "Done")
         XCTAssertEqual(checkout.items.first?.removeLabel, "Remove Speckled Stoneware Mug")
         XCTAssertEqual(checkout.steps.first?.spoken, "Cart, step 1 of 4")

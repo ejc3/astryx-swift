@@ -286,6 +286,8 @@ public struct ChoiceNode: Decodable, Sendable {
     public let label: String
     public let options: [Option]
     public let value: String
+    /// The label is for assistive technology only (the core says so; the web follows it too).
+    public let labelHidden: Bool?
 }
 
 public struct SliderNode: Decodable, Sendable {
@@ -424,6 +426,9 @@ public struct PaginationNode: Decodable, Sendable {
     public let label: String
     public let previousId: String?
     public let nextId: String?
+    /// The step buttons' names for assistive technology; a core without them gives none.
+    public let previousLabel: String?
+    public let nextLabel: String?
 }
 
 // MARK: Collections
@@ -469,6 +474,11 @@ public struct TableNode: Decodable, Sendable {
     public let columns: [Column]
     public let rows: [Row]
     public let empty: String
+    /// The table's own width below which each row stacks into a record (the core's rule, which
+    /// the web page follows too). Older cores send none: the kit then uses its own width.
+    public let stackBelow: Double?
+    /// The word for the stacked form's sort menu, when the core gives one.
+    public let sortLabel: String?
 }
 
 public struct ListItem: Decodable, Sendable {
@@ -574,6 +584,9 @@ public struct BoardColumn: Decodable, Sendable {
 
 public struct BoardNode: Decodable, Sendable {
     public let columns: [BoardColumn]
+    /// The board's own width below which its columns stack one above the other (the core's rule,
+    /// which the web page follows too). Older cores send none: the columns then never stack.
+    public let stackBelow: Double?
 }
 
 /// `template`: a screen the core hands over as a typed view model for one Astryx template

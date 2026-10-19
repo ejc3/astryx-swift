@@ -333,6 +333,7 @@
      "previous": "Previous",
      "next": "Next",
      "done": "Done",
+     "title": "Checkout",
      "secureCheckout": "Secure checkout",
      "progress": "Checkout progress",
      "cart": {
@@ -395,7 +396,8 @@
       "total": "Total",
       "qty": "Qty"
      }
-    }
+    },
+    "headingRepeatsTitle": true
    }
   }
  },

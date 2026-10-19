@@ -55,7 +55,8 @@ export type Node =
   | { kind: "switch"; id: string; label: string; description?: string; on: boolean }
   | { kind: "checkbox"; id: string; label: string; checked: boolean }
   | { kind: "radio"; id: string; label: string; options: Option[]; value: string }
-  | { kind: "segmented"; id: string; label: string; options: Option[]; value: string }
+  /** `labelHidden`: the label is for assistive technology only (the control needs no visible caption). */
+  | { kind: "segmented"; id: string; label: string; options: Option[]; value: string; labelHidden?: boolean }
   | { kind: "select"; id: string; label: string; options: Option[]; value: string }
   | { kind: "slider"; id: string; label: string; value: number; min: number; max: number; step: number; valueText: string }
   | { kind: "progress"; label: string; value: number; valueText: string; tone: Tone }
@@ -66,17 +67,19 @@ export type Node =
   | { kind: "kbd"; keys: string[] }
   | { kind: "metric"; label: string; value: string; delta?: { text: string; tone: Tone; up: boolean }; trend?: number[] }
   | { kind: "bars"; label: string; bars: { label: string; value: number; valueText: string; highlight: boolean }[] }
-  | { kind: "table"; columns: { id: string; label: string; align: "start" | "end"; sort: "asc" | "desc" | "none" | null; sortId?: string }[]; rows: { id: string; cells: Cell[]; selected: boolean; selectId?: string }[]; empty: string }
+  /** `stackBelow`: the table's own width, in points or CSS pixels, below which each row stacks into a record (its first cell as the heading, the other columns as label and value lines). */
+  | { kind: "table"; stackBelow: number; columns: { id: string; label: string; align: "start" | "end"; sort: "asc" | "desc" | "none" | null; sortId?: string }[]; rows: { id: string; cells: Cell[]; selected: boolean; selectId?: string }[]; empty: string }
   | { kind: "list"; items: ListItem[]; empty: string }
   | { kind: "tabs"; id: string; tabs: (Option & { count?: string })[]; value: string }
   | { kind: "stepper"; steps: { label: string; state: "done" | "current" | "upcoming"; selectId?: string }[] }
   | { kind: "banner"; tone: Tone; title: string; text: string; action?: ButtonNode; dismissId?: string }
   | { kind: "empty"; icon: Icon; title: string; text: string; action?: ButtonNode }
   | { kind: "metadata"; items: { label: string; value: string }[] }
-  | { kind: "pagination"; label: string; previousId?: string; nextId?: string }
+  | { kind: "pagination"; label: string; previousLabel: string; nextLabel: string; previousId?: string; nextId?: string }
   | { kind: "calendar"; title: string; weekdays: string[]; weeks: CalendarDay[][]; previousId: string; nextId: string; previousLabel: string; nextLabel: string }
   | { kind: "chat"; messages: ChatMessage[]; composer: { id: string; value: string; placeholder: string; sendId: string; sendLabel: string; canSend: boolean } }
-  | { kind: "board"; columns: BoardColumn[] }
+  /** `stackBelow`: the board's own width, in points or CSS pixels, below which the columns stack one above the other. */
+  | { kind: "board"; columns: BoardColumn[]; stackBelow: number }
   /** A refactored stock Astryx template: drawn by its own renderer from `view` (core/src/templates). */
   | { kind: "template"; template: string; view: unknown };
 

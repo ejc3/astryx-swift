@@ -1,7 +1,7 @@
 import SwiftUI
 
 // Pieces the checkout, order and settings drawings share (COS = checkout, order, settings):
-// form fields with the right keyboards, a menu select, switches, buttons, banners, a collapsible
+// form fields with the right keyboards, a menu select, checkboxes, buttons, banners, a collapsible
 // and the product tile. They read every color, radius, spacing and size from the theme's tokens.
 
 // MARK: Shared words and sizes
@@ -43,6 +43,36 @@ let cosTouch: CGFloat = {
     44
     #endif
 }()
+
+/// The height of a field, select, quantity box or icon button as Astryx draws it: `size-element-md`,
+/// 32 points, on every platform. On a touch screen the hit region still reaches 44 points
+/// (`cosFieldSlop`), but the drawn control is the web's size (the iPhone review's ruling on X.5).
+func cosFieldHeight(_ ax: AXStyle) -> CGFloat { 32 * min(ax.scale, 1.4) }
+
+/// The room a field's hit region reaches past its drawn box above and below, so the touch target
+/// is `cosTouch` high (nothing on the Mac, where the pointer is precise).
+func cosFieldSlop(_ ax: AXStyle) -> CGFloat { max(0, (cosTouch - cosFieldHeight(ax)) / 2) }
+
+/// The text of a field, select or composer. Astryx's touch rule is `max(1rem, body size)` on a
+/// phone (WebKit zooms a page that focuses a smaller field), so on iOS it is at least 16 points.
+func cosFieldFont(_ ax: AXStyle) -> Font {
+    #if os(iOS)
+    .system(size: max(ax.scaled(16), ax.fontSize("font-size-base", 14)), weight: .regular)
+    #else
+    ax.fontBase
+    #endif
+}
+
+extension View {
+    /// A tap gesture whose region reaches `slop` points past the view above and below, without
+    /// changing the room the view takes (the extra is padding taken back).
+    func cosTapWithSlop(_ slop: CGFloat, perform action: @escaping () -> Void) -> some View {
+        padding(.vertical, slop)
+            .contentShape(Rectangle())
+            .onTapGesture(perform: action)
+            .padding(.vertical, -slop)
+    }
+}
 
 // MARK: Text entry
 
@@ -135,7 +165,8 @@ struct COSField<Content: View>: View {
     var body: some View {
         VStack(alignment: .leading, spacing: ax.space(1)) {
             HStack(spacing: ax.space(1)) {
-                Text(label).font(ax.fontLabel).foregroundStyle(ax.text)
+                Text(label).font(ax.fontLabel).foregroundStyle(ax.textSecondary)
+                    .axLeading(ax, size: ax.fontSize("font-size-base", 14), ratio: ax.bodyLeading)
                 if optional {
                     Text(words.optional).font(ax.fontSmall).foregroundStyle(ax.textSecondary)
                 }
@@ -169,12 +200,15 @@ struct COSField<Content: View>: View {
                 }
             }
             .accessibilityElement(children: .contain)
+            // Astryx puts the description between the label and the control; an error goes below it.
+            if let hint, error == nil {
+                Text(hint).font(ax.fontSmall).foregroundStyle(ax.textSecondary)
+                    .axLeading(ax, size: ax.fontSize("font-size-sm", 12), ratio: ax.supportingLeading)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
             content
             if let error {
                 COSStatus(tone: .danger, message: error)
-            } else if let hint {
-                Text(hint).font(ax.fontSmall).foregroundStyle(ax.textSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -262,20 +296,17 @@ struct COSTextBox: View {
     @Environment(\.ax) private var ax
     @Environment(\.axStatic) private var isStatic
 
-    /// `startsEmpty` draws the field empty although the model holds a value: used for password
-    /// fields, whose sample text is the stock template's data. It is a native-only
-    /// presentation choice (the web copy must match stock); typing sends the new text as usual.
     init(
         id: String, label: String, value: String, placeholder: String = "", content: COSContent = .plain,
         secure: Bool = false, multiline: Bool = false, maxLength: Int? = nil, icon: String? = nil,
         hasError: Bool = false, focusKey: String? = nil, focus: FocusState<String?>.Binding? = nil,
-        startsEmpty: Bool = false, submitLabel: SubmitLabel = .return, onSubmit: (() -> Void)? = nil
+        submitLabel: SubmitLabel = .return, onSubmit: (() -> Void)? = nil
     ) {
         self.id = id; self.label = label; self.value = value; self.placeholder = placeholder
         self.content = content; self.secure = secure; self.multiline = multiline; self.maxLength = maxLength
         self.icon = icon; self.hasError = hasError; self.focusKey = focusKey; self.focus = focus
         self.submitLabel = submitLabel; self.onSubmit = onSubmit
-        _text = State(initialValue: startsEmpty ? "" : value)
+        _text = State(initialValue: value)
     }
 
     /// Tapping anywhere in the box (its padding or icon, not only the text line) focuses the field.
@@ -293,15 +324,16 @@ struct COSTextBox: View {
             field
         }
         .padding(.horizontal, ax.space(3))
-        .padding(.vertical, multiline ? ax.space(2) : ax.space(2) + 2)
-        .frame(minHeight: max(cosTouch, 36 * min(ax.scale, 1.4)))
+        .padding(.vertical, multiline ? ax.space(2) : fieldPadding)
+        .frame(minHeight: cosFieldHeight(ax))
         .background(RoundedRectangle(cornerRadius: radius, style: .continuous).fill(ax.surface))
         .overlay(
             RoundedRectangle(cornerRadius: radius, style: .continuous)
                 .strokeBorder(hasError ? ax.danger : ax.borderStrong, lineWidth: 1)
         )
         .contentShape(RoundedRectangle(cornerRadius: radius, style: .continuous))
-        .onTapGesture { if !isStatic { focusField() } }
+        // Drawn 32 high like Astryx's field; a tap within 44 points of it still focuses it.
+        .cosTapWithSlop(multiline ? 0 : cosFieldSlop(ax)) { if !isStatic { focusField() } }
         .syncedText(id: id, value: value, text: $text)
         .onChange(of: text) { _, new in
             if let maxLength, new.count > maxLength { text = String(new.prefix(maxLength)) }
@@ -312,35 +344,38 @@ struct COSTextBox: View {
         multiline ? min(ax.radiusElement, ax.radiusContainer) : ax.radiusElement
     }
 
+    /// A single-line box is `cosFieldHeight` high (32), its text centered.
+    private var fieldPadding: CGFloat { ax.space(1) }
+
     @ViewBuilder
     private var field: some View {
         if isStatic {
             let shown = secure ? String(repeating: "\u{2022}", count: text.count) : text
             Text(shown.isEmpty ? placeholder : shown)
-                .font(ax.fontBase)
-                .foregroundStyle(shown.isEmpty ? ax.textDisabled : ax.text)
+                .font(cosFieldFont(ax))
+                .foregroundStyle(shown.isEmpty ? ax.textSecondary : ax.text)
                 .frame(maxWidth: .infinity, minHeight: multiline ? 60 * min(ax.scale, 1.4) : 0, alignment: .topLeading)
         } else if secure {
-            SecureField(label, text: $text, prompt: Text(placeholder).foregroundColor(ax.textDisabled))
+            SecureField(label, text: $text, prompt: Text(placeholder).foregroundColor(ax.textSecondary))
                 .textFieldStyle(.plain)
-                .font(ax.fontBase)
+                .font(cosFieldFont(ax))
                 .foregroundStyle(ax.text)
                 .cosContent(content)
                 .modifier(COSFocusModifier(binding: focus, key: focusKey ?? id, own: $ownFocus))
                 .submitLabel(submitLabel)
                 .onSubmit { onSubmit?() }
         } else if multiline {
-            TextField(label, text: $text, prompt: Text(placeholder).foregroundColor(ax.textDisabled), axis: .vertical)
+            TextField(label, text: $text, prompt: Text(placeholder).foregroundColor(ax.textSecondary), axis: .vertical)
                 .textFieldStyle(.plain)
                 .lineLimit(3...8)
-                .font(ax.fontBase)
+                .font(cosFieldFont(ax))
                 .foregroundStyle(ax.text)
                 .cosContent(content)
                 .modifier(COSFocusModifier(binding: focus, key: focusKey ?? id, own: $ownFocus))
         } else {
-            TextField(label, text: $text, prompt: Text(placeholder).foregroundColor(ax.textDisabled))
+            TextField(label, text: $text, prompt: Text(placeholder).foregroundColor(ax.textSecondary))
                 .textFieldStyle(.plain)
-                .font(ax.fontBase)
+                .font(cosFieldFont(ax))
                 .foregroundStyle(ax.text)
                 .cosContent(content)
                 .modifier(COSFocusModifier(binding: focus, key: focusKey ?? id, own: $ownFocus))
@@ -381,8 +416,8 @@ struct COSSelect: View {
         } label: {
             HStack(spacing: ax.space(2)) {
                 Text(shown ?? placeholder)
-                    .font(ax.fontBase)
-                    .foregroundStyle(shown == nil ? ax.textDisabled : ax.text)
+                    .font(cosFieldFont(ax))
+                    .foregroundStyle(shown == nil ? ax.textSecondary : ax.text)
                     .lineLimit(1)
                 Spacer(minLength: 0)
                 Image(systemName: "chevron.up.chevron.down")
@@ -390,13 +425,14 @@ struct COSSelect: View {
                     .foregroundStyle(ax.iconSecondary)
             }
             .padding(.horizontal, ax.space(3))
-            .frame(minHeight: max(cosTouch, 36 * min(ax.scale, 1.4)))
+            .frame(minHeight: cosFieldHeight(ax))
             .background(RoundedRectangle(cornerRadius: ax.radiusElement, style: .continuous).fill(ax.surface))
             .overlay(
                 RoundedRectangle(cornerRadius: ax.radiusElement, style: .continuous)
                     .strokeBorder(hasError ? ax.danger : ax.borderStrong, lineWidth: 1)
             )
             .contentShape(Rectangle())
+            .axTapTarget(keepLayout: true)
         }
         .menuStyle(.button)
         .buttonStyle(.plain)
@@ -406,8 +442,11 @@ struct COSSelect: View {
     }
 }
 
-/// A switch with its label and description. It calls `change` with the new value.
-struct COSSwitch: View {
+/// A checkbox with its label and description beside it, as Astryx's `CheckboxInput` draws one:
+/// the system checkbox on the Mac (a Mac convention, HIG Toggles), a drawn box on a touch screen
+/// (Astryx's 24 point box there) and in a picture with no window, centered on the label and its
+/// description. The label is secondary text, as Astryx paints it. It calls `change` with the new value.
+struct COSCheckbox: View {
     let label: String
     var description: String? = nil
     let isOn: Bool
@@ -416,28 +455,75 @@ struct COSSwitch: View {
     @Environment(\.axStatic) private var isStatic
 
     var body: some View {
-        if isStatic {
-            HStack(alignment: .center, spacing: ax.space(3)) {
-                text
-                Spacer(minLength: ax.space(3))
-                StaticSwitch(on: isOn)
+        HStack(alignment: boxAlignment, spacing: ax.space(3)) {
+            box
+            VStack(alignment: .leading, spacing: ax.hair) {
+                Text(label).font(ax.fontBase).foregroundStyle(ax.textSecondary)
+                    .axLeading(ax, size: ax.fontSize("font-size-base", 14), ratio: ax.bodyLeading)
+                if let description {
+                    Text(description).font(ax.fontSmall).foregroundStyle(ax.textSecondary)
+                        .axLeading(ax, size: ax.fontSize("font-size-sm", 12), ratio: ax.supportingLeading)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
-        } else {
-            Toggle(isOn: Binding(get: { isOn }, set: { change($0) })) { text }
-                .toggleStyle(.switch)
-                .tint(ax.accent)
-        }
-    }
-
-    private var text: some View {
-        VStack(alignment: .leading, spacing: ax.hair) {
-            Text(label).font(ax.fontLabel).foregroundStyle(ax.text)
-            if let description {
-                Text(description).font(ax.fontSmall).foregroundStyle(ax.textSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
+            .onTapGesture { if !isStatic { change(!isOn) } }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .contain)
+    }
+
+    /// The box sits on the first line beside the Mac's system checkbox; on a touch screen it is
+    /// centered on the label and description, as the web draws it.
+    private var boxAlignment: VerticalAlignment {
+        #if os(macOS)
+        .top
+        #else
+        .center
+        #endif
+    }
+
+    @ViewBuilder
+    private var box: some View {
+        #if os(macOS)
+        if isStatic { drawn } else {
+            Toggle(label, isOn: Binding(get: { isOn }, set: { change($0) }))
+                .labelsHidden()
+                .toggleStyle(.checkbox)
+                .tint(ax.accent)
+                .accessibilityLabel(label)
+                .accessibilityHint(description ?? "")
+        }
+        #else
+        drawn
+        #endif
+    }
+
+    private var drawn: some View {
+        #if os(iOS)
+        let side = 24 * min(ax.scale, 1.5)
+        #else
+        let side = 18 * min(ax.scale, 1.5)
+        #endif
+        let shape = RoundedRectangle(cornerRadius: ax.radiusInner + 1, style: .continuous)
+        return Button { change(!isOn) } label: {
+            shape.fill(isOn ? ax.accent : ax.surface)
+                .overlay(shape.strokeBorder(isOn ? ax.accent : ax.borderStrong, lineWidth: 1.5))
+                .overlay {
+                    if isOn {
+                        Image(systemName: "checkmark")
+                            .font(.system(size: side * 0.6, weight: .bold))
+                            .foregroundStyle(ax.onAccent)
+                    }
+                }
+                .frame(width: side, height: side)
+                .axTapTarget(keepLayout: true)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(label)
+        .accessibilityHint(description ?? "")
+        .axToggleSemantics(isOn: isOn)
     }
 }
 
@@ -466,7 +552,6 @@ struct COSButton: View {
                     .fixedSize(horizontal: !typeSize.isAccessibilitySize, vertical: true)
             }
             .frame(maxWidth: wide ? .infinity : nil)
-            .frame(minHeight: cosTouch)
         }
         .buttonStyle(AXButtonStyle(variant: variant, ax: ax, fills: wide))
     }
@@ -476,17 +561,21 @@ struct COSButton: View {
 struct COSIconButton: View {
     let label: String
     let symbol: String
+    /// The glyph's point size, where a wide symbol needs less than the usual 16.
+    var glyph: CGFloat? = nil
     let action: () -> Void
     @Environment(\.ax) private var ax
 
     var body: some View {
-        let side = max(cosTouch, 36 * min(ax.scale, 1.4))
+        // Astryx's 32 point icon button; on a touch screen the hit region reaches 44.
+        let side = cosFieldHeight(ax)
         Button(action: action) {
             Image(systemName: symbol)
-                .font(.system(size: ax.fontSize("font-size-lg", 17) * 0.95))
+                .font(.system(size: glyph.map { ax.scaled($0) } ?? ax.fontSize("font-size-lg", 17) * 0.95))
                 .foregroundStyle(ax.iconSecondary)
                 .frame(width: side, height: side)
                 .contentShape(Rectangle())
+                .axTapTarget(keepLayout: true)
         }
         .buttonStyle(.plain)
         .accessibilityLabel(label)
@@ -530,6 +619,8 @@ struct COSBanner: View {
 /// unless `startsOpen` says otherwise.
 struct COSCollapsible<Title: View, Content: View>: View {
     var startsOpen = true
+    /// The room under the content while open, for a card that pads its closed trigger less.
+    var openBottomInset: CGFloat = 0
     var spokenTitle: String
     @ViewBuilder var title: Title
     @ViewBuilder var content: Content
@@ -537,8 +628,12 @@ struct COSCollapsible<Title: View, Content: View>: View {
     @Environment(\.ax) private var ax
     @Environment(\.cosWords) private var words
 
-    init(startsOpen: Bool = true, spokenTitle: String, @ViewBuilder title: () -> Title, @ViewBuilder content: () -> Content) {
+    init(
+        startsOpen: Bool = true, openBottomInset: CGFloat = 0, spokenTitle: String,
+        @ViewBuilder title: () -> Title, @ViewBuilder content: () -> Content
+    ) {
         self.startsOpen = startsOpen
+        self.openBottomInset = openBottomInset
         self.spokenTitle = spokenTitle
         self.title = title()
         self.content = content()
@@ -565,19 +660,20 @@ struct COSCollapsible<Title: View, Content: View>: View {
             .accessibilityLabel(spokenTitle)
             .accessibilityValue(isOpen ? words.expanded : words.collapsed)
             .accessibilityHint(isOpen ? words.collapseHint : words.expandHint)
-            if isOpen { content }
+            if isOpen { content.padding(.bottom, openBottomInset) }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
 /// A product picture. The models carry one stand-in picture for every product, an SVG data
-/// URI the platform cannot draw, so this draws the same stand-in (a tile with a picture
-/// mark) from tokens; an http(s) address, if a model carries one, is loaded.
+/// URI the platform cannot draw. This reads the tile's ground and the picture mark's stroke
+/// from that SVG and draws the same mark (a rounded square with a sun and a hill), so the tile
+/// is what the web shows; an http(s) address, if a model carries one, is loaded.
 struct COSThumbnail: View {
     let src: String
     let name: String
-    var side: CGFloat = 56
+    var side: CGFloat = 64
     @Environment(\.ax) private var ax
 
     var body: some View {
@@ -588,29 +684,102 @@ struct COSThumbnail: View {
                 AsyncImage(url: url) { image in
                     image.resizable().scaledToFill()
                 } placeholder: {
-                    placeholder
+                    placeholder(size)
                 }
             } else {
-                placeholder
+                placeholder(size)
             }
         }
         .frame(width: size, height: size)
-        .background(ax.muted)
         .clipShape(shape)
+        // Astryx's Thumbnail has a 1 point border.
         .overlay(shape.strokeBorder(ax.border, lineWidth: 1))
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(name)
         .accessibilityAddTraits(.isImage)
     }
 
-    private var placeholder: some View {
-        Image(systemName: "photo")
-            .font(.system(size: side * 0.38 * min(ax.scale, 1.4), weight: .light))
-            .foregroundStyle(ax.textDisabled)
+    /// The colors the stand-in SVG names: a tile ground and a mark stroke.
+    private var colors: (ground: Color, stroke: Color) {
+        let svg = src.removingPercentEncoding ?? src
+        func hex(_ pattern: String) -> Color? {
+            guard let range = svg.range(of: pattern, options: .regularExpression) else { return nil }
+            let match = String(svg[range])
+            guard let hash = match.firstIndex(of: "#") else { return nil }
+            return Color(hex: String(match[hash...].prefix(while: { $0 != "\"" && $0 != "'" })))
+        }
+        return (
+            hex("<rect[^>]*fill=[\"']#[0-9a-fA-F]+") ?? ax.muted,
+            hex("stroke=[\"']#[0-9a-fA-F]+") ?? ax.color("color-icon-disabled")
+        )
+    }
+
+    private func placeholder(_ size: CGFloat) -> some View {
+        let c = colors
+        // The SVG's stroke is 5 in its 400 by 300 space, which a square tile scales by size / 300.
+        let line = 5 * size / 300
+        return ZStack {
+            Rectangle().fill(c.ground)
+            COSPictureMark().stroke(c.stroke, style: StrokeStyle(lineWidth: line, lineCap: .round, lineJoin: .round))
+                .overlay(COSPictureSun().fill(c.stroke))
+        }
     }
 }
 
-/// Initials and a stable hue from a name, for people the models give only as names.
+/// The stand-in's picture mark in its own 400 by 300 space, scaled to fill a tile (the SVG's
+/// `xMidYMid slice`): a rounded square with a hill drawn inside it.
+private struct COSPictureMark: Shape {
+    func path(in rect: CGRect) -> Path {
+        let scale = max(rect.width / 400, rect.height / 300)
+        let origin = CGPoint(x: rect.midX, y: rect.midY)
+        func point(_ x: CGFloat, _ y: CGFloat) -> CGPoint { CGPoint(x: origin.x + x * scale, y: origin.y + y * scale) }
+        var path = Path()
+        path.addRoundedRect(
+            in: CGRect(x: origin.x - 44 * scale, y: origin.y - 44 * scale, width: 88 * scale, height: 88 * scale),
+            cornerSize: CGSize(width: 16 * scale, height: 16 * scale), style: .continuous
+        )
+        path.move(to: point(-34, 30))
+        for (x, y) in [(-8, 0), (10, 18), (20, 8), (34, 24)] as [(CGFloat, CGFloat)] { path.addLine(to: point(x, y)) }
+        return path
+    }
+}
+
+/// The sun in the picture mark: a dot at (18, -18) in the SVG's space.
+private struct COSPictureSun: Shape {
+    func path(in rect: CGRect) -> Path {
+        let scale = max(rect.width / 400, rect.height / 300)
+        let center = CGPoint(x: rect.midX + 18 * scale, y: rect.midY - 18 * scale)
+        return Path(ellipseIn: CGRect(x: center.x - 2.5 * scale, y: center.y - 2.5 * scale, width: 5 * scale, height: 5 * scale))
+    }
+}
+
+/// An avatar for a name: Astryx's neutral Avatar (the templates pass it no hue), a neutral
+/// ground with the initials in secondary text.
+struct COSAvatar: View {
+    let name: String
+    var size: AvatarNode.Size = .md
+    @Environment(\.ax) private var ax
+
+    private var diameter: CGFloat {
+        let base: CGFloat = switch size { case .sm: 24; case .md: 36; case .lg: 48 }
+        return base * min(ax.scale, 1.6)
+    }
+
+    var body: some View {
+        let person = cosPerson(name)
+        Text(person.initials)
+            .font(.system(size: diameter * 0.38, weight: .regular))
+            .foregroundStyle(ax.textSecondary)
+            .minimumScaleFactor(0.6)
+            .lineLimit(1)
+            .frame(width: diameter, height: diameter)
+            .background(Circle().fill(ax.color("color-neutral")))
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(name)
+    }
+}
+
+/// Initials from a name, for people the models give only as names.
 func cosPerson(_ name: String) -> (initials: String, hue: Double) {
     let words = name.split(separator: " ").prefix(2)
     let initials = words.compactMap { $0.first.map(String.init) }.joined().uppercased()
@@ -618,22 +787,29 @@ func cosPerson(_ name: String) -> (initials: String, hue: Double) {
     return (initials.isEmpty ? "?" : initials, hue)
 }
 
-/// An avatar for a name.
-struct COSAvatar: View {
-    let name: String
-    var size: AvatarNode.Size = .md
-
-    var body: some View {
-        let person = cosPerson(name)
-        AXAvatar(name: name, initials: person.initials, hue: person.hue, size: size)
-    }
-}
-
 /// A bulleted separator for a run of facts.
 struct COSBullet: View {
     @Environment(\.ax) private var ax
     var body: some View {
         Text("\u{30FB}").font(ax.fontSmall).foregroundStyle(ax.textSecondary).accessibilityHidden(true)
+    }
+}
+
+/// A badge in Astryx's `green` colour variant: the soft green ground with green ink. (The shared
+/// `AXBadge` draws the `success` tone, a solid fill, which is another thing.) Drawn as `AXBadge` is.
+struct COSGreenBadge: View {
+    let text: String
+    @Environment(\.ax) private var ax
+
+    var body: some View {
+        Text(text)
+            .font(ax.font("font-size-sm", 12, weight: "font-weight-medium").monospacedDigit())
+            .foregroundStyle(ax.color("color-text-green"))
+            .lineLimit(1)
+            .padding(.horizontal, ax.space(2))
+            .frame(minHeight: 20 * min(ax.scale, 1.6))
+            .background(Capsule().fill(ax.color("color-background-green")))
+            .fixedSize()
     }
 }
 

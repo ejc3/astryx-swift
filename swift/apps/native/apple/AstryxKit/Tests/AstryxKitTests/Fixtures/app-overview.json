@@ -149,7 +149,7 @@
  "screen": {
   "id": "overview",
   "title": "Components",
-  "subtitle": "Astryx's components, drawn natively",
+  "subtitle": "Astryx's components, from one core",
   "toolbar": [
    {
     "kind": "button",
@@ -326,7 +326,7 @@
         },
         {
          "kind": "text",
-         "text": "3 tokens. Tap × to remove one.",
+         "text": "3 tokens. Remove one with ×.",
          "style": "caption"
         }
        ]

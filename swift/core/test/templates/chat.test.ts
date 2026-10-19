@@ -70,3 +70,18 @@ test("the view is plain JSON", () => {
   const v = chat.view(start(), NOW);
   assert.deepEqual(JSON.parse(JSON.stringify(v)), v);
 });
+
+test("each tool-call group carries its header, and the delivered word is in the view", () => {
+  const view = chat.view(start(), NOW);
+  const groups = view.items.flatMap((i) => (i.kind === "message" ? i.parts.filter((p) => p.kind === "tools") : []));
+  assert.deepEqual(groups.map((g) => g.kind === "tools" && g.label), ["3 tool calls", "1 tool call", "3 tool calls", "1 tool call"]);
+  assert.equal(view.words.delivered, "Delivered");
+  assert.ok(view.items.some((i) => i.kind === "message" && i.parts.some((p) => p.kind === "bubble" && p.status === "delivered")));
+});
+
+test("a code block carries the header line the stock page draws", () => {
+  const codes = chat.view(start(), NOW).items.flatMap((i) =>
+    i.kind === "message" ? i.parts.flatMap((p) => (p.kind === "bubble" && p.content.kind === "code" ? [p.content.header] : [])) : [],
+  );
+  assert.deepEqual(codes, ["middleware.ts — typescript", "middleware.test.ts — typescript"]);
+});

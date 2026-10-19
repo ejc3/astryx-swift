@@ -62,12 +62,22 @@ final class AccessibilityTests: XCTestCase {
         }
     }
 
-    func testFieldBordersReach3OnEveryGround() throws {
+    func testFieldBordersAreTheThemesOwnUntilIncreaseContrast() throws {
+        // The web draws the theme's outline, and so does the native drawing; only Increase
+        // Contrast raises it (checked in testIncreaseContrastIsStrongerStill).
         for name in themes {
             for (label, raw) in try modes(name) {
                 let mode = AXPalette.strengthened(raw)
-                let grounds = try XCTUnwrap(AXPalette.grounds(mode.colors))
-                XCTAssertGreaterThanOrEqual(AXContrast.lowest(try color(mode, "color-border-emphasized"), on: grounds.plain + [grounds.muted]), 3, "\(name) \(label)")
+                XCTAssertEqual(try color(mode, "color-border-emphasized").hex, try color(raw, "color-border-emphasized").hex, "\(name) \(label)")
+            }
+        }
+    }
+
+    func testInactiveTextIsTheRawDisabledToken() throws {
+        for name in themes {
+            for (label, raw) in try modes(name) {
+                let mode = AXPalette.strengthened(raw)
+                XCTAssertEqual(try color(mode, "color-text-inactive").hex, try color(raw, "color-text-disabled").hex, "\(name) \(label)")
             }
         }
     }

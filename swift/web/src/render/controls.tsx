@@ -1,5 +1,6 @@
 import { Button } from "@astryxdesign/core/Button";
 import { CheckboxInput } from "@astryxdesign/core/CheckboxInput";
+import { Field } from "@astryxdesign/core/Field";
 import { IconButton } from "@astryxdesign/core/IconButton";
 import { ProgressBar, type ProgressBarProps } from "@astryxdesign/core/ProgressBar";
 import { RadioList, RadioListItem } from "@astryxdesign/core/RadioList";
@@ -11,6 +12,7 @@ import { TextArea } from "@astryxdesign/core/TextArea";
 import { TextInput } from "@astryxdesign/core/TextInput";
 import { ToggleButton } from "@astryxdesign/core/ToggleButton";
 import type { ButtonNode, Node, Tone } from "@astryx-native/core";
+import { useId } from "react";
 import { press, set } from "../client.ts";
 import { iconComponent, Ic } from "../icons.tsx";
 
@@ -67,11 +69,15 @@ export function RadioNode({ node }: { node: Of<"radio"> }) {
 }
 
 export function SegmentedNode({ node }: { node: Of<"segmented"> }) {
-  return (
+  const id = useId();
+  const control = (
     <SegmentedControl label={node.label} value={node.value} onChange={(v) => set(node.id, v)}>
       {node.options.map((o) => <SegmentedControlItem key={o.value} value={o.value} label={o.label} />)}
     </SegmentedControl>
   );
+  // Astryx's SegmentedControl keeps its label for assistive technology only; a visible caption is a Field's.
+  if (node.labelHidden) return control;
+  return <Field label={node.label} inputID={id} labelID={`${id}-label`} isGroupLabel>{control}</Field>;
 }
 
 export function SelectNode({ node }: { node: Of<"select"> }) {

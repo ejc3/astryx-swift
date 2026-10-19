@@ -95,7 +95,7 @@ struct CheckoutCartStep: View {
                 VStack(alignment: .leading, spacing: ax.hair) {
                     Text(item.name).font(ax.fontLabel).foregroundStyle(ax.text)
                         .fixedSize(horizontal: false, vertical: true)
-                    if item.isLimited { AXBadge(text: model.words.cart.limited, tone: .success) }
+                    if item.isLimited { COSGreenBadge(text: model.words.cart.limited) }
                     Text(item.lineTotal).font(ax.fontStrong).foregroundStyle(ax.text)
                 }
             } else {
@@ -103,7 +103,7 @@ struct CheckoutCartStep: View {
                     HStack(alignment: .firstTextBaseline, spacing: ax.space(2)) {
                         Text(item.name).font(ax.fontLabel).foregroundStyle(ax.text)
                             .fixedSize(horizontal: false, vertical: true)
-                        if item.isLimited { AXBadge(text: model.words.cart.limited, tone: .success) }
+                        if item.isLimited { COSGreenBadge(text: model.words.cart.limited) }
                     }
                     Spacer(minLength: ax.space(2))
                     Text(item.lineTotal).font(ax.fontStrong).foregroundStyle(ax.text)
@@ -112,6 +112,7 @@ struct CheckoutCartStep: View {
             Text("\(item.variant) \u{B7} \(item.priceEach) each")
                 .font(ax.fontSmall)
                 .foregroundStyle(ax.textSecondary)
+                .axLeading(ax, size: ax.fontSize("font-size-sm", 12), ratio: ax.supportingLeading)
                 .fixedSize(horizontal: false, vertical: true)
             ViewThatFits(in: .horizontal) {
                 HStack(spacing: ax.space(2)) { quantity(item); remove(item) }
@@ -121,12 +122,12 @@ struct CheckoutCartStep: View {
         }
         if stacked {
             VStack(alignment: .leading, spacing: ax.space(3)) {
-                COSThumbnail(src: item.src, name: item.name, side: 72)
+                COSThumbnail(src: item.src, name: item.name, side: 64)
                 details
             }
         } else {
             HStack(alignment: .top, spacing: ax.space(4)) {
-                COSThumbnail(src: item.src, name: item.name, side: 72)
+                COSThumbnail(src: item.src, name: item.name, side: 64)
                 details
             }
         }
@@ -146,7 +147,7 @@ struct CheckoutCartStep: View {
     /// The code and its Apply button level with the box; the status sits under the pair.
     private var promo: some View {
         VStack(alignment: .leading, spacing: ax.space(1)) {
-            Text(model.words.cart.promoLabel).font(ax.fontLabel).foregroundStyle(ax.text)
+            Text(model.words.cart.promoLabel).font(ax.fontLabel).foregroundStyle(ax.textSecondary)
             ViewThatFits(in: .horizontal) {
                 HStack(spacing: ax.space(2)) { promoBox; applyButton }
                 VStack(alignment: .leading, spacing: ax.space(2)) { promoBox; applyButton }
@@ -166,12 +167,16 @@ struct CheckoutCartStep: View {
     }
 
     private var applyButton: some View {
+        // Level with the box beside it: as tall as the field.
         COSButton(label: model.words.cart.apply, variant: .secondary) { actions.press("apply") }
+            .frame(minHeight: cosFieldHeight(ax))
     }
 }
 
-/// A quantity: minus, a number you can type, plus; 0 to 10, as the web field. VoiceOver
-/// adjusts it with swipes up and down.
+/// A quantity, 0 to 10, as the web field: a number you can type. The number sits in a box, with the
+/// system's stepper beside it (HIG Steppers: a text field beside a stepper): on the Mac the up and
+/// down arrows at the box's right, on a touch screen the system's minus and plus capsule after it.
+/// VoiceOver adjusts it with swipes up and down.
 struct CheckoutQuantity: View {
     /// The spoken name, "Quantity of <name>", and the field's own name ("Quantity").
     let label: String
@@ -195,58 +200,124 @@ struct CheckoutQuantity: View {
     }
 
     var body: some View {
-        let side = max(cosTouch, 36 * min(ax.scale, 1.4))
+        let side = cosFieldHeight(ax)
         let shape = RoundedRectangle(cornerRadius: ax.radiusElement, style: .continuous)
+        #if os(macOS)
         HStack(spacing: 0) {
-            stepper("minus", enabled: qty > 0) { change(max(qty - 1, 0)) }
-            Group {
-                if isStatic {
-                    Text(text)
-                } else {
-                    TextField(field, text: $text)
-                        .textFieldStyle(.plain)
-                        .multilineTextAlignment(.center)
-                        .cosContent(.integer)
-                        .modifier(CheckoutQuantityFocus(binding: focus, key: focusKey, own: $ownFocus))
-                }
-            }
-            .font(ax.fontBase.monospacedDigit())
-            .foregroundStyle(ax.text)
-            .frame(width: 40 * min(ax.scale, 1.4), height: side)
-            stepper("plus", enabled: qty < 10) { change(min(qty + 1, 10)) }
+            number
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.leading, ax.space(3))
+            arrows
+                .padding(.trailing, ax.space(2))
         }
+        .frame(width: 96 * min(ax.scale, 1.4), height: side)
         .background(shape.fill(ax.surface))
-        .overlay(shape.strokeBorder(ax.borderStrong, lineWidth: 1))
+        .overlay(shape.strokeBorder(ax.border, lineWidth: 1))
+        .modifier(quantityBehaviour)
+        #else
+        // A 56 point number box, then the system's stepper with its label hidden.
+        HStack(spacing: ax.space(2)) {
+            number
+                .padding(.horizontal, ax.space(3))
+                .frame(width: 56 * min(ax.scale, 1.4), height: side, alignment: .leading)
+                .background(shape.fill(ax.surface))
+                .overlay(shape.strokeBorder(ax.borderStrong, lineWidth: 1))
+                .contentShape(shape)
+                .cosTapWithSlop(cosFieldSlop(ax)) { if !isStatic { focusNumber() } }
+            stepper
+        }
         .fixedSize()
-        .onChange(of: text) { _, new in
-            if let value = Int(new), (0...10).contains(value), value != qty { change(value) }
-        }
-        .onChange(of: qty) { _, new in
-            if Int(text) != new { text = String(new) }
-        }
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(label)
-        .accessibilityValue("\(qty)")
-        .accessibilityAdjustableAction { direction in
-            switch direction {
-            case .increment: if qty < 10 { change(qty + 1) }
-            case .decrement: if qty > 0 { change(qty - 1) }
-            @unknown default: break
-            }
-        }
+        .modifier(quantityBehaviour)
+        #endif
     }
 
-    private func stepper(_ symbol: String, enabled: Bool, action: @escaping () -> Void) -> some View {
-        let side = max(cosTouch, 36 * min(ax.scale, 1.4))
-        return Button(action: action) {
-            Image(systemName: symbol)
-                .font(.system(size: ax.fontSize("font-size-sm", 12), weight: .semibold))
-                .foregroundStyle(enabled ? ax.text : ax.textDisabled)
-                .frame(width: side, height: side)
-                .contentShape(Rectangle())
+    private func focusNumber() {
+        if let focus, let focusKey { focus.wrappedValue = focusKey } else { ownFocus = true }
+    }
+
+    /// Typing sends the new number; the model's own change shows in the box; VoiceOver adjusts.
+    private var quantityBehaviour: some ViewModifier {
+        QuantityBehaviour(
+            text: $text, qty: qty, label: label, change: change
+        )
+    }
+
+    private var number: some View {
+        Group {
+            if isStatic {
+                Text(text)
+            } else {
+                TextField(field, text: $text)
+                    .textFieldStyle(.plain)
+                    .cosContent(.integer)
+                    .modifier(CheckoutQuantityFocus(binding: focus, key: focusKey, own: $ownFocus))
+            }
         }
-        .buttonStyle(.plain)
-        .disabled(!enabled)
+        .font(cosFieldFont(ax).monospacedDigit())
+        .foregroundStyle(ax.text)
+    }
+
+    #if os(macOS)
+    /// The system's up and down arrows (a picture draws them by hand).
+    @ViewBuilder
+    private var arrows: some View {
+        if isStatic {
+            Image(systemName: "chevron.up.chevron.down")
+                .font(.system(size: ax.fontSize("font-size-xs", 10), weight: .semibold))
+                .foregroundStyle(ax.iconSecondary)
+        } else {
+            Stepper(label, value: Binding(get: { qty }, set: { change($0) }), in: 0...10)
+                .labelsHidden()
+        }
+    }
+    #else
+    /// The system's minus and plus capsule; a picture, which cannot draw a `Stepper`, gets the
+    /// same two segments by hand.
+    @ViewBuilder
+    private var stepper: some View {
+        if isStatic {
+            HStack(spacing: 0) {
+                Image(systemName: "minus").frame(width: 47, height: cosFieldHeight(ax))
+                Rectangle().fill(ax.border).frame(width: 1, height: 18)
+                Image(systemName: "plus").frame(width: 47, height: cosFieldHeight(ax))
+            }
+            .font(.system(size: ax.fontSize("font-size-base", 14), weight: .medium))
+            .foregroundStyle(ax.text)
+            .background(Capsule().fill(ax.color("color-neutral")))
+        } else {
+            Stepper(label, value: Binding(get: { qty }, set: { change($0) }), in: 0...10)
+                .labelsHidden()
+        }
+    }
+    #endif
+}
+
+/// What a quantity does besides draw: typing changes it, the model's own change shows in the
+/// box, and VoiceOver adjusts it with swipes up and down.
+private struct QuantityBehaviour: ViewModifier {
+    @Binding var text: String
+    let qty: Int
+    let label: String
+    let change: (Int) -> Void
+
+    func body(content: Content) -> some View {
+        content
+            .onChange(of: text) { _, new in
+                if let value = Int(new), (0...10).contains(value), value != qty { change(value) }
+            }
+            .onChange(of: qty) { _, new in
+                if Int(text) != new { text = String(new) }
+            }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(label)
+            .accessibilityValue("\(qty)")
+            .accessibilityAdjustableAction { direction in
+                switch direction {
+                case .increment: if qty < 10 { change(qty + 1) }
+                case .decrement: if qty > 0 { change(qty - 1) }
+                @unknown default: break
+                }
+            }
     }
 }
 
@@ -334,7 +405,7 @@ struct CheckoutDeliveryStep: View {
             VStack(alignment: .leading, spacing: ax.space(4)) {
                 methods
                 AXDivider()
-                COSSwitch(label: model.words.delivery.gift, isOn: d.isGift) { actions.set("isGift", .bool($0)) }
+                COSCheckbox(label: model.words.delivery.gift, isOn: d.isGift) { actions.set("isGift", .bool($0)) }
                 COSField(label: d.noteLabel, optional: true, hint: d.noteDescription) {
                     COSTextBox(
                         id: CheckoutSender.id("deliveryNote"), label: d.noteLabel, value: d.note,
@@ -343,6 +414,15 @@ struct CheckoutDeliveryStep: View {
                 }
             }
         }
+    }
+
+    /// Astryx's radio is 24 on a touch screen (`any-pointer: coarse`) and 18 elsewhere.
+    private var radioSide: CGFloat {
+        #if os(iOS)
+        24 * min(ax.scale, 1.5)
+        #else
+        18 * min(ax.scale, 1.5)
+        #endif
     }
 
     private var methods: some View {
@@ -359,7 +439,7 @@ struct CheckoutDeliveryStep: View {
                             Circle()
                                 .strokeBorder(selected ? ax.accent : ax.borderStrong, lineWidth: selected ? 5 : 1.5)
                                 .background(Circle().fill(ax.surface))
-                                .frame(width: 18 * min(ax.scale, 1.5), height: 18 * min(ax.scale, 1.5))
+                                .frame(width: radioSide, height: radioSide)
                             VStack(alignment: .leading, spacing: ax.hair) {
                                 Text(option.label).font(ax.fontLabel).foregroundStyle(ax.text)
                                 Text(option.window).font(ax.fontSmall).foregroundStyle(ax.textSecondary)
@@ -424,7 +504,7 @@ struct CheckoutPaymentStep: View {
                     Spacer(minLength: 0)
                 }
                 AXDivider()
-                COSSwitch(label: w.billingMatches, isOn: p.billingMatches) {
+                COSCheckbox(label: w.billingMatches, isOn: p.billingMatches) {
                     actions.set("billingMatches", .bool($0))
                 }
                 if !p.billingMatches {

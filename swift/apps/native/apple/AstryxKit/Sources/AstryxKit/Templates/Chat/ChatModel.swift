@@ -32,10 +32,10 @@ enum TChatContent: Decodable {
     case text(String)
     case mention(text: String, tokens: [TChatToken])
     case markdown(String)
-    case code(title: String, language: String, code: String)
+    case code(title: String, header: String, code: String)
     case artifact(label: String, title: String, caption: String)
 
-    private enum Keys: String, CodingKey { case kind, text, tokens, title, language, code, label, caption }
+    private enum Keys: String, CodingKey { case kind, text, tokens, title, header, code, label, caption }
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: Keys.self)
@@ -43,7 +43,10 @@ enum TChatContent: Decodable {
         case "text": self = .text(try c.decode(String.self, forKey: .text))
         case "mention": self = .mention(text: try c.decode(String.self, forKey: .text), tokens: try c.decode([TChatToken].self, forKey: .tokens))
         case "markdown": self = .markdown(try c.decode(String.self, forKey: .text))
-        case "code": self = .code(title: try c.decode(String.self, forKey: .title), language: try c.decode(String.self, forKey: .language), code: try c.decode(String.self, forKey: .code))
+        case "code":
+            let title = try c.decode(String.self, forKey: .title)
+            // The core's header line ("middleware.ts - typescript"); a core without one gives the title alone.
+            self = .code(title: title, header: try c.decodeIfPresent(String.self, forKey: .header) ?? title, code: try c.decode(String.self, forKey: .code))
         case "artifact": self = .artifact(label: try c.decode(String.self, forKey: .label), title: try c.decode(String.self, forKey: .title), caption: try c.decode(String.self, forKey: .caption))
         case let other:
             throw DecodingError.dataCorruptedError(forKey: .kind, in: c, debugDescription: "unknown bubble content \(other)")
@@ -53,7 +56,7 @@ enum TChatContent: Decodable {
 
 enum TChatPart: Decodable {
     case bubble(Bubble)
-    case tools(expanded: Bool, calls: [TChatToolCall])
+    case tools(expanded: Bool, label: String, calls: [TChatToolCall])
     case meta(time: TChatStamp, footer: String?)
 
     struct Bubble: Decodable {
@@ -69,13 +72,18 @@ enum TChatPart: Decodable {
         var isGhost: Bool { variant == "ghost" }
     }
 
-    private enum Keys: String, CodingKey { case kind, expanded, calls, time, footer }
+    private enum Keys: String, CodingKey { case kind, expanded, label, calls, time, footer }
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: Keys.self)
         switch try c.decode(String.self, forKey: .kind) {
         case "bubble": self = .bubble(try Bubble(from: decoder))
-        case "tools": self = .tools(expanded: try c.decode(Bool.self, forKey: .expanded), calls: try c.decode([TChatToolCall].self, forKey: .calls))
+        case "tools":
+            self = .tools(
+                expanded: try c.decode(Bool.self, forKey: .expanded),
+                label: try c.decodeIfPresent(String.self, forKey: .label) ?? "",
+                calls: try c.decode([TChatToolCall].self, forKey: .calls)
+            )
         case "meta": self = .meta(time: try c.decode(TChatStamp.self, forKey: .time), footer: try c.decodeIfPresent(String.self, forKey: .footer))
         case let other:
             throw DecodingError.dataCorruptedError(forKey: .kind, in: c, debugDescription: "unknown part \(other)")
@@ -136,6 +144,8 @@ struct TChatWords: Decodable {
     var status = Status()
     var added = ""
     var removed = ""
+    /// The word beside a delivered message's time ("Delivered").
+    var delivered = ""
 
     static let empty = TChatWords()
 
@@ -158,18 +168,9 @@ extension EnvironmentValues {
     }
 }
 
-private struct TChatInertKey: EnvironmentKey { static let defaultValue: Set<String> = [] }
-
-extension EnvironmentValues {
-    /// Which of the template's controls the core keeps inert (view.inert).
-    var tChatInert: Set<String> {
-        get { self[TChatInertKey.self] }
-        set { self[TChatInertKey.self] = newValue }
-    }
-}
-
-/// The hit side of a chat icon control: its drawn size, but never under 44 pt.
-func tChatSide(_ ax: AXStyle) -> CGFloat { Swift.max(axMinTarget, 32 * Swift.min(ax.scale, 1.4)) }
+/// The drawn side of a chat icon control: Astryx's 32 (the hit region reaches 44 on a touch screen
+/// through `axTapTarget`).
+func tChatSide(_ ax: AXStyle) -> CGFloat { 32 * Swift.min(ax.scale, 1.4) }
 
 struct TChatModel: Decodable {
     struct Composer: Decodable {
@@ -191,7 +192,7 @@ struct TChatModel: Decodable {
         let panelOpen: Bool
         let dialogOpen: Bool
     }
-    /// Controls the stock page draws but wires to nothing ("mention", "attach", "versions").
+    /// Controls the stock page draws but wires to nothing ("mention", "attach", "versions"); drawn enabled, like the web's.
     let inert: Set<String>
     let words: TChatWords
     let items: [TChatItem]

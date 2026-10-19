@@ -20,7 +20,7 @@ struct OrderHeader: View {
         VStack(alignment: .leading, spacing: ax.space(3)) {
             HStack(alignment: .top, spacing: ax.space(4)) {
                 VStack(alignment: .leading, spacing: 0) {
-                    // Inert in the stock template: a disabled button, not a link that does nothing.
+                    // The stock link goes nowhere: drawn as the web draws it, a secondary-colour link.
                     Button {} label: {
                         HStack(spacing: ax.space(1)) {
                             Image(systemName: "arrow.left").font(ax.fontSmall)
@@ -30,7 +30,6 @@ struct OrderHeader: View {
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
-                    .disabled(model.isInert("allOrders"))
                     .foregroundStyle(ax.textSecondary)
                     .padding(.vertical, -(cosTouch - 20) / 2)
                     .padding(.bottom, ax.space(1))
@@ -51,15 +50,17 @@ struct OrderHeader: View {
                 if typeSize.isAccessibilitySize {
                     VStack(spacing: ax.space(2)) { restock; edit }.environment(\.axFillButtons, true)
                 } else {
-                    HStack(spacing: ax.space(2)) { restock; edit }
+                    // Fill the row as the web's flex does: each button its own width, and the rest
+                    // of the room shared equally between them.
+                    OrderShareRow(spacing: ax.space(2)) { restock; edit }
                 }
             }
             HStack(spacing: ax.space(2)) {
                 OrderTabs(model: model)
-                    .environment(\.axWidth, max(width - max(cosTouch, 36 * min(ax.scale, 1.4)) - ax.space(2), 0))
+                    .environment(\.axWidth, max(width - cosFieldHeight(ax) - ax.space(2), 0))
                 COSIconButton(
                     label: panelShown ? model.words.hidePanel : model.words.showPanel,
-                    symbol: panelShown ? "sidebar.right" : "sidebar.right"
+                    symbol: "rectangle.split.3x1", glyph: 13
                 ) {
                     send(.press(id: narrow ? "tpl.order.panel:dialog" : "tpl.order.panel:side"))
                 }
@@ -70,23 +71,22 @@ struct OrderHeader: View {
                 .accessibilityAddTraits(panelShown ? .isSelected : [])
             }
         }
-        .padding(.top, ax.space(1))
     }
 
+    // Restock and Edit do nothing in the stock page, which draws them enabled; so do we.
     private var restock: some View {
         COSButton(label: model.words.restock, variant: .secondary, fills: stacked) {}
-            .disabled(model.isInert("restock"))
     }
 
     private var edit: some View {
         COSButton(label: model.words.edit, variant: .secondary, fills: stacked) {}
-            .disabled(model.isInert("edit"))
     }
 
     /// Facts wrap onto more lines on a narrow screen rather than collapse behind "+N more".
     private var facts: some View {
         FlowLayout(spacing: ax.space(1), crossAlignment: 0.5) {
             Text(model.itemsLabel).font(ax.fontBase).foregroundStyle(ax.text)
+                .axLeading(ax, size: ax.fontSize("font-size-base", 14), ratio: ax.bodyLeading)
             HStack(spacing: ax.space(1)) {
                 COSBullet()
                 COSAvatar(name: model.customerName, size: .sm)
@@ -112,12 +112,11 @@ struct OrderHeader: View {
             HStack(spacing: ax.space(1)) {
                 COSBullet()
                 Button {} label: {
-                    Text(model.words.seeAll).font(ax.fontBase).underline()
+                    Text(model.words.seeAll).font(ax.fontBase)
                         .frame(minHeight: cosTouch)
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .disabled(model.isInert("seeAll"))
                 .foregroundStyle(ax.textSecondary)
                 .padding(.vertical, -(cosTouch - 20) / 2)
             }
@@ -125,7 +124,34 @@ struct OrderHeader: View {
     }
 }
 
-/// The first tabs in a row and a More menu for the rest. Choosing sends `set tab`.
+/// A row of buttons that fill it the way flex items do: each is as wide as its label needs, and
+/// what is left over is shared equally (so the buttons are not equal halves unless their labels are).
+private struct OrderShareRow: Layout {
+    let spacing: CGFloat
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let ideal = subviews.map { $0.sizeThatFits(.unspecified) }
+        let natural = ideal.reduce(0) { $0 + $1.width } + spacing * CGFloat(max(subviews.count - 1, 0))
+        return CGSize(width: proposal.width ?? natural, height: ideal.map(\.height).max() ?? 0)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        let ideal = subviews.map { $0.sizeThatFits(.unspecified) }
+        let gaps = spacing * CGFloat(max(subviews.count - 1, 0))
+        let extra = max(0, bounds.width - gaps - ideal.reduce(0) { $0 + $1.width }) / CGFloat(max(subviews.count, 1))
+        var x = bounds.minX
+        for (view, size) in zip(subviews, ideal) {
+            let w = size.width + extra
+            view.place(at: CGPoint(x: x, y: bounds.minY), anchor: .topLeading, proposal: ProposedViewSize(width: w, height: bounds.height))
+            x += w + spacing
+        }
+    }
+}
+
+/// The first tabs in a row and a More menu for the rest, as Astryx's full-bleed TabList draws
+/// them: the labels flush with the content edge and the selected one underlined as wide as its
+/// word. The hairline under the tabs is the header's own divider, edge to edge. Choosing sends
+/// `set tab`.
 struct OrderTabs: View {
     let model: OrderModel
     @Environment(\.ax) private var ax
@@ -136,19 +162,16 @@ struct OrderTabs: View {
 
     var body: some View {
         AXHScroll {
-            HStack(spacing: ax.space(1)) {
+            HStack(spacing: ax.space(7)) {
                 ForEach(model.tabs.filter { !$0.more }, id: \.value) { button($0.value, $0.label) }
                 menu
             }
-        }
-        .overlay(alignment: .bottom) {
-            Rectangle().fill(ax.border).frame(height: 1).allowsHitTesting(false)
         }
     }
 
     private func label(_ text: String, selected: Bool) -> some View {
         Text(text)
-            .font(selected ? ax.fontStrong : ax.fontLabel)
+            .font(selected ? ax.fontStrong : ax.fontBase)
             .foregroundStyle(selected ? ax.text : ax.textSecondary)
             .lineLimit(1)
     }
@@ -163,7 +186,6 @@ struct OrderTabs: View {
             send(.set(id: "tpl.order.tab", value: .string(value)))
         } label: {
             label(title, selected: selected)
-                .padding(.horizontal, ax.space(3))
                 .frame(minHeight: max(cosTouch, 40))
                 .overlay(alignment: .bottom) { underline(selected) }
                 .contentShape(Rectangle())
@@ -193,7 +215,6 @@ struct OrderTabs: View {
                     .font(.system(size: ax.fontSize("font-size-xs", 10), weight: .semibold))
                     .foregroundStyle(ax.iconSecondary)
             }
-            .padding(.horizontal, ax.space(3))
             .frame(minHeight: max(cosTouch, 40))
             .overlay(alignment: .bottom) { underline(selected) }
             .contentShape(Rectangle())

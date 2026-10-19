@@ -1,6 +1,24 @@
+import CoreText
 import SwiftUI
 
 extension Color {
+    /// A color from hue (degrees), saturation and lightness (0 to 1), as CSS `hsl()` reads them.
+    public init(hue degrees: Double, saturation s: Double, lightness l: Double) {
+        let h = ((degrees.truncatingRemainder(dividingBy: 360)) + 360).truncatingRemainder(dividingBy: 360)
+        let c = (1 - abs(2 * l - 1)) * s
+        let x = c * (1 - abs((h / 60).truncatingRemainder(dividingBy: 2) - 1))
+        let m = l - c / 2
+        let (r, g, b): (Double, Double, Double) = switch h {
+        case ..<60: (c, x, 0)
+        case ..<120: (x, c, 0)
+        case ..<180: (0, c, x)
+        case ..<240: (0, x, c)
+        case ..<300: (x, 0, c)
+        default: (c, 0, x)
+        }
+        self.init(.sRGB, red: r + m, green: g + m, blue: b + m, opacity: 1)
+    }
+
     /// A color from `#RRGGBBAA`, the form the theme store uses. `#RRGGBB` and `#RGB` also read.
     public init(hex: String) {
         var digits = hex.hasPrefix("#") ? String(hex.dropFirst()) : hex
@@ -83,12 +101,18 @@ struct AXStyle: Sendable {
     /// Placeholders and text that is dimmed but still works (an out-of-month date). The theme's own
     /// disabled gray is 2:1 on white; this is raised to 4.5:1 (see `AXPalette`).
     var textDisabled: Color { color("color-text-disabled") }
+    /// Inactive content that is not a control's own words (an out-of-month date): the theme's
+    /// disabled token as it is, as the web draws it. WCAG exempts inactive content from 4.5:1.
+    var textInactive: Color { mode.colors["color-text-inactive"] == nil ? textDisabled : color("color-text-inactive") }
     var border: Color { color("color-border") }
     var borderStrong: Color { color("color-border-emphasized") }
     var iconSecondary: Color { color("color-icon-secondary") }
     // Accent
     var accent: Color { color("color-accent") }
     var accentMuted: Color { color("color-accent-muted") }
+    /// The theme's accent thinned to 16 %: the web's `ACCENT_SOFT` (web/src/render/tone.ts). Astryx's
+    /// own muted accent does not follow a theme's accent override; this does.
+    var accentSoft: Color { accent.opacity(0.16) }
     var onAccent: Color { color("color-on-accent") }
     var danger: Color { color("color-error") }
 
@@ -142,6 +166,22 @@ struct AXStyle: Sendable {
     var fontSmall: Font { font("font-size-sm", 12) }
     var fontXSmall: Font { font("font-size-xs", 10) }
     var fontLabel: Font { font("font-size-base", 14, weight: "font-weight-medium") }
+
+    /// The size of the text a field or select shows. Astryx floors it at 1rem on a touch screen
+    /// (`@media (pointer: coarse) { font-size: max(1rem, var(--text-body-size)) }`, so WebKit does
+    /// not zoom the page on focus); on the Mac it is the body size.
+    var fieldFontSize: CGFloat {
+        #if os(iOS)
+        Swift.max(scaled(16), fontSize("font-size-base", 14))
+        #else
+        fontSize("font-size-base", 14)
+        #endif
+    }
+    var fieldFont: Font { .system(size: fieldFontSize, weight: weight(Int(size("font-weight-normal", 400)))) }
+
+    /// An SF Symbol beside a label or in a field: Astryx's icons are a 16 box with about 12 of
+    /// glyph, and an SF Symbol at the label's own size draws about 30 % larger than that.
+    var iconFont: Font { .system(size: fontSize("font-size-base", 14) * 0.86) }
     var fontStrong: Font { font("font-size-base", 14, weight: "font-weight-semibold") }
     func heading(_ level: Int) -> Font {
         let l = min(max(level, 1), 6)
@@ -155,9 +195,9 @@ struct AXStyle: Sendable {
     func tone(_ tone: Tone) -> ToneColors {
         switch tone {
         case .neutral:
-            ToneColors(text: color("color-text-gray"), solid: color("color-text-secondary"), muted: color("color-neutral"), border: border, onSolid: color("color-background-surface"))
+            ToneColors(text: color("color-text-primary"), solid: color("color-icon-secondary"), muted: color("color-neutral"), border: border, onSolid: color("color-background-surface"))
         case .accent:
-            ToneColors(text: color("color-text-accent"), solid: accent, muted: accentMuted, border: accent.opacity(0.35), onSolid: onAccent)
+            ToneColors(text: color("color-text-accent"), solid: accent, muted: accentSoft, border: accent.opacity(0.35), onSolid: onAccent)
         case .success:
             ToneColors(text: color("color-text-green"), solid: color("color-success"), muted: color("color-success-muted"), border: color("color-border-green"), onSolid: color("color-on-success"))
         case .warning:
@@ -169,13 +209,98 @@ struct AXStyle: Sendable {
         }
     }
 
-    /// A person's tint: a soft ground and a strong mark of one hue, light or dark.
+    /// A person's mark: initials in white on `hsl(hue 52% 40%)`, in light and dark alike, as the
+    /// web's `.an-avatar` paints them (web/src/styles.css).
     func person(hue: Double) -> (ground: Color, mark: Color) {
-        let h = (hue.truncatingRemainder(dividingBy: 360) + 360).truncatingRemainder(dividingBy: 360) / 360
-        if isDark {
-            return (Color(hue: h, saturation: 0.45, brightness: 0.42), Color(hue: h, saturation: 0.25, brightness: 0.97))
+        (Color(hue: hue, saturation: 0.52, lightness: 0.40), .white)
+    }
+
+    // MARK: Line heights
+
+    /// The space to add between lines so that a line of `size` points is `ratio` times its size,
+    /// as Astryx's `--text-*-leading` tokens set it (a system font is about 1.19 times its size
+    /// before any).
+    func lineSpacing(size: CGFloat, ratio: CGFloat) -> CGFloat {
+        Swift.max(0, size * ratio - axNaturalLineHeight(size))
+    }
+
+    /// Body text: 14 on 20.
+    var bodyLeading: CGFloat { size("text-body-leading", 1.4286) }
+    /// Supporting text and badges: 12 on 20.
+    var supportingLeading: CGFloat { size("text-supporting-leading", 1.6667) }
+    /// A heading's line height ratio.
+    func headingLeading(_ level: Int) -> CGFloat {
+        let l = min(max(level, 1), 6)
+        let defaults: [CGFloat] = [1.3333, 1.4, 1.4118, 1.4286, 1.6667, 1.6]
+        return size("text-heading-\(l)-leading", defaults[l - 1])
+    }
+
+    /// A tone as text, as the web's `TEXT_TONE` does (web/src/render/tone.ts): success and danger
+    /// read the plain `color-success` and `color-error`, neutral reads the secondary text.
+    func textTone(_ tone: Tone) -> Color {
+        switch tone {
+        case .neutral: textSecondary
+        case .accent: color("color-text-accent")
+        case .success: color("color-success")
+        case .warning: color("color-text-orange")
+        case .danger: color("color-error")
+        case .info: color("color-text-blue")
         }
-        return (Color(hue: h, saturation: 0.28, brightness: 0.96), Color(hue: h, saturation: 0.75, brightness: 0.45))
+    }
+
+    /// A tone as a fill (dots, bars, an icon's color): the web's `FILL_TONE`.
+    func fillTone(_ tone: Tone) -> Color {
+        switch tone {
+        case .neutral: iconSecondary
+        case .accent: accent
+        case .success: color("color-success")
+        case .warning: color("color-warning")
+        case .danger: color("color-error")
+        case .info: color("color-icon-blue")
+        }
+    }
+
+    /// A tone as a soft ground behind an icon or a chip: the web's `SOFT_TONE`.
+    func softTone(_ tone: Tone) -> Color {
+        switch tone {
+        case .neutral: muted
+        case .accent: accentSoft
+        case .success: color("color-success-muted")
+        case .warning: color("color-warning-muted")
+        case .danger: color("color-error-muted")
+        case .info: color("color-background-blue")
+        }
+    }
+
+    // MARK: Badge colors
+
+    /// A badge's fill and ink, as Astryx's `Badge` and the web's `ToneBadge` set them: success,
+    /// warning, error and info are solid; neutral is `color-neutral` with primary text; accent is
+    /// the thinned accent with accent text.
+    func badge(_ tone: Tone) -> (fill: Color, ink: Color) {
+        switch tone {
+        case .neutral: (color("color-neutral"), text)
+        case .accent: (accentSoft, color("color-text-accent"))
+        case .success: (color("color-success"), color("color-on-success"))
+        case .warning: (color("color-warning"), color("color-on-warning"))
+        case .danger: (color("color-error"), color("color-on-error"))
+        case .info: (accent, onAccent)
+        }
+    }
+}
+
+/// A system font's natural line height at `size` (ascent, descent and leading).
+func axNaturalLineHeight(_ size: CGFloat) -> CGFloat {
+    let font = CTFontCreateUIFontForLanguage(.system, size, nil) ?? CTFontCreateWithName("Helvetica" as CFString, size, nil)
+    return CTFontGetAscent(font) + CTFontGetDescent(font) + CTFontGetLeading(font)
+}
+
+extension View {
+    /// Text laid out on Astryx's line height: `ratio` times the point `size` per line (a one-line
+    /// text takes that height too, centered in it).
+    func axLeading(_ ax: AXStyle, size: CGFloat, ratio: CGFloat) -> some View {
+        lineSpacing(ax.lineSpacing(size: size, ratio: ratio))
+            .frame(minHeight: size * ratio, alignment: Alignment(horizontal: .leading, vertical: .center))
     }
 }
 
@@ -221,6 +346,9 @@ private struct AXStyleKey: EnvironmentKey { static let defaultValue = AXStyle.fa
 private struct AXStaticKey: EnvironmentKey { static let defaultValue = false }
 private struct AXFillButtonsKey: EnvironmentKey { static let defaultValue = false }
 private struct AXWidthKey: EnvironmentKey { static let defaultValue: CGFloat = 800 }
+private struct AXHeightKey: EnvironmentKey { static let defaultValue: CGFloat = 800 }
+private struct AXInRowKey: EnvironmentKey { static let defaultValue = false }
+private struct AXBleedKey: EnvironmentKey { static let defaultValue: CGFloat = 0 }
 
 /// A closure that sends an Action; the root view sets it, nodes call it.
 struct AXSender: Sendable {
@@ -238,6 +366,23 @@ extension EnvironmentValues {
     var axWidth: CGFloat {
         get { self[AXWidthKey.self] }
         set { self[AXWidthKey.self] = newValue }
+    }
+    /// True inside a horizontal stack: a text input or select there keeps a width of its own
+    /// (as in a flex row) instead of taking the whole width, as it does in a column.
+    var axInRow: Bool {
+        get { self[AXInRowKey.self] }
+        set { self[AXInRowKey.self] = newValue }
+    }
+    /// The height the screen has, for boxes sized by the window (the chat's box is 68 % of it).
+    var axHeight: CGFloat {
+        get { self[AXHeightKey.self] }
+        set { self[AXHeightKey.self] = newValue }
+    }
+    /// The padding of the card a table sits in: a table runs to the card's edges (as Astryx's
+    /// Table pulls itself out of its container) and pads its cells by this much.
+    var axBleed: CGFloat {
+        get { self[AXBleedKey.self] }
+        set { self[AXBleedKey.self] = newValue }
     }
     /// True only when a screen is drawn to an image with no window (ImageRenderer draws a
     /// TextField, Toggle, Picker, Slider or ScrollView as an empty box). Controls then draw as

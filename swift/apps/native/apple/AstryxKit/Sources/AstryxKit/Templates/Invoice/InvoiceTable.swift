@@ -261,7 +261,6 @@ struct InvoiceLineDetail: View {
                 Text(model.words.dispute).frame(maxWidth: .infinity)
             }
             .buttonStyle(AXButtonStyle(variant: .secondary, ax: ax))
-            .disabled(model.isInert("dispute"))
         }
         .padding(ax.space(4))
         .frame(width: fixedWidth)
@@ -347,7 +346,7 @@ struct InvoiceFilterEditor: View {
                     .onChange(of: current?.text ?? "") { _, core in adopt(core) }
             }
         }
-        .font(ax.fontBase)
+        .font(showFieldFont(ax))
         .padding(.horizontal, ax.space(3))
         .frame(minHeight: 36 * min(ax.scale, 1.4))
         .background(shape.fill(ax.surface))
@@ -393,7 +392,9 @@ struct InvoiceFilterEditor: View {
 /// a click on a header sorted, Tab and the arrow keys move through the rows, and the Return key or a
 /// double click opens a line's details. The core sorts and filters; this only asks. A click on a
 /// sorted header turns it round, as every Mac table does, so the web's third state (off) is the
-/// Sort menu's "None".
+/// Sort menu's "None". A header aligned with its figures needs macOS 14.4; before that the lines are the
+/// hand-drawn `InvoiceTable`.
+@available(macOS 14.4, *)
 struct InvoiceSystemTable: View {
     let model: InvoiceModel
     @Environment(\.ax) private var ax
@@ -403,10 +404,13 @@ struct InvoiceSystemTable: View {
 
     private typealias Row = InvoiceModel.Row
 
-    /// The room the table is given: its header and one line per row. The table does not size
-    /// itself inside a scrolling page.
-    private var height: CGFloat { Self.headerHeight + CGFloat(model.rows.count) * rowHeight + 4 }
+    /// The room the table is given: its header, one line per row and the `.inset` style's content
+    /// insets above and below. The table does not size itself inside a scrolling page, and it must
+    /// not scroll inside it: its rows would slide under the header.
+    private var height: CGFloat { Self.headerHeight + CGFloat(model.rows.count) * rowHeight + Self.contentInsets }
     static let headerHeight: CGFloat = 28
+    /// The style's insets, above the first row and below the last.
+    static let contentInsets: CGFloat = 20
     /// A line of the base text and the table's padding (25 points at 14-point text, measured).
     private var rowHeight: CGFloat { (ax.fontSize("font-size-base", 14) * 1.2).rounded(.up) + 8 }
 
@@ -448,23 +452,27 @@ struct InvoiceSystemTable: View {
 
     var body: some View {
         Table(model.rows, selection: $selection, sortOrder: order) {
+            // Description is the wide column, as the web's proportional one is: it takes what the others leave.
             TableColumn(title("description"), value: \.description) { row in
                 Text(row.description).font(ax.fontBase).foregroundStyle(ax.text).lineLimit(1)
             }
+            .width(min: 160, ideal: 204)
             TableColumn(title("category"), value: \.category) { row in
                 Text(row.category).font(ax.fontBase).foregroundStyle(ax.textSecondary).lineLimit(1)
             }
-            .width(min: 90, ideal: 150, max: 220)
+            .width(min: 90, ideal: 120, max: 220)
             TableColumn(title("quantity"), value: \.quantity) { row in
                 Text(row.quantity).font(ax.fontBase.monospacedDigit()).foregroundStyle(ax.text)
                     .frame(maxWidth: .infinity, alignment: .trailing)
             }
-            .width(min: 50, ideal: 72, max: 100)
+            .width(min: 50, ideal: 56, max: 100)
+            .alignment(.numeric)
             TableColumn(title("unitPrice"), value: \.rate) { row in
                 Text(row.rate).font(ax.fontBase.monospacedDigit()).foregroundStyle(ax.text)
                     .frame(maxWidth: .infinity, alignment: .trailing)
             }
-            .width(min: 70, ideal: 104, max: 140)
+            .width(min: 70, ideal: 96, max: 140)
+            .alignment(.numeric)
             TableColumn(title("amount"), value: \.amount) { row in
                 Text(row.amount).font(ax.fontBase.monospacedDigit()).foregroundStyle(ax.text)
                     .frame(maxWidth: .infinity, alignment: .trailing)
@@ -476,9 +484,11 @@ struct InvoiceSystemTable: View {
                     }
             }
             .width(min: 90, ideal: 132, max: 180)
+            .alignment(.numeric)
         }
         .tableStyle(.inset)
         .scrollContentBackground(.hidden)
+        .scrollDisabled(true)
         .frame(height: height)
         .contextMenu(forSelectionType: String.self) { _ in
         } primaryAction: { ids in

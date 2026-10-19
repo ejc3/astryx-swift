@@ -14,7 +14,9 @@ struct AXHeading: View {
     }
 }
 
-/// `text`: body, secondary, caption, emphasis or code, optionally in a tone's color.
+/// `text`: body, secondary, caption, emphasis or code, optionally in a tone's color. Each is
+/// Astryx's `Text` at its size and line height: body and emphasis 14 on 20, secondary (Astryx's
+/// "supporting") 12 on 20, caption (`size="xsm"`) 10 on 16.7.
 struct AXText: View {
     let node: TextNode
     @Environment(\.ax) private var ax
@@ -23,20 +25,38 @@ struct AXText: View {
         Text(node.text)
             .font(font)
             .foregroundStyle(color)
+            .axLeading(ax, size: size, ratio: ratio)
             .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private var size: CGFloat {
+        switch node.style {
+        case .body, .emphasis: ax.fontSize("font-size-base", 14)
+        case .secondary, .code: ax.fontSize("font-size-sm", 12)
+        case .caption: ax.fontSize("font-size-xs", 10)
+        }
+    }
+
+    private var ratio: CGFloat {
+        switch node.style {
+        case .body, .emphasis: ax.bodyLeading
+        default: ax.supportingLeading
+        }
     }
 
     private var font: Font {
         switch node.style {
-        case .body, .secondary: ax.fontBase
-        case .caption: ax.fontSmall
+        case .body: ax.fontBase
+        case .secondary: ax.fontSmall
+        case .caption: ax.fontXSmall
         case .emphasis: ax.fontStrong
         case .code: ax.font("font-size-sm", 12, design: .monospaced)
         }
     }
 
+    /// The tone's text color as the web draws it (`TEXT_TONE` in web/src/render/tone.ts).
     private var color: Color {
-        if let tone = node.tone, tone != .neutral { return ax.tone(tone).text }
+        if let tone = node.tone { return ax.textTone(tone) }
         switch node.style {
         case .secondary, .caption: return ax.textSecondary
         default: return ax.text
@@ -44,21 +64,23 @@ struct AXText: View {
     }
 }
 
-/// `badge`: a small tinted pill.
+/// `badge`: Astryx's Badge: a pill 20 high, 12 medium. Success, warning, danger and info are
+/// solid; neutral and accent are soft.
 struct AXBadge: View {
     let text: String
     let tone: Tone
     @Environment(\.ax) private var ax
 
     var body: some View {
-        let colors = ax.tone(tone)
+        let colors = ax.badge(tone)
         Text(text)
-            .font(ax.font("font-size-xs", 10, weight: "font-weight-semibold").monospacedDigit())
-            .foregroundStyle(colors.text)
+            .font(ax.font("font-size-sm", 12, weight: "font-weight-medium").monospacedDigit())
+            .foregroundStyle(colors.ink)
             .lineLimit(1)
             .padding(.horizontal, ax.space(2))
-            .padding(.vertical, ax.hair)
-            .background(Capsule().fill(colors.muted))
+            .frame(minHeight: 20 * min(ax.scale, 1.6))
+            .background(Capsule().fill(colors.fill))
+            .fixedSize()
     }
 }
 
@@ -72,7 +94,7 @@ struct AXToken: View {
         let colors = ax.tone(node.tone)
         HStack(spacing: ax.space(1)) {
             Text(node.text)
-                .font(ax.font("font-size-sm", 12, weight: "font-weight-medium"))
+                .font(ax.fontSmall)
             if let removeId = node.removeId {
                 Button {
                     send(.press(id: removeId))
@@ -92,8 +114,9 @@ struct AXToken: View {
         .padding(.leading, ax.space(2))
         .padding(.trailing, node.removeId == nil ? ax.space(2) : ax.space(1))
         .padding(.vertical, ax.space(1))
-        .background(RoundedRectangle(cornerRadius: ax.radiusElement, style: .continuous).fill(colors.muted))
-        .overlay(RoundedRectangle(cornerRadius: ax.radiusElement, style: .continuous).strokeBorder(colors.border.opacity(0.5), lineWidth: 1))
+        // Astryx's Token is 24 high.
+        .frame(minHeight: 24 * min(ax.scale, 1.6))
+        .background(RoundedRectangle(cornerRadius: ax.radiusInner, style: .continuous).fill(colors.muted))
     }
 }
 
@@ -105,7 +128,7 @@ struct AXStatusDot: View {
     var body: some View {
         HStack(spacing: ax.space(2)) {
             AXToneMark(tone: node.tone)
-            Text(node.label).font(ax.fontBase).foregroundStyle(ax.text)
+            Text(node.label).font(ax.fontSmall).foregroundStyle(ax.textSecondary)
         }
         .accessibilityElement(children: .combine)
     }
@@ -129,14 +152,20 @@ struct AXKbd: View {
     var body: some View {
         HStack(spacing: ax.space(1)) {
             ForEach(Array(node.keys.enumerated()), id: \.offset) { _, key in
+                // Astryx's Kbd: 20 high, 12 medium in the body face, a neutral key with a 2 pt
+                // edge along its bottom in the emphasized border.
                 Text(key)
-                    .font(ax.font("font-size-sm", 12, weight: "font-weight-medium", design: .monospaced))
-                    .foregroundStyle(ax.textSecondary)
-                    .padding(.horizontal, ax.space(half: 1))
-                    .padding(.vertical, ax.hair)
-                    .frame(minWidth: 22)
-                    .background(RoundedRectangle(cornerRadius: ax.radiusInner + 1, style: .continuous).fill(ax.muted))
-                    .overlay(RoundedRectangle(cornerRadius: ax.radiusInner + 1, style: .continuous).strokeBorder(ax.borderStrong, lineWidth: 1))
+                    .font(ax.font("font-size-sm", 12, weight: "font-weight-medium"))
+                    .foregroundStyle(ax.text)
+                    .padding(.horizontal, ax.space(1))
+                    .frame(minWidth: 20, minHeight: 20 * min(ax.scale, 1.6))
+                    .background(
+                        ZStack(alignment: .bottom) {
+                            Rectangle().fill(ax.color("color-neutral"))
+                            Rectangle().fill(ax.borderStrong).frame(height: 2)
+                        }
+                        .clipShape(RoundedRectangle(cornerRadius: ax.radiusInner, style: .continuous))
+                    )
             }
         }
         .accessibilityElement(children: .combine)
@@ -158,17 +187,17 @@ struct AXAvatar: View {
         self.status = status; self.statusLabel = statusLabel
     }
 
-    private var diameter: CGFloat {
-        let base: CGFloat = switch size { case .sm: 24; case .md: 36; case .lg: 56 }
-        return base * min(ax.scale, 1.6)
-    }
+    /// The size before Dynamic Type grows it.
+    fileprivate var base: CGFloat { switch size { case .sm: 24; case .md: 36; case .lg: 48 } }
+
+    private var diameter: CGFloat { base * min(ax.scale, 1.6) }
 
     var body: some View {
         let tint = ax.person(hue: hue)
         ZStack {
             Circle().fill(tint.ground)
             Text(initials)
-                .font(.system(size: diameter * 0.38, weight: .semibold))
+                .font(.system(size: diameter * 0.38, weight: .regular))
                 .foregroundStyle(tint.mark)
                 .minimumScaleFactor(0.6)
                 .lineLimit(1)
@@ -176,15 +205,38 @@ struct AXAvatar: View {
         .frame(width: diameter, height: diameter)
         .overlay(alignment: .bottomTrailing) {
             if let status {
-                Circle()
-                    .fill(ax.tone(status).solid)
-                    .frame(width: diameter * 0.28, height: diameter * 0.28)
-                    .overlay(Circle().strokeBorder(ax.surface, lineWidth: 2))
+                statusDot(status)
             }
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(name.isEmpty ? initials : name)
         .accessibilityValue(statusLabel ?? "")
+    }
+}
+
+extension AXAvatar {
+    /// Astryx's AvatarStatusDot has three looks: success (green), error (red) and a hollow ring
+    /// for anything else (Away included), as the web renderer maps the core's tones.
+    @ViewBuilder
+    fileprivate func statusDot(_ status: Tone) -> some View {
+        // Astryx's tiers (AvatarStatusDot): a 10 dot with a 1 ring up to a 36 avatar, a 20 dot
+        // with a 2 ring up to 72. The ring is inside the dot's size.
+        let small = base <= 36
+        let side: CGFloat = small ? 10 : 20
+        let ring: CGFloat = small ? 1 : 2
+        switch status {
+        case .success, .danger:
+            Circle()
+                .fill(status == .success ? ax.tone(.success).solid : ax.tone(.danger).solid)
+                .frame(width: side, height: side)
+                .overlay(Circle().strokeBorder(ax.surface, lineWidth: ring))
+        default:
+            Circle()
+                .fill(ax.surface)
+                .frame(width: side, height: side)
+                .overlay(Circle().strokeBorder(ax.surface, lineWidth: ring))
+                .overlay(Circle().strokeBorder(ax.iconSecondary, lineWidth: small ? 1 : 1.5).padding(ring))
+        }
     }
 }
 
@@ -194,12 +246,12 @@ struct AXAvatarGroup: View {
     @Environment(\.ax) private var ax
 
     var body: some View {
-        let d = 28 * min(ax.scale, 1.6)
+        let d = 36 * min(ax.scale, 1.6)
         HStack(spacing: -d * 0.16) {
             ForEach(Array(node.people.enumerated()), id: \.offset) { _, person in
                 let tint = ax.person(hue: person.hue)
                 Text(person.initials)
-                    .font(.system(size: d * 0.38, weight: .semibold))
+                    .font(.system(size: d * 0.38, weight: .regular))
                     .foregroundStyle(tint.mark)
                     .frame(width: d, height: d)
                     .background(Circle().fill(tint.ground))
@@ -210,7 +262,7 @@ struct AXAvatarGroup: View {
                     .font(.system(size: d * 0.36, weight: .semibold))
                     .foregroundStyle(ax.textSecondary)
                     .frame(minWidth: d, minHeight: d)
-                    .background(Circle().fill(ax.muted))
+                    .background(Circle().fill(ax.color("color-neutral")))
                     .overlay(Circle().strokeBorder(ax.surface, lineWidth: 2))
             }
         }

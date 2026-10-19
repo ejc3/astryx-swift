@@ -22,7 +22,7 @@ struct InboxTemplate: View {
     }
 }
 
-/// The screen: the masthead, then the list and the open conversation in one bordered surface.
+/// The screen: the masthead, then the list and the open conversation on the page.
 struct InboxScreen: View {
     let model: InboxModel
     @Environment(\.ax) private var ax
@@ -41,7 +41,8 @@ struct InboxScreen: View {
 
     // MARK: Layout facts
 
-    private var inner: CGFloat { max(width - 2, 0) }
+    /// The surface is flat on the page (no card around it), so it has the whole width.
+    private var inner: CGFloat { max(width, 0) }
 
     /// The layout facts that follow from the surface's width alone: single surface or not, and
     /// which thread is open here.
@@ -76,14 +77,25 @@ struct InboxScreen: View {
         #endif
     }
 
+    /// On a phone the list is the page's one scroll: the masthead and the tab strip are its first
+    /// rows, so a single list scrolls under the navigation bar and the home indicator, instead of
+    /// a list scrolling inside a page that scrolls.
+    private var listIsThePage: Bool {
+        // The page no longer scrolls (RootView lets the inbox size itself to the window), so the
+        // masthead stays put above the one scrolling list, as the web's pinned header does.
+        false
+    }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: ax.space(3)) {
-            masthead
+        // The template owns its padding: the header's is 16, and the list runs flat on the page
+        // under it, as in the web's layout (no card, no border).
+        VStack(alignment: .leading, spacing: 0) {
+            if !listIsThePage {
+                masthead
+                    .padding(ax.space(4))
+            }
             surface
-                .modifier(InboxFill())
-                .background(RoundedRectangle(cornerRadius: ax.radiusContainer, style: .continuous).fill(ax.card))
-                .clipShape(RoundedRectangle(cornerRadius: ax.radiusContainer, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: ax.radiusContainer, style: .continuous).strokeBorder(ax.border, lineWidth: 1))
+                .modifier(InboxFill(wholePage: listIsThePage))
         }
         .frame(maxWidth: .infinity, alignment: .topLeading)
         .sheet(isPresented: Binding(
@@ -101,15 +113,15 @@ struct InboxScreen: View {
 
     private var masthead: some View {
         let subtitle = Text(model.subtitle.joined())
-            .font(ax.fontBase)
+            .font(ax.fontSmall)
             .foregroundStyle(ax.textSecondary)
+            .axLeading(ax, size: ax.fontSize("font-size-sm", 12), ratio: ax.supportingLeading)
         func refresh(fills: Bool) -> some View {
             Button {
             } label: {
-                Label(model.text.refresh, systemImage: "arrow.clockwise")
+                Label(model.text.refresh, systemImage: "arrow.triangle.2.circlepath")
             }
             .buttonStyle(AXButtonStyle(variant: .ghost, ax: ax, fills: fills))
-            .disabled(model.isInert("refresh"))
         }
         func compose(fills: Bool) -> some View {
             Button {
@@ -119,8 +131,8 @@ struct InboxScreen: View {
             }
             .buttonStyle(AXButtonStyle(variant: .primary, ax: ax, fills: fills))
         }
-        // The subtitle and the two buttons in a row; else the buttons under the subtitle; else
-        // (and at accessibility sizes at once) a column of full-width buttons.
+        // The web's order, now that the page has no H1: the subtitle and Refresh on one row,
+        // Compose under them; else (and at accessibility sizes at once) a column of full-width buttons.
         let stacked = VStack(alignment: .leading, spacing: ax.space(2)) {
             subtitle
             refresh(fills: true)
@@ -131,10 +143,17 @@ struct InboxScreen: View {
                 stacked
             } else {
                 ViewThatFits(in: .horizontal) {
-                    HStack(spacing: ax.space(3)) { subtitle.axOneLine(); Spacer(minLength: ax.space(2)); refresh(fills: false).axOneLine(); compose(fills: false).axOneLine() }
-                    VStack(alignment: .leading, spacing: ax.space(2)) {
-                        subtitle
-                        HStack(spacing: ax.space(2)) { refresh(fills: false).axOneLine(); compose(fills: false).axOneLine() }
+                    // Wide (the web's desktop header): the subtitle, then Refresh and Compose at the end.
+                    HStack(spacing: ax.space(3)) {
+                        subtitle.axOneLine()
+                        Spacer(minLength: ax.space(4))
+                        refresh(fills: false).axOneLine()
+                        compose(fills: false).axOneLine()
+                    }
+                    // A phone (the web's narrow header): Compose goes under the subtitle row.
+                    VStack(alignment: .leading, spacing: ax.space(3)) {
+                        HStack(spacing: ax.space(3)) { subtitle.axOneLine(); Spacer(minLength: ax.space(2)); refresh(fills: false).axOneLine() }
+                        compose(fills: false).axOneLine()
                     }
                     stacked
                 }
@@ -165,7 +184,7 @@ struct InboxScreen: View {
                     .background(ax.card)
             }
         } else {
-            InboxListColumn(model: model, layout: layout)
+            InboxListColumn(model: model, layout: layout, header: listIsThePage ? AnyView(masthead.padding(ax.space(4))) : nil)
                 .environment(\.axWidth, inner)
                 .clipped()
         }
@@ -201,16 +220,21 @@ struct InboxScreen: View {
     }
 }
 
-/// The surface fills the window's height when it scrolls inside itself; drawn to an image it
-/// takes the room its content needs, at least a window's worth.
+/// The surface fills the window's height under the header when it scrolls inside itself; drawn to
+/// an image it takes the room its content needs, at least a window's worth.
 struct InboxFill: ViewModifier {
+    /// The list carries the masthead too and so takes the window's whole height (a phone).
+    var wholePage = false
     @Environment(\.axStatic) private var isStatic
 
     func body(content: Content) -> some View {
-        if isStatic {
+        if wholePage {
+            content.containerRelativeFrame(.vertical, alignment: .top) { height, _ in max(height, 460) }
+        } else if isStatic {
             content.frame(minHeight: 560, alignment: .top)
         } else {
-            content.containerRelativeFrame(.vertical, alignment: .top) { height, _ in max(height - 170, 460) }
+            // The window's height under the masthead: the page itself does not scroll.
+            content.frame(maxHeight: .infinity, alignment: .top)
         }
     }
 }

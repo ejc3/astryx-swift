@@ -6,6 +6,7 @@ import { StackItem } from "@astryxdesign/core/Stack";
 import { Text } from "@astryxdesign/core/Text";
 import { VStack } from "@astryxdesign/core/VStack";
 import { Badge } from "@astryxdesign/core/Badge";
+import { useLayoutEffect, useRef, useState } from "react";
 import type { BoardColumn, Node } from "@astryx-native/core";
 import { press } from "../client.ts";
 import { Ic } from "../icons.tsx";
@@ -42,8 +43,21 @@ function BoardCard({ card }: { card: BoardColumn["cards"][number] }) {
 
 /** Astryx has no board: columns of Cards over its tokens, side by side and scrolling on a phone. */
 export function BoardNode({ node }: { node: Of<"board"> }) {
+  const wrap = useRef<HTMLDivElement>(null);
+  const [stacked, setStacked] = useState(false);
+  // The core names the width below which the columns stack; the board's own width decides.
+  useLayoutEffect(() => {
+    const el = wrap.current;
+    if (!el) return;
+    const measure = () => setStacked(el.clientWidth < node.stackBelow);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [node.stackBelow]);
   return (
-    <div className="an-board">
+    <div ref={wrap} className="an-board-wrap">
+    <div className="an-board" {...(stacked ? { "data-stacked": "" } : {})}>
       {node.columns.map((col) => (
         <section key={col.id} className="an-column" aria-label={col.title}>
           <HStack gap={2} align="center">
@@ -55,6 +69,7 @@ export function BoardNode({ node }: { node: Of<"board"> }) {
           </VStack>
         </section>
       ))}
+    </div>
     </div>
   );
 }

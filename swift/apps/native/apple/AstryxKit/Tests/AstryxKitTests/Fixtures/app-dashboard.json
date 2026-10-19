@@ -393,6 +393,7 @@
      "children": [
       {
        "kind": "table",
+       "stackBelow": 600,
        "empty": "No orders.",
        "columns": [
         {

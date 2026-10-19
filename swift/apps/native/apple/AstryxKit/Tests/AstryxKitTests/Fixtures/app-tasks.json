@@ -166,6 +166,7 @@
        "kind": "segmented",
        "id": "tasks.filter",
        "label": "Show",
+       "labelHidden": true,
        "options": [
         {
          "value": "all",
@@ -389,7 +390,8 @@
         }
        ]
       }
-     ]
+     ],
+     "stackBelow": 760
     }
    ]
   }

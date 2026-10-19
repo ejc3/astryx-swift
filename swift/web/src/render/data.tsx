@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHeader, TableHeaderCell, TableRow } f
 import { Tab, TabList } from "@astryxdesign/core/TabList";
 import { Text } from "@astryxdesign/core/Text";
 import { VStack } from "@astryxdesign/core/VStack";
+import { useLayoutEffect, useRef, useState } from "react";
 import type { Cell, ListItem as ListItemNode, Node } from "@astryx-native/core";
 import { press, set } from "../client.ts";
 import { Ic } from "../icons.tsx";
@@ -24,7 +25,7 @@ function CellView({ cell }: { cell: Cell }) {
   const lines = (
     <VStack gap={0}>
       <Text weight={cell.secondary || cell.avatar ? "medium" : undefined}>{cell.text}</Text>
-      {cell.secondary ? <Text type="supporting" size="xsm">{cell.secondary}</Text> : null}
+      {cell.secondary ? <Text type="supporting" size="xsm" className="an-cell-secondary">{cell.secondary}</Text> : null}
     </VStack>
   );
   return (
@@ -35,34 +36,104 @@ function CellView({ cell }: { cell: Cell }) {
   );
 }
 
+/** The narrowest a table's first column (a name and its second line) and each other column may be: six of them and a checkbox fit a 690 px card. */
+const COL_FIRST = 150, COL_REST = 88;
+/** From this many columns a table uses tight cell padding. */
+const DENSE_FROM = 6;
+
+/** Sort buttons for a column header, the same in the table and in the stacked records. */
+function SortLabel({ c }: { c: Of<"table">["columns"][number] }) {
+  if (!c.sortId) return <Text weight="semibold">{c.label}</Text>;
+  return (
+    <Button
+      variant="ghost"
+      size="sm"
+      label={c.label}
+      onClick={() => press(c.sortId!)}
+      endContent={c.sort === "none" ? <Icon icon="arrowsUpDown" color="secondary" /> : <Ic name={c.sort === "desc" ? "arrow-down" : "arrow-up"} color="accent" />}
+    />
+  );
+}
+
+/**
+ * Below the core's `stackBelow` width each row is a record: its first cell is the heading, the
+ * other columns are label and value lines. The sortable headers become a row of buttons above.
+ */
+function StackedTable({ node }: { node: Of<"table"> }) {
+  const selectable = node.rows.some((r) => r.selectId !== undefined);
+  const sortable = node.columns.filter((c) => c.sortId);
+  return (
+    <VStack gap={3}>
+      {sortable.length > 0 ? (
+        <HStack gap={1} align="center" wrap="wrap" role="group" aria-label="Sort by">
+          <Text type="supporting" size="xsm">Sort by</Text>
+          {sortable.map((c) => <SortLabel key={c.id} c={c} />)}
+        </HStack>
+      ) : null}
+      <VStack gap={0}>
+        {node.rows.map((row) => (
+          <div key={row.id} className="an-record" {...(row.selected ? { style: { background: ACCENT_SOFT } } : {})}>
+            <HStack gap={2} align="start">
+              {selectable && row.selectId ? (
+                <CheckboxInput isLabelHidden label={row.cells[0]?.text ?? row.id} value={row.selected} onChange={(on) => set(row.selectId!, on)} />
+              ) : null}
+              <div className="an-record-body">
+                <VStack gap={2}>
+                  {row.cells[0] ? <CellView cell={row.cells[0]} /> : null}
+                  <MetadataList>
+                    {row.cells.slice(1).map((cell, i) => (
+                      <MetadataListItem key={i} label={node.columns[i + 1]?.label ?? ""}><CellView cell={{ ...cell, align: "end" }} /></MetadataListItem>
+                    ))}
+                  </MetadataList>
+                </VStack>
+              </div>
+            </HStack>
+          </div>
+        ))}
+      </VStack>
+      {node.rows.length === 0 ? <div className="an-table-empty"><Text type="supporting">{node.empty}</Text></div> : null}
+    </VStack>
+  );
+}
+
 export function TableNode({ node }: { node: Of<"table"> }) {
+  const wrap = useRef<HTMLDivElement>(null);
+  const [stacked, setStacked] = useState(false);
+  // The core names the width below which rows stack; the table's own width decides.
+  useLayoutEffect(() => {
+    const el = wrap.current;
+    if (!el) return;
+    const measure = () => setStacked(el.clientWidth < node.stackBelow);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [node.stackBelow]);
+  return (
+    <div ref={wrap} className="an-table-wrap">
+      {stacked ? <StackedTable node={node} /> : <WideTable node={node} />}
+    </div>
+  );
+}
+
+function WideTable({ node }: { node: Of<"table"> }) {
   const selectable = node.rows.some((r) => r.selectId !== undefined);
   return (
-    <div className="an-table">
-      <div className="an-table-inner" style={{ minWidth: node.columns.length * 150 + (selectable ? 72 : 0) }}>
+    <div className="an-table" {...(node.columns.length >= DENSE_FROM ? { "data-dense": "" } : {})}>
+      <div className="an-table-inner" style={{ minWidth: node.columns.length >= DENSE_FROM ? (selectable ? 44 : 0) + COL_FIRST + (node.columns.length - 1) * COL_REST : node.columns.length * 150 + (selectable ? 72 : 0) }}>
       <Table>
         <TableHeader>
           <TableRow isHeaderRow>
-            {selectable ? <TableHeaderCell scope="col" style={{ width: 72 }}><span /></TableHeaderCell> : null}
+            {selectable ? <TableHeaderCell scope="col" style={{ width: node.columns.length >= DENSE_FROM ? 44 : 72 }}><span /></TableHeaderCell> : null}
             {node.columns.map((c, ci) => (
               <TableHeaderCell
                 key={c.id}
                 scope="col"
-                {...(ci === 0 ? { style: { width: "32%" } } : {})}
+                {...(node.columns.length >= DENSE_FROM ? { style: { minWidth: ci === 0 ? COL_FIRST : COL_REST } } : ci === 0 ? { style: { width: "32%" } } : {})}
                 {...(c.sort === "asc" ? { "aria-sort": "ascending" as const } : c.sort === "desc" ? { "aria-sort": "descending" as const } : c.sort === "none" ? { "aria-sort": "none" as const } : {})}
               >
                 <HStack gap={1} align="center" {...(c.align === "end" ? { justify: "end" as const } : {})}>
-                  {c.sortId ? (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      label={c.label}
-                      onClick={() => press(c.sortId!)}
-                      endContent={c.sort === "none" ? <Icon icon="arrowsUpDown" color="secondary" /> : <Ic name={c.sort === "desc" ? "arrow-down" : "arrow-up"} color="accent" />}
-                    />
-                  ) : (
-                    <Text weight="semibold">{c.label}</Text>
-                  )}
+                  <SortLabel c={c} />
                 </HStack>
               </TableHeaderCell>
             ))}
@@ -142,7 +213,7 @@ export function StepperNode({ node }: { node: Of<"stepper"> }) {
       activeStep={current < 0 ? node.steps.length : current}
       onStepClick={(i) => { const id = node.steps[i]?.selectId; if (id) press(id); }}
     >
-      {node.steps.map((s, i) => <Step key={i} step={i} label={s.label} />)}
+      {node.steps.map((s, i) => <Step key={i} step={i} label={s.label} {...(s.state !== "current" && !s.selectId ? { isDisabled: true } : {})} />)}
     </Stepper>
   );
 }

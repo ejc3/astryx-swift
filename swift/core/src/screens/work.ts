@@ -45,6 +45,9 @@ export function inbox(s: State): Screen {
   };
 }
 
+/** Three columns need about 240 each plus the gaps; narrower than this they stack. */
+const BOARD_STACK_BELOW = 760;
+
 export function tasks(s: State): Screen {
   const t = s.tasks;
   const mine = t.filter === "mine";
@@ -75,8 +78,8 @@ export function tasks(s: State): Screen {
     id: "tasks", title: "Tasks", subtitle: `${plural(open, "open task")}, ${grouped(done)} done`,
     toolbar: [],
     body: v("md",
-      spread({ kind: "segmented", id: "tasks.filter", label: "Show", options: [{ value: "all", label: "Everyone" }, { value: "mine", label: "Assigned to me" }], value: t.filter }, { kind: "progress", label: "Sprint", value: shown.length === 0 ? 0 : done / shown.length, valueText: `${grouped(done)} of ${grouped(shown.length)}`, tone: "success" }),
-      { kind: "board", columns },
+      spread({ kind: "segmented", id: "tasks.filter", label: "Show", labelHidden: true, options: [{ value: "all", label: "Everyone" }, { value: "mine", label: "Assigned to me" }], value: t.filter }, { kind: "progress", label: "Sprint", value: shown.length === 0 ? 0 : done / shown.length, valueText: `${grouped(done)} of ${grouped(shown.length)}`, tone: "success" }),
+      { kind: "board", columns, stackBelow: BOARD_STACK_BELOW },
     ),
   };
 }
@@ -91,6 +94,7 @@ function dueText(done: boolean, day: string, overdue: boolean): string {
 const SORTS: { id: SortColumn; label: string; align: "start" | "end" }[] = [
   { id: "name", label: "Name", align: "start" },
   { id: "role", label: "Role", align: "start" },
+  { id: "status", label: "Status", align: "start" },
   { id: "team", label: "Team", align: "start" },
   { id: "joined", label: "Joined", align: "end" },
   { id: "projects", label: "Projects", align: "end" },
@@ -100,6 +104,7 @@ function compare(a: Person, b: Person, by: SortColumn): number {
   switch (by) {
     case "name": return a.name.localeCompare(b.name);
     case "role": return a.role.localeCompare(b.role) || a.name.localeCompare(b.name);
+    case "status": return a.status.localeCompare(b.status) || a.name.localeCompare(b.name);
     case "team": return a.team.localeCompare(b.team) || a.name.localeCompare(b.name);
     case "joined": return a.joinedDaysAgo - b.joinedDaysAgo;
     case "projects": return a.projects - b.projects || a.name.localeCompare(b.name);
@@ -136,20 +141,22 @@ export function people(s: State): Screen {
       card(undefined, [
         {
           kind: "table",
+          stackBelow: 640,
           empty: q !== "" ? `No one matches "${p.query.trim()}".` : "No one has that role yet.",
           columns: SORTS.map((c) => ({ id: c.id, label: c.label, align: c.align, sort: p.sort === c.id ? (p.descending ? "desc" : "asc") : "none", sortId: `people.sort:${c.id}` })),
           rows: rows.map((x) => ({
             id: x.id, selected: p.selected.includes(x.id), selectId: `people.check:${x.id}`,
             cells: [
               { text: x.name, secondary: x.email, avatar: { initials: initials(x.name), hue: hueOf(x.name) } },
-              { text: x.role, badge: { text: statusText[x.status], tone: statusTone[x.status] } },
+              { text: x.role },
+              { text: statusText[x.status], badge: { text: statusText[x.status], tone: statusTone[x.status] } },
               { text: x.team },
               { text: tenure(x.joinedDaysAgo), align: "end" },
               { text: grouped(x.projects), align: "end" },
             ],
           })),
         },
-        { kind: "pagination", label: sorted.length === 0 ? "No results" : `${grouped(page * PER_PAGE + 1)}-${grouped(page * PER_PAGE + rows.length)} of ${grouped(sorted.length)}`, ...(page > 0 ? { previousId: "people.page:previous" } : {}), ...(page < pages - 1 ? { nextId: "people.page:next" } : {}) },
+        { kind: "pagination", previousLabel: "Previous page", nextLabel: "Next page", label: sorted.length === 0 ? "No results" : `${grouped(page * PER_PAGE + 1)}-${grouped(page * PER_PAGE + rows.length)} of ${grouped(sorted.length)}`, ...(page > 0 ? { previousId: "people.page:previous" } : {}), ...(page < pages - 1 ? { nextId: "people.page:next" } : {}) },
       ]),
     ),
   };

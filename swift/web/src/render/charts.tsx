@@ -47,7 +47,9 @@ export function BarsNode({ node }: { node: Of<"bars"> }) {
         {node.bars.map((b, i) => (
           <div key={i} className="an-bar" data-highlight={b.highlight ? "" : undefined} title={`${b.label}: ${b.valueText}`}>
             <span className="an-bar-value">{b.highlight ? b.valueText : ""}</span>
-            <span className="an-bar-fill" style={{ height: `${Math.max(2, b.value * 100)}%`, background: b.highlight ? FILL_TONE.accent : ACCENT_SOFT }} />
+            <span className="an-bar-track">
+              <span className="an-bar-fill" style={{ height: `${Math.max(2, b.value * 100)}%`, background: b.highlight ? FILL_TONE.accent : ACCENT_SOFT }} />
+            </span>
             <span className="an-bar-label">{b.label}</span>
           </div>
         ))}

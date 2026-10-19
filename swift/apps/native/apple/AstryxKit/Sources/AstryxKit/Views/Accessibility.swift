@@ -3,36 +3,69 @@ import SwiftUI
 /// Shared pieces of the accessibility work: hit targets, checkbox semantics, Reduce Motion and
 /// Differentiate Without Color.
 
-/// The smallest hit region the HIG allows for a control (Buttons, Accessibility: 44 x 44 pt).
+/// The smallest hit region the HIG allows for a control (Accessibility): 44 x 44 pt on a touch
+/// screen, and on the Mac, whose default control size is 28 x 28 pt, 28.
+#if os(iOS)
 let axMinTarget: CGFloat = 44
+#else
+let axMinTarget: CGFloat = 28
+#endif
+
+/// The height of a text field, select or the like: Astryx's `size-element-md` (32) on the Mac;
+/// on a touch screen at least the 44 pt target. Grows with Dynamic Type.
+func axControlHeight(_ ax: AXStyle) -> CGFloat {
+    #if os(iOS)
+    max(axMinTarget, 36 * min(ax.scale, 1.4))
+    #else
+    32 * min(ax.scale, 1.4)
+    #endif
+}
+
+/// The height a text field or select is drawn: Astryx's `size-element-md` (32), on a touch screen
+/// too, with the taps around it reaching 44 (`axTapTarget(keepLayout: true)`). Grows with Dynamic Type.
+func axFieldHeight(_ ax: AXStyle) -> CGFloat {
+    32 * min(ax.scale, 1.4)
+}
 
 /// Places `content` at its own size and adds a clear hit area of at least 44 x 44 pt around its
 /// center, without changing the size the layout gives it. The control stays as compact as the
 /// design draws it; the taps around it still reach it.
 private struct AXTapLayout: Layout {
+    /// Which subview is the control; the other is the clear hit region.
+    var contentIndex = 0
+
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        subviews.first?.sizeThatFits(proposal) ?? .zero
+        subviews[contentIndex].sizeThatFits(proposal)
     }
 
     func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        guard let content = subviews.first else { return }
         let center = CGPoint(x: bounds.midX, y: bounds.midY)
-        content.place(at: center, anchor: .center, proposal: ProposedViewSize(bounds.size))
+        subviews[contentIndex].place(at: center, anchor: .center, proposal: ProposedViewSize(bounds.size))
         if subviews.count > 1 {
             let hit = ProposedViewSize(width: Swift.max(bounds.width, axMinTarget), height: Swift.max(bounds.height, axMinTarget))
-            subviews[1].place(at: center, anchor: .center, proposal: hit)
+            subviews[1 - contentIndex].place(at: center, anchor: .center, proposal: hit)
         }
     }
 }
 
 private struct AXTapTarget: ViewModifier {
     let keepLayout: Bool
+    let action: (() -> Void)?
 
     func body(content: Content) -> some View {
         if keepLayout {
-            AXTapLayout {
-                content
-                Color.clear.contentShape(Rectangle())
+            if let action {
+                // Under the control, so a tap on the control itself still reaches it (a text
+                // field places its caret); a tap around it does `action`.
+                AXTapLayout(contentIndex: 1) {
+                    Color.clear.contentShape(Rectangle()).onTapGesture(perform: action)
+                    content
+                }
+            } else {
+                AXTapLayout {
+                    content
+                    Color.clear.contentShape(Rectangle())
+                }
             }
         } else {
             content
@@ -46,8 +79,11 @@ extension View {
     /// A hit region of at least 44 x 44 pt. Put it on the label inside a `Button`, not on the
     /// button itself. With `keepLayout` the drawn control keeps the room the design gives it
     /// (the region reaches past it into the gaps); without, the control takes 44 x 44.
-    func axTapTarget(keepLayout: Bool = false) -> some View {
-        modifier(AXTapTarget(keepLayout: keepLayout))
+    ///
+    /// `action` is for a control that is not a `Button` (a text field): a tap in the region around
+    /// the drawn control does that, as a tap on the control itself does what the control does.
+    func axTapTarget(keepLayout: Bool = false, action: (() -> Void)? = nil) -> some View {
+        modifier(AXTapTarget(keepLayout: keepLayout, action: action))
     }
 
     /// A checkbox or switch-like control, announced as a toggle with its state as the value (the
@@ -96,11 +132,13 @@ struct AXToneMark: View {
 struct AXToneDot: View {
     let tone: Tone
     var diameter: CGFloat = 5
+    /// A color to paint with instead of the tone's (the dots of a selected day, in on-accent).
+    var color: Color? = nil
     @Environment(\.ax) private var ax
     @Environment(\.accessibilityDifferentiateWithoutColor) private var differentiate
 
     var body: some View {
-        let color = ax.tone(tone).solid
+        let color = self.color ?? ax.fillTone(tone)
         Group {
             if differentiate {
                 switch tone {

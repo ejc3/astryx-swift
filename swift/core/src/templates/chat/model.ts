@@ -39,12 +39,12 @@ export type BubbleContent =
   | { kind: "text"; text: string }
   | { kind: "mention"; text: string; tokens: { value: string; label: string; variant: "blue" }[] }
   | { kind: "markdown"; text: string }
-  | { kind: "code"; title: string; language: string; code: string }
+  | { kind: "code"; title: string; language: string; /** The header line: "middleware.ts — typescript". */ header: string; code: string }
   | { kind: "artifact"; label: string; title: string; caption: string };
 
 export type ChatPart =
   | { kind: "bubble"; variant?: "ghost"; group?: "first" | "last"; width?: string; time?: Stamp; status?: "delivered"; content: BubbleContent }
-  | { kind: "tools"; expanded: boolean; calls: ToolCall[] }
+  | { kind: "tools"; expanded: boolean; /** The group's header: "3 tool calls". */ label: string; calls: ToolCall[] }
   | { kind: "meta"; time: Stamp; footer?: string };
 
 export type ChatItem =
@@ -72,6 +72,8 @@ export type ChatWords = {
   /** After a diff count: "8 added", "2 removed". */
   added: string;
   removed: string;
+  /** The word beside a delivered message's time: "Delivered". */
+  delivered: string;
 };
 
 export type ChatView = {
@@ -182,6 +184,23 @@ const TEST_CODE = `describe('authMiddleware', () => {
   });
 });`;
 
+/** A tool-call group, with its header ("1 tool call", "3 tool calls"). */
+const tools = (expanded: boolean, calls: ToolCall[]): ChatPart => ({
+  kind: "tools",
+  expanded,
+  label: `${calls.length} tool ${calls.length === 1 ? "call" : "calls"}`,
+  calls,
+});
+
+/** A code block, with the header the stock page draws: its file name and language. */
+const codeBlock = (title: string, language: string, code: string): BubbleContent => ({
+  kind: "code",
+  title,
+  language,
+  header: `${title} \u2014 ${language}`,
+  code,
+});
+
 /** The conversation, in order. Ids are the position, so a host can key on them. */
 const ITEMS: ChatItem[] = [
   { kind: "divider", text: "Today" },
@@ -214,15 +233,11 @@ const ITEMS: ChatItem[] = [
     files: [],
     parts: [
       { kind: "bubble", variant: "ghost", content: { kind: "text", text: "Looking into the auth files now. Let me read through the code and trace the token refresh flow." } },
-      {
-        kind: "tools",
-        expanded: true,
-        calls: [
-          { name: "read", target: "auth-service.ts", status: "complete", duration: "45ms" },
-          { name: "read", target: "middleware.ts", status: "complete", duration: "38ms" },
-          { name: "bash", target: 'grep -rn "refreshToken" src/', status: "complete", duration: "120ms", node: "cli:remote-server" },
-        ],
-      },
+      tools(true, [
+        { name: "read", target: "auth-service.ts", status: "complete", duration: "45ms" },
+        { name: "read", target: "middleware.ts", status: "complete", duration: "38ms" },
+        { name: "bash", target: 'grep -rn "refreshToken" src/', status: "complete", duration: "120ms", node: "cli:remote-server" },
+      ]),
       {
         kind: "bubble",
         variant: "ghost",
@@ -239,12 +254,8 @@ Here's the problematic sequence:
 The fix is to catch \`TokenExpiredError\` specifically and attempt a refresh before rejecting:`,
         },
       },
-      { kind: "bubble", variant: "ghost", content: { kind: "code", title: "middleware.ts", language: "typescript", code: MIDDLEWARE_CODE } },
-      {
-        kind: "tools",
-        expanded: false,
-        calls: [{ name: "edit", target: "middleware.ts", status: "complete", duration: "85ms", additions: 8, deletions: 2 }],
-      },
+      { kind: "bubble", variant: "ghost", content: codeBlock("middleware.ts", "typescript", MIDDLEWARE_CODE) },
+      tools(false, [{ name: "edit", target: "middleware.ts", status: "complete", duration: "85ms", additions: 8, deletions: 2 }]),
       { kind: "meta", time: stamp(10, 15, 30), footer: "Agent" },
     ],
   },
@@ -269,15 +280,11 @@ The fix is to catch \`TokenExpiredError\` specifically and attempt a refresh bef
     avatar: "Agent",
     files: [],
     parts: [
-      {
-        kind: "tools",
-        expanded: true,
-        calls: [
-          { name: "read", target: "middleware.test.ts", status: "complete", duration: "32ms" },
-          { name: "edit", target: "middleware.test.ts", status: "complete", duration: "110ms", additions: 24, deletions: 0 },
-          { name: "bash", target: "yarn test middleware", status: "complete", duration: "3.2s", node: "cli:remote-server" },
-        ],
-      },
+      tools(true, [
+        { name: "read", target: "middleware.test.ts", status: "complete", duration: "32ms" },
+        { name: "edit", target: "middleware.test.ts", status: "complete", duration: "110ms", additions: 24, deletions: 0 },
+        { name: "bash", target: "yarn test middleware", status: "complete", duration: "3.2s", node: "cli:remote-server" },
+      ]),
       {
         kind: "bubble",
         variant: "ghost",
@@ -293,7 +300,7 @@ The fix is to catch \`TokenExpiredError\` specifically and attempt a refresh bef
 | Malformed token returns 401 immediately | ✅ |`,
         },
       },
-      { kind: "bubble", variant: "ghost", content: { kind: "code", title: "middleware.test.ts", language: "typescript", code: TEST_CODE } },
+      { kind: "bubble", variant: "ghost", content: codeBlock("middleware.test.ts", "typescript", TEST_CODE) },
       { kind: "meta", time: stamp(10, 16, 45) },
     ],
   },
@@ -373,7 +380,7 @@ The fix is to catch \`TokenExpiredError\` specifically and attempt a refresh bef
           text: `On it — adding a **Rollout & Monitoring** section with a staged flag ramp and the alert thresholds. Updating the document now.`,
         },
       },
-      { kind: "tools", expanded: false, calls: [{ name: "edit", target: "docs/token-refresh.md", status: "running", node: "cli:remote-server" }] },
+      tools(false, [{ name: "edit", target: "docs/token-refresh.md", status: "running", node: "cli:remote-server" }]),
       { kind: "meta", time: stamp(10, 20, 30) },
     ],
   },
@@ -400,6 +407,7 @@ const WORDS: ChatWords = {
   status: { pending: "Pending", running: "Running", complete: "Complete", error: "Failed" },
   added: "added",
   removed: "removed",
+  delivered: "Delivered",
 };
 
 const isMode = (v: unknown): v is ComposerMode => v === "ask" || v === "edit";

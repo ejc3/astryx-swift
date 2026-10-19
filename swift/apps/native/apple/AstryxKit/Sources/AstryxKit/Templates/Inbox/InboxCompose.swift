@@ -69,7 +69,6 @@ struct InboxComposeForm: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button(words.send) {}
-                        .disabled(inert.contains("send"))
                 }
                 ToolbarItemGroup(placement: toolsPlacement) {
                     ForEach(words.tools, id: \.id) { tool in
@@ -77,7 +76,6 @@ struct InboxComposeForm: View {
                         } label: {
                             Label(tool.label, systemImage: Self.toolSymbol(tool.id))
                         }
-                        .disabled(inert.contains(tool.id))
                     }
                 }
             }
@@ -131,7 +129,6 @@ struct InboxComposeForm: View {
             HStack(spacing: ax.space(1)) {
                 ForEach(words.tools, id: \.id) { tool in
                     InboxIconButton(symbol: Self.toolSymbol(tool.id), label: tool.label)
-                        .disabled(inert.contains(tool.id))
                 }
                 Spacer(minLength: ax.space(2))
                 InboxIconButton(symbol: "trash", label: words.discard)
@@ -184,7 +181,7 @@ struct InboxComposeForm: View {
                     .foregroundStyle(ax.text)
             }
         }
-        .font(ax.fontBase)
+        .font(showFieldFont(ax))
         .modifier(InboxFieldFrame(horizontal: ax.space(3), vertical: 0, minHeight: 38 * min(ax.scale, 1.4)))
         .syncedText(id: inboxAction("subject"), value: compose.subject, text: $subject)
     }
@@ -212,7 +209,7 @@ struct InboxComposeForm: View {
                     .accessibilityLabel(words.body)
             }
         }
-        .font(ax.fontBase)
+        .font(showFieldFont(ax))
         .modifier(InboxFieldFrame(horizontal: ax.space(2), vertical: ax.space(2), minHeight: 0))
         .syncedText(id: inboxAction("body"), value: compose.body, text: $bodyText)
     }
@@ -331,7 +328,7 @@ struct InboxRecipientField: View {
             TextField(placeholder, text: $query, prompt: Text(placeholder).foregroundColor(ax.textDisabled))
                 .labelsHidden()
                 .textFieldStyle(.plain)
-                .font(ax.fontBase)
+                .font(showFieldFont(ax))
                 .foregroundStyle(ax.text)
                 .frame(minWidth: 120)
                 .onSubmit(submit)

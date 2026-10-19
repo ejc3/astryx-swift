@@ -1,17 +1,15 @@
 import SwiftUI
 
-/// The page's three sections, one under another, separated by hairlines.
+/// The page's three sections, one under another, with room between them and no rules.
 struct OrderMain: View {
     let model: OrderModel
     let narrow: Bool
     @Environment(\.ax) private var ax
 
     var body: some View {
-        VStack(alignment: .leading, spacing: ax.space(5)) {
+        VStack(alignment: .leading, spacing: ax.space(12)) {
             OrderItems(model: model)
-            AXDivider()
             OrderInvoice(model: model, narrow: narrow)
-            AXDivider()
             OrderTimeline(model: model)
         }
         .frame(maxWidth: 1000, alignment: .topLeading)
@@ -36,10 +34,12 @@ private struct SectionHeader<Badge: View, Buttons: View>: View {
             }
         } else {
             ViewThatFits(in: .horizontal) {
-                HStack(spacing: ax.space(2)) {
+                // The title, then the buttons at the far end: one gap between the title and the first
+                // button (the buttons' own gap is theirs), so the row keeps to one line where it can.
+                HStack(spacing: 0) {
                     titleRow
                     Spacer(minLength: ax.space(2))
-                    buttons
+                    HStack(spacing: ax.space(2)) { buttons }
                 }
                 VStack(alignment: .leading, spacing: ax.space(2)) {
                     titleRow
@@ -67,22 +67,29 @@ struct OrderItems: View {
     @Environment(\.ax) private var ax
     @Environment(\.dynamicTypeSize) private var typeSize
 
+    /// The amount is bold, a step heavier than the semibold of a name.
+    private var amountFont: Font { ax.font("font-size-base", 14, weight: "font-weight-bold") }
+    /// Above and below a row of a spacious list.
+    private var rowPad: CGFloat { ax.space(3) + 1 }
+
     var body: some View {
         VStack(alignment: .leading, spacing: ax.space(4)) {
             SectionHeader(title: model.words.items) {
                 AXBadge(text: model.status, tone: .warning)
             } buttons: {
+                // Inert in the stock page, which draws them enabled; so do we.
                 COSButton(label: model.words.fulfillItem, variant: .ghost) {}
-                    .disabled(model.isInert("fulfill"))
                 COSButton(label: model.words.createLabel, variant: .secondary) {}
-                    .disabled(model.isInert("label"))
             }
-            VStack(alignment: .leading, spacing: ax.space(4)) {
+            // A spacious list: each row has room above and below it.
+            VStack(alignment: .leading, spacing: 0) {
                 ForEach(Array(model.products.enumerated()), id: \.offset) { _, product in
                     let details = VStack(alignment: .leading, spacing: 0) {
-                        Text(product.name).font(ax.fontLabel).foregroundStyle(ax.text)
+                        Text(product.name).font(ax.fontBase).foregroundStyle(ax.text)
+                            .axLeading(ax, size: ax.fontSize("font-size-base", 14), ratio: ax.bodyLeading)
                         ForEach(Array(product.lines.enumerated()), id: \.offset) { _, line in
                             Text(line).font(ax.fontSmall).foregroundStyle(ax.textSecondary)
+                                .axLeading(ax, size: ax.fontSize("font-size-sm", 12), ratio: ax.supportingLeading)
                         }
                     }
                     .fixedSize(horizontal: false, vertical: true)
@@ -90,31 +97,37 @@ struct OrderItems: View {
                         // Name and lines get the whole width under the picture, and the
                         // amount a line of its own, so no word is broken to make room.
                         VStack(alignment: .leading, spacing: ax.space(2)) {
-                            COSThumbnail(src: product.image, name: product.name, side: 56)
+                            COSThumbnail(src: product.image, name: product.name, side: 64)
                             details
                             VStack(alignment: .leading, spacing: 0) {
-                                Text(product.amount).font(ax.fontStrong).foregroundStyle(ax.text)
+                                Text(product.amount).font(amountFont).foregroundStyle(ax.text)
                                 Text(COSPart.join(product.unit)).font(ax.fontSmall).foregroundStyle(ax.textSecondary)
                             }
                             .fixedSize(horizontal: false, vertical: true)
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.vertical, rowPad)
                         .accessibilityElement(children: .combine)
                     } else {
                         HStack(alignment: .top, spacing: ax.space(3)) {
-                            COSThumbnail(src: product.image, name: product.name, side: 56)
+                            COSThumbnail(src: product.image, name: product.name, side: 64)
                             details
                             Spacer(minLength: ax.space(2))
+                            // The amount and the unit price are centered on the row, as the web's are.
                             VStack(alignment: .trailing, spacing: 0) {
-                                Text(product.amount).font(ax.fontStrong).foregroundStyle(ax.text)
+                                Text(product.amount).font(amountFont).foregroundStyle(ax.text)
                                 Text(COSPart.join(product.unit)).font(ax.fontSmall).foregroundStyle(ax.textSecondary)
                             }
                             .lineLimit(1)
+                            .frame(maxHeight: .infinity, alignment: .center)
                         }
+                        .padding(.vertical, rowPad)
                         .accessibilityElement(children: .combine)
                     }
                 }
             }
+            // The list sits 4 points in from the section, as the web's spacious list does.
+            .padding(.horizontal, ax.space(1))
         }
     }
 }
@@ -132,37 +145,43 @@ struct OrderInvoice: View {
                 // Refund moves money out and cannot be undone: if it is ever enabled it needs a
                 // destructive confirmation (`.confirmationDialog`, destructive Refund, Cancel) first.
                 COSButton(label: model.words.refund, variant: .ghost) {}
-                    .disabled(model.isInert("refund"))
                 COSButton(label: model.words.sendInvoice, variant: .secondary) {}
-                    .disabled(model.isInert("invoice"))
             }
-            VStack(alignment: .leading, spacing: ax.space(2)) {
+            // A MetadataList: the label column is as wide as its longest label, the note takes
+            // the room, the amount sits at the end.
+            Grid(alignment: .leading, horizontalSpacing: ax.space(3), verticalSpacing: ax.space(3) + 2) {
                 ForEach(Array(model.summary.enumerated()), id: \.offset) { _, row in
                     line(label: row.label, note: row.note.map(COSPart.join), amount: row.amount, strong: row.strong)
                 }
             }
             AXDivider()
-            line(label: model.paidBy.label, note: model.paidBy.note, amount: model.paidBy.amount, strong: false)
+            Grid(alignment: .leading, horizontalSpacing: ax.space(3)) {
+                line(label: model.paidBy.label, note: model.paidBy.note, amount: model.paidBy.amount, strong: false)
+            }
         }
     }
 
     /// A MetadataList row: the label, then the note taking the room, then the amount.
     private func line(label: String, note: String?, amount: String, strong: Bool) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: ax.space(3)) {
+        GridRow(alignment: .firstTextBaseline) {
             Text(label)
                 .font(ax.fontBase)
                 .foregroundStyle(ax.textSecondary)
-                .frame(width: (narrow ? 84 : 150) * min(ax.scale, 1.5), alignment: .leading)
+                .axLeading(ax, size: ax.fontSize("font-size-base", 14), ratio: ax.bodyLeading)
+                .fixedSize(horizontal: true, vertical: false)
+                .gridColumnAlignment(.leading)
             Text(note ?? "")
                 .font(ax.fontBase)
                 .foregroundStyle(ax.text)
+                .axLeading(ax, size: ax.fontSize("font-size-base", 14), ratio: ax.bodyLeading)
                 .frame(maxWidth: .infinity, alignment: .leading)
             Text(amount)
                 .font(strong ? ax.fontStrong : ax.fontBase)
                 .foregroundStyle(ax.text)
+                .axLeading(ax, size: ax.fontSize("font-size-base", 14), ratio: ax.bodyLeading)
+                .fixedSize(horizontal: true, vertical: false)
+                .gridColumnAlignment(.trailing)
         }
-        .fixedSize(horizontal: false, vertical: true)
-        .accessibilityElement(children: .combine)
     }
 }
 
@@ -176,7 +195,6 @@ struct OrderTimeline: View {
                 Text(model.words.timeline).font(ax.heading(2)).foregroundStyle(ax.text).accessibilityAddTraits(.isHeader)
                 Spacer(minLength: 0)
                 COSIconButton(label: model.words.filters, symbol: "line.3.horizontal.decrease") {}
-                    .disabled(model.isInert("filters"))
             }
             VStack(alignment: .leading, spacing: ax.space(4)) {
                 ForEach(Array(model.activity.enumerated()), id: \.offset) { _, item in
@@ -196,13 +214,16 @@ struct OrderTimeline: View {
     private func note(_ item: OrderModel.Activity) -> some View {
         VStack(alignment: .leading, spacing: ax.space(1)) {
             Text(item.user).font(ax.fontStrong).foregroundStyle(ax.text)
+                .axLeading(ax, size: ax.fontSize("font-size-base", 14), ratio: ax.bodyLeading)
             Text(item.text).font(ax.fontBase).foregroundStyle(ax.text)
+                .axLeading(ax, size: ax.fontSize("font-size-base", 14), ratio: ax.bodyLeading)
             if let changes = item.changes {
                 VStack(alignment: .leading, spacing: ax.space(1)) {
                     ForEach(Array(changes.enumerated()), id: \.offset) { _, change in
                         HStack(alignment: .firstTextBaseline, spacing: ax.space(2)) {
                             Image(systemName: "square.and.pencil").font(ax.fontSmall).foregroundStyle(ax.iconSecondary)
                             Text(change).font(ax.fontSmall).foregroundStyle(ax.textSecondary)
+                                .axLeading(ax, size: ax.fontSize("font-size-sm", 12), ratio: ax.supportingLeading)
                         }
                     }
                 }
@@ -216,8 +237,8 @@ struct OrderTimeline: View {
     }
 
     /// A text link with a 44-point target (the extra is taken back from the layout, so the line
-    /// does not grow). The stock page's Like and Reply do nothing, so they are drawn disabled.
-    private func inertLink(_ title: String, control: String) -> some View {
+    /// does not grow). The stock page's Like and Reply do nothing and are drawn enabled.
+    private func inertLink(_ title: String) -> some View {
         Button {} label: {
             Text(title).font(ax.fontSmall)
                 .frame(minWidth: cosTouch, minHeight: cosTouch)
@@ -226,7 +247,6 @@ struct OrderTimeline: View {
         }
         .buttonStyle(.plain)
         .foregroundStyle(ax.textSecondary)
-        .disabled(model.isInert(control))
     }
 
     private func footer(_ item: OrderModel.Activity) -> some View {
@@ -239,9 +259,9 @@ struct OrderTimeline: View {
             .foregroundStyle(ax.textSecondary)
             .accessibilityElement(children: .combine)
             .accessibilityLabel(item.reactionsLabel)
-            inertLink(model.words.like, control: "like")
+            inertLink(model.words.like)
             COSBullet()
-            inertLink(model.words.reply, control: "reply")
+            inertLink(model.words.reply)
             COSBullet()
             Text(item.time).font(ax.fontSmall).foregroundStyle(ax.textSecondary)
         }

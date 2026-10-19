@@ -4,7 +4,9 @@ import UniformTypeIdentifiers
 /// Astryx's kanban template (`kanban-board`), drawn natively from the core's view model
 /// (core/src/templates/kanban/model.ts, its `View` type).
 ///
-/// A toolbar (title, sprint, tools, Add task) over four columns of cards. A card moves by
+/// A toolbar (title, sprint, tools, Add task) over four columns of cards. The template owns its
+/// padding: the toolbar's and the board's are 16, with a hairline under the toolbar. The tools
+/// the core has no action for (`inert`) are drawn enabled, as the web draws them. A card moves by
 /// dragging it into a column (the core gets `drop:<card>` with `"<column>:<index>"`), by its
 /// menu's "Move to ..." entries (`move:<card>:<column>`), or by a VoiceOver action.
 struct KanbanTemplate: View {
@@ -45,11 +47,17 @@ struct KanbanScreen: View {
     @Environment(\.axWidth) private var width
     @Environment(\.dynamicTypeSize) private var typeSize
     @State private var drag = KanbanDragState()
+    /// The toolbar's own height, so the board takes exactly the rest of the window.
+    @State private var toolbarHeight: CGFloat = 66
 
     var body: some View {
-        VStack(alignment: .leading, spacing: ax.space(4)) {
+        VStack(alignment: .leading, spacing: 0) {
             toolbar
+                .padding(ax.space(4))
+                .overlay(alignment: .bottom) { InboxHairline() }
+                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { toolbarHeight = $0 }
             board
+                .modifier(KanbanFill(above: toolbarHeight))
         }
         .frame(maxWidth: .infinity, alignment: .topLeading)
         // A card landing somewhere (dropped, or moved from its menu) is felt as a tap.
@@ -68,16 +76,20 @@ struct KanbanScreen: View {
             Text(model.title)
                 .font(ax.heading(3))
                 .foregroundStyle(ax.text)
+                .axLeading(ax, size: ax.fontSize("text-heading-3-size", 17), ratio: ax.headingLeading(3))
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityAddTraits(.isHeader)
             AXBadge(text: "\(model.total)", tone: .neutral)
                 .accessibilityLabel("\(model.total)")
         }
-        let tools = HStack(spacing: ax.hair) {
-            InboxIconButton(symbol: "arrow.up.arrow.down", label: model.words.sort).disabled(model.isInert("sort"))
-            InboxIconButton(symbol: "line.3.horizontal.decrease", label: model.words.filter).disabled(model.isInert("filter"))
-            InboxIconButton(symbol: "magnifyingglass", label: model.words.search).disabled(model.isInert("search"))
+        // Three square icon buttons filled with `color-neutral`, their glyphs in the primary ink.
+        let tools = HStack(spacing: ax.space(1)) {
+            KanbanToolButton(symbol: "arrow.up.arrow.down", label: model.words.sort)
+            KanbanToolButton(symbol: "line.3.horizontal.decrease", label: model.words.filter)
+            KanbanToolButton(symbol: "magnifyingglass", label: model.words.search)
         }
+        // A strong vertical rule between the sprint selector and the tools.
+        let rule = Rectangle().fill(ax.borderStrong).frame(width: 1, height: 20 * min(ax.scale, 1.4)).accessibilityHidden(true)
         let add = Button {
         } label: {
             Label(model.words.addTask, systemImage: "plus")
@@ -85,7 +97,7 @@ struct KanbanScreen: View {
                 .fixedSize()
         }
         .buttonStyle(AXButtonStyle(variant: .primary, ax: ax))
-        .disabled(model.isInert("addTask"))
+        
         // Where the words do not fit beside the sprint and the tools: the plus alone, still
         // named for VoiceOver and a tooltip by the core's word.
         let addIcon = Button {
@@ -93,13 +105,13 @@ struct KanbanScreen: View {
             Image(systemName: "plus")
                 .font(.system(size: ax.fontSize("font-size-lg", 17) * 0.95, weight: .semibold))
                 .foregroundStyle(ax.onAccent)
-                .frame(width: chromeTarget, height: chromeTarget)
+                .frame(width: 32 * min(ax.scale, 1.4), height: 32 * min(ax.scale, 1.4))
                 .background(RoundedRectangle(cornerRadius: ax.radiusElement, style: .continuous).fill(ax.accent))
-                .opacity(model.isInert("addTask") ? 0.45 : 1)
                 .contentShape(Rectangle())
+                .axTapTarget(keepLayout: true)
         }
         .buttonStyle(.plain)
-        .disabled(model.isInert("addTask"))
+        
         .accessibilityLabel(model.words.addTask)
         .help(model.words.addTask)
         // At accessibility sizes nothing sits beside anything: each control has a row to itself,
@@ -113,7 +125,7 @@ struct KanbanScreen: View {
                 Label(model.words.addTask, systemImage: "plus")
             }
             .buttonStyle(AXButtonStyle(variant: .primary, ax: ax, fills: true))
-            .disabled(model.isInert("addTask"))
+            
         }
         return Group {
             if typeSize.isAccessibilitySize {
@@ -124,6 +136,7 @@ struct KanbanScreen: View {
                         heading
                         Spacer(minLength: ax.space(3))
                         sprintPicker
+                        rule
                         tools
                         add
                     }
@@ -132,6 +145,7 @@ struct KanbanScreen: View {
                         HStack(spacing: ax.space(2)) {
                             sprintPicker
                             Spacer(minLength: 0)
+                            rule
                             tools
                             add
                         }
@@ -141,6 +155,7 @@ struct KanbanScreen: View {
                         HStack(spacing: ax.space(2)) {
                             sprintPicker
                             Spacer(minLength: 0)
+                            rule
                             tools
                             addIcon
                         }
@@ -181,7 +196,11 @@ struct KanbanScreen: View {
             .menuStyle(.button)
             .buttonStyle(.plain)
             .menuIndicator(.hidden)
+            #if os(iOS)
+            .fixedSize(horizontal: false, vertical: true)
+            #else
             .fixedSize(horizontal: !typeSize.isAccessibilitySize, vertical: true)
+            #endif
             .accessibilityLabel(model.words.sprint)
             .accessibilityValue(current)
         }
@@ -189,56 +208,102 @@ struct KanbanScreen: View {
 
     private func sprintLabel(_ text: String) -> some View {
         HStack(spacing: ax.space(2)) {
-            Text(text).font(ax.fontLabel).foregroundStyle(ax.text).lineLimit(typeSize.isAccessibilitySize ? nil : 1)
+            Text(text).font(showFieldFont(ax)).foregroundStyle(ax.text).lineLimit(typeSize.isAccessibilitySize ? nil : 1)
             if typeSize.isAccessibilitySize { Spacer(minLength: 0) }
             Image(systemName: "chevron.up.chevron.down")
                 .font(.system(size: ax.fontSize("font-size-xs", 10), weight: .semibold))
                 .foregroundStyle(ax.iconSecondary)
         }
         .padding(.horizontal, ax.space(3))
-        .frame(minHeight: 36 * min(ax.scale, 1.4))
-        .frame(minWidth: 130, alignment: .leading)
+        // Astryx's md selector (32); the tap region reaches 44 on a touch screen.
+        .frame(minHeight: 32 * min(ax.scale, 1.4))
+        #if os(iOS)
+        // On a phone it gives way before the toolbar's other controls do, from 200 down to 120.
+        .frame(minWidth: typeSize.isAccessibilitySize ? 200 : 120, idealWidth: typeSize.isAccessibilitySize ? 200 : 120, maxWidth: typeSize.isAccessibilitySize ? .infinity : 200, alignment: .leading)
+        #else
+        .frame(minWidth: 200, alignment: .leading)
+        #endif
+        .axTapTarget(keepLayout: true)
     }
 
     // MARK: Board
 
-    private let minimumColumn: CGFloat = 228
+    /// The web gives every column 300 points and scrolls the board sideways when they do not fit.
+    private let columnWidth: CGFloat = 300
 
     @ViewBuilder
     private var board: some View {
         let gap = ax.space(4)
-        let count = CGFloat(model.columns.count)
-        if width >= count * minimumColumn + (count - 1) * gap {
-            // Room for every column: they share the width.
-            columns(width: nil, gap: gap)
+        let column: CGFloat = columnWidth
+        if isStatic {
+            columns(width: column, gap: gap)
+                .padding(ax.space(4))
+                .frame(width: width, alignment: .leading)
+                .clipped()
         } else {
-            let column: CGFloat = width < 600 ? max(width - 56, 220) : 300
-            if isStatic {
+            ScrollView(.horizontal, showsIndicators: false) {
                 columns(width: column, gap: gap)
-                    .frame(width: width, alignment: .leading)
-                    .clipped()
-            } else {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    columns(width: column, gap: gap)
-                        .scrollTargetLayout()
-                }
-                .scrollTargetBehavior(.viewAligned)
-                .scrollClipDisabled()
+                    .padding(ax.space(4))
+                    .scrollTargetLayout()
             }
+            .scrollTargetBehavior(.viewAligned)
+            .scrollClipDisabled()
         }
     }
 
-    /// The columns side by side, as tall as the tallest.
-    private func columns(width: CGFloat?, gap: CGFloat) -> some View {
+    /// The columns side by side, each as tall as the board.
+    private func columns(width: CGFloat, gap: CGFloat) -> some View {
         HStack(alignment: .top, spacing: gap) {
             ForEach(model.columns) { column in
                 KanbanColumnView(column: column, model: model, drag: $drag)
                     .frame(width: width)
-                    .frame(maxWidth: width == nil ? .infinity : nil, maxHeight: .infinity, alignment: .top)
+                    .frame(maxHeight: .infinity, alignment: .top)
             }
         }
-        .fixedSize(horizontal: false, vertical: true)
         .modifier(KanbanBoardDrop(drag: $drag))
+    }
+}
+
+/// The board takes the height the window has left under the toolbar (the web's columns are
+/// `height: 100%`); drawn to an image it takes a window's worth.
+struct KanbanFill: ViewModifier {
+    /// The toolbar's height, above the board.
+    var above: CGFloat = 66
+    @Environment(\.axStatic) private var isStatic
+
+    func body(content: Content) -> some View {
+        if isStatic {
+            content.frame(minHeight: 560, alignment: .top)
+        } else {
+            // Exactly the height the window has left, so the page itself has nothing to scroll
+            // and the toolbar stays where it is.
+            content.containerRelativeFrame(.vertical, alignment: .top) { height, _ in max(height - above, 420) }
+        }
+    }
+}
+
+/// One of the toolbar's square icon buttons: a `color-neutral` ground and a primary-ink glyph.
+struct KanbanToolButton: View {
+    let symbol: String
+    let label: String
+    @Environment(\.ax) private var ax
+    @State private var hovering = false
+
+    var body: some View {
+        let side = 32 * min(ax.scale, 1.4)
+        Button {} label: {
+            Image(systemName: symbol)
+                .font(.system(size: min(ax.fontSize("font-size-base", 14), 24)))
+                .foregroundStyle(ax.text)
+                .frame(width: side, height: side)
+                .background(RoundedRectangle(cornerRadius: ax.radiusElement, style: .continuous).fill(ax.color("color-neutral")).brightness(hovering ? -0.03 : 0))
+                .contentShape(Rectangle())
+                .axTapTarget(keepLayout: true)
+        }
+        .buttonStyle(.plain)
+        .onHover { hovering = $0 }
+        .help(label)
+        .accessibilityLabel(label)
     }
 }
 
@@ -278,9 +343,11 @@ struct KanbanColumnView: View {
         }
         .frame(maxWidth: .infinity, minHeight: 360, maxHeight: .infinity, alignment: .top)
         .background(RoundedRectangle(cornerRadius: ax.radiusContainer, style: .continuous).fill(ax.muted))
+        // No edge at rest (a muted card); a drop target gets the accent.
         .overlay(
             RoundedRectangle(cornerRadius: ax.radiusContainer, style: .continuous)
-                .strokeBorder(target != nil ? ax.accent : ax.border, lineWidth: target != nil ? 2 : 1)
+                .strokeBorder(ax.accent, lineWidth: 2)
+                .opacity(target != nil ? 1 : 0)
         )
         .modifier(KanbanDropZone(delegate: KanbanDropDelegate(
             column: column.id,
@@ -302,6 +369,7 @@ struct KanbanColumnView: View {
             Text(column.title)
                 .font(ax.heading(4))
                 .foregroundStyle(ax.text)
+                .axLeading(ax, size: ax.fontSize("text-heading-4-size", 14), ratio: ax.headingLeading(4))
                 .accessibilityAddTraits(.isHeader)
             Button {
                 showingTip.toggle()
@@ -375,9 +443,7 @@ struct KanbanColumnView: View {
     /// screen, too big for a column of 228 points.
     private var empty: some View {
         VStack(spacing: ax.space(2)) {
-            Image(systemName: KanbanColumnView.symbol(column.emptyIcon.name))
-                .font(.system(size: ax.fontSize("font-size-2xl", 24)))
-                .foregroundStyle(ax.textSecondary)
+            emptyMark
                 .accessibilityHidden(true)
             Text(column.emptyTitle).font(ax.fontStrong).foregroundStyle(ax.text)
             Text(column.emptyDescription)
@@ -391,11 +457,29 @@ struct KanbanColumnView: View {
         .accessibilityElement(children: .combine)
     }
 
+    /// The empty column's glyph. A clipboard with a check has no single SF Symbol, so it is a
+    /// clipboard with a check over it.
+    @ViewBuilder
+    private var emptyMark: some View {
+        let size = ax.fontSize("font-size-2xl", 24)
+        if column.emptyIcon.name == "clipboard-check" {
+            ZStack {
+                Image(systemName: "clipboard").font(.system(size: size))
+                Image(systemName: "checkmark").font(.system(size: size * 0.4, weight: .semibold)).offset(y: size * 0.08)
+            }
+            .foregroundStyle(ax.textSecondary)
+        } else {
+            Image(systemName: KanbanColumnView.symbol(column.emptyIcon.name))
+                .font(.system(size: size))
+                .foregroundStyle(ax.textSecondary)
+        }
+    }
+
     static func symbol(_ name: String) -> String {
         switch name {
         case "inbox": "tray"
         case "arrow-path": "arrow.triangle.2.circlepath"
-        case "clipboard-check": "checklist"
+        case "clipboard-check": "clipboard"
         case "check-circle": "checkmark.circle"
         default: "tray"
         }
@@ -416,17 +500,14 @@ struct KanbanCardView: View {
     @Environment(\.ax) private var ax
     @Environment(\.axSend) private var send
 
-    private var priorityColors: ToneColors {
+    /// The priority's fill and ink, as Astryx's Badge sets them: error and warning are solid,
+    /// teal is its tint, and anything else is the neutral badge.
+    private var priorityColors: (fill: Color, ink: Color) {
         switch card.priorityVariant {
-        case .error: ax.tone(.danger)
-        case .warning: ax.tone(.warning)
-        case .teal:
-            ToneColors(
-                text: ax.color("color-text-teal"), solid: ax.color("color-icon-teal"),
-                muted: ax.color("color-background-teal"), border: ax.color("color-border-teal"),
-                onSolid: ax.color("color-on-accent")
-            )
-        case .neutral: ax.tone(.neutral)
+        case .error: ax.badge(.danger)
+        case .warning: ax.badge(.warning)
+        case .teal: (ax.color("color-background-teal"), ax.color("color-text-teal"))
+        case .neutral: ax.badge(.neutral)
         }
     }
 
@@ -444,15 +525,18 @@ struct KanbanCardView: View {
                 Text(card.title)
                     .font(ax.heading(4))
                     .foregroundStyle(ax.text)
+                    .axLeading(ax, size: ax.fontSize("text-heading-4-size", 14), ratio: ax.headingLeading(4))
                     .fixedSize(horizontal: false, vertical: true)
                 Text(card.description)
                     .font(ax.fontSmall)
                     .foregroundStyle(ax.textSecondary)
+                    .axLeading(ax, size: ax.fontSize("font-size-sm", 12), ratio: ax.supportingLeading)
                     .lineLimit(2)
             }
             Text(card.meta)
                 .font(ax.fontSmall)
                 .foregroundStyle(ax.textSecondary)
+                .axLeading(ax, size: ax.fontSize("font-size-sm", 12), ratio: ax.supportingLeading)
         }
         .padding(ax.space(3))
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -482,12 +566,12 @@ struct KanbanCardView: View {
     private var priorityBadge: some View {
         let colors = priorityColors
         return Text(card.priorityLabel)
-            .font(ax.font("font-size-xs", 10, weight: "font-weight-semibold"))
-            .foregroundStyle(colors.text)
+            .font(ax.font("font-size-sm", 12, weight: "font-weight-medium"))
+            .foregroundStyle(colors.ink)
             .lineLimit(1)
             .padding(.horizontal, ax.space(2))
-            .padding(.vertical, ax.hair)
-            .background(Capsule().fill(colors.muted))
+            .frame(minHeight: ax.space(5) * min(ax.scale, 1.4))
+            .background(Capsule().fill(colors.fill))
     }
 
     private var insertionLine: some View {
@@ -508,8 +592,8 @@ struct KanbanCardView: View {
 
     @ViewBuilder
     private var menuItems: some View {
-        Button(model.words.open) {}.disabled(model.isInert("open"))
-        Button(model.words.assignToMe) {}.disabled(model.isInert("assignToMe"))
+        Button(model.words.open) {}
+        Button(model.words.assignToMe) {}
         Divider()
         ForEach(card.moveTargets) { target in
             Button(target.label) { move(target) }

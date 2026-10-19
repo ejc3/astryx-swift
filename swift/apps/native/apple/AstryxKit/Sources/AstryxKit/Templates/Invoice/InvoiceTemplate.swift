@@ -40,18 +40,33 @@ struct InvoiceScreen: View {
         _query = State(initialValue: model.query)
     }
 
+    /// The page's own padding: the stock template pads its content 16 points on every side.
+    private var pad: CGFloat { ax.space(4) }
+
     /// Below this the table cannot hold its five columns and each line becomes a small card.
     static let tableFrom: CGFloat = 640
-    private var isTable: Bool { width >= Self.tableFrom }
+    private var isTable: Bool { width - 2 * pad >= Self.tableFrom }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: ax.space(6)) {
-            masthead
-            controls
-            if !model.filters.isEmpty { activeFilters }
-            lines
-            if let banner = model.banner { bannerView(banner) }
+        // The masthead, the controls and the lines, 32 points apart; the masthead is held 16 clear
+        // of the controls on top of that, as the stock page's is.
+        VStack(alignment: .leading, spacing: ax.space(8)) {
+            masthead.padding(.bottom, ax.space(4))
+            if model.filters.isEmpty {
+                controls
+            } else {
+                VStack(alignment: .leading, spacing: ax.space(3)) {
+                    controls
+                    activeFilters
+                }
+            }
+            VStack(alignment: .leading, spacing: ax.space(6)) {
+                lines
+                if let banner = model.banner { bannerView(banner) }
+            }
         }
+        .padding(pad)
+        .environment(\.axWidth, width - 2 * pad)
         .frame(maxWidth: .infinity, alignment: .topLeading)
         .modifier(InvoiceSearch(prompt: model.words.searchPlaceholder, query: $query))
         .syncedText(id: invoiceAction("query"), value: model.query, text: $query)
@@ -73,7 +88,8 @@ struct InvoiceScreen: View {
     /// Where the lines are drawn by the system's `Table`: the Mac, on a device, wide enough for it.
     private var usesSystemTable: Bool {
         #if os(macOS)
-        return isTable && !isStatic
+        if #available(macOS 14.4, *) { return isTable && !isStatic }
+        return false
         #else
         return false
         #endif
@@ -95,11 +111,10 @@ struct InvoiceScreen: View {
             Label(model.words.downloadPdf, systemImage: "arrow.down.to.line")
         }
         .buttonStyle(AXButtonStyle(variant: .secondary, ax: ax, fills: fills))
-        .disabled(model.isInert("downloadPdf"))
     }
 
     private var masthead: some View {
-        VStack(alignment: .leading, spacing: ax.space(5)) {
+        VStack(alignment: .leading, spacing: ax.space(6)) {
             AXAdaptiveRow {
                 HStack(alignment: .center, spacing: ax.space(3)) {
                     mastheadTitle.frame(maxWidth: .infinity, alignment: .leading)
@@ -115,20 +130,32 @@ struct InvoiceScreen: View {
         }
     }
 
+    /// How many 280-wide columns a grid of `contentWidth` holds with `gap` between them
+    /// (`repeat(auto-fill, minmax(280px, 1fr))`), at least one.
+    static func factColumns(contentWidth: CGFloat, gap: CGFloat) -> Int {
+        max(1, Int((contentWidth + gap) / (280 + gap)))
+    }
+
     /// The invoice facts, label over value, in as many columns as fit.
     private var details: some View {
-        // One column at accessibility sizes: two would break a long value inside a word.
-        let columns = typeSize.isAccessibilitySize ? 1 : width >= 760 ? 3 : 2
+        // The web's `MetadataList columns="multi"`: `repeat(auto-fill, minmax(280px, 1fr))` with a
+        // 16 gap (one column at 358, two from 576, three from 872). One column at accessibility
+        // sizes: two would break a long value inside a word.
+        let columns = typeSize.isAccessibilitySize ? 1 : Self.factColumns(contentWidth: width - 2 * pad, gap: ax.space(4))
         let rows = stride(from: 0, to: model.details.count, by: columns).map { start in
             Array(model.details[start..<min(start + columns, model.details.count)])
         }
-        return Grid(alignment: .topLeading, horizontalSpacing: ax.space(6), verticalSpacing: ax.space(4)) {
+        let size = ax.fontSize("font-size-base", 14)
+        return Grid(alignment: .topLeading, horizontalSpacing: ax.space(4), verticalSpacing: ax.space(4)) {
             ForEach(Array(rows.enumerated()), id: \.offset) { _, row in
                 GridRow {
                     ForEach(Array(row.enumerated()), id: \.offset) { _, detail in
+                        // The label (medium, secondary) over the value (regular), 2 points apart, on 20 point lines.
                         VStack(alignment: .leading, spacing: ax.hair) {
-                            Text(detail.label).font(ax.fontSmall).foregroundStyle(ax.textSecondary)
-                            Text(detail.value).font(ax.fontLabel).foregroundStyle(ax.text)
+                            Text(detail.label).font(ax.fontLabel).foregroundStyle(ax.textSecondary)
+                                .axLeading(ax, size: size, ratio: ax.bodyLeading)
+                            Text(detail.value).font(ax.fontBase).foregroundStyle(ax.text)
+                                .axLeading(ax, size: size, ratio: ax.bodyLeading)
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .accessibilityElement(children: .combine)
@@ -141,13 +168,23 @@ struct InvoiceScreen: View {
 
     // MARK: Controls
 
+    /// The Sort and Filter buttons as Astryx draws a button: 32 on a phone (touch still gets 44
+    /// from `axTapTarget`); the Mac keeps its 36.
+    private var buttonHeight: CGFloat {
+        #if os(iOS)
+        32 * min(ax.scale, 1.4)
+        #else
+        36 * min(ax.scale, 1.4)
+        #endif
+    }
+
     /// The billing switch and, where the search field is not in the toolbar (drawn to an image),
     /// the search box; on a phone, and on a Mac with the system table, the Sort and Filter buttons.
     private var controls: some View {
         ViewThatFits(in: .horizontal) {
             HStack(spacing: ax.space(3)) {
                 basisSwitch
-                if usesSystemTable { sortAndFilter }
+                if !isTable || usesSystemTable { sortAndFilter }
                 Spacer(minLength: ax.space(3))
                 if isStatic { searchBox.frame(width: 300) }
             }
@@ -242,9 +279,10 @@ struct InvoiceScreen: View {
                 .font(ax.fontLabel)
                 .foregroundStyle(ax.text)
                 .padding(.horizontal, ax.space(3))
-                .frame(minHeight: max(36 * min(ax.scale, 1.4), InboxTarget.side))
+                .frame(minHeight: buttonHeight)
                 .overlay(RoundedRectangle(cornerRadius: ax.radiusElement, style: .continuous).strokeBorder(ax.borderStrong, lineWidth: 1))
                 .contentShape(Rectangle())
+                .axTapTarget(keepLayout: true)
         }
         .menuStyle(.button)
         .buttonStyle(.plain)
@@ -262,9 +300,10 @@ struct InvoiceScreen: View {
                 .font(ax.fontLabel)
                 .foregroundStyle(model.filters.isEmpty ? ax.text : ax.accent)
                 .padding(.horizontal, ax.space(3))
-                .frame(minHeight: max(36 * min(ax.scale, 1.4), InboxTarget.side))
+                .frame(minHeight: buttonHeight)
                 .overlay(RoundedRectangle(cornerRadius: ax.radiusElement, style: .continuous).strokeBorder(ax.borderStrong, lineWidth: 1))
                 .contentShape(Rectangle())
+                .axTapTarget(keepLayout: true)
         }
         .buttonStyle(.plain)
         // A popover on an iPad or a Mac; on an iPhone the same form is a sheet.
@@ -345,10 +384,11 @@ struct InvoiceScreen: View {
         if let empty = model.empty {
             emptyState(empty)
         } else {
-            VStack(alignment: .leading, spacing: ax.space(4)) {
+            // The cards end in a rule, which is the rule above Subtotal: 12 clear of the first total.
+            VStack(alignment: .leading, spacing: showsCards ? ax.space(3) : ax.space(4)) {
                 if usesSystemTable {
                     #if os(macOS)
-                    InvoiceSystemTable(model: model)
+                    if #available(macOS 14.4, *) { InvoiceSystemTable(model: model) }
                     #endif
                 } else if isTable {
                     InvoiceTable(model: model)
@@ -359,6 +399,9 @@ struct InvoiceScreen: View {
             }
         }
     }
+
+    /// The lines drawn as stacked cards (a phone), each ending in a rule.
+    private var showsCards: Bool { !usesSystemTable && !isTable }
 
     private func emptyState(_ empty: InvoiceModel.Notice) -> some View {
         ContentUnavailableView {
@@ -376,14 +419,19 @@ struct InvoiceScreen: View {
     /// The arithmetic about the table: rules and right-aligned figures on the Amount column.
     private var totals: some View {
         VStack(spacing: ax.space(3)) {
-            InboxHairline()
+            if !showsCards { InboxHairline() }
             ForEach(Array(model.totals.enumerated()), id: \.offset) { index, total in
                 totalRow(total)
+                    // The system table's rows are inset from its edges: the figures sit under the Amount column's.
+                    .padding(.trailing, usesSystemTable ? Self.tableRowInset : 0)
                 if index == model.totals.count - 2 || index == model.totals.count - 1 { InboxHairline() }
             }
         }
         .accessibilityElement(children: .contain)
     }
+
+    /// How far the system table's `.inset` style holds a row's content in from the table's edge.
+    static let tableRowInset: CGFloat = 16
 
     private func totalRow(_ total: InvoiceModel.Total) -> some View {
         let strong = total.emphasis == .strong
@@ -394,16 +442,11 @@ struct InvoiceScreen: View {
         let value = Text(total.value)
             .font(ax.font("font-size-base", 14, weight: weight).monospacedDigit())
             .foregroundStyle(ax.text)
+        // A right-aligned block at every width: the label beside a figure box 132 wide.
         return HStack(spacing: ax.space(6)) {
-            if isTable {
-                Spacer(minLength: 0)
-                label
-                value.frame(width: 132, alignment: .trailing)
-            } else {
-                label
-                Spacer(minLength: ax.space(3))
-                value
-            }
+            Spacer(minLength: 0)
+            label
+            value.frame(width: 132, alignment: .trailing)
         }
         .accessibilityElement(children: .combine)
     }

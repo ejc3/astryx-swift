@@ -16,6 +16,32 @@ final class TemplatesInboxKanbanInvoiceTests: XCTestCase {
         return URL(fileURLWithPath: path, isDirectory: true)
     }
 
+    // MARK: Phone rules
+
+    /// The invoice facts follow `MetadataList columns="multi"` (`auto-fill, minmax(280px, 1fr)`,
+    /// gap 16): one column on a 390 pt phone (358 of content), two on the Mac pane, three on a
+    /// wide window.
+    func testInvoiceFactsFollowTheWebsAutoFillGrid() {
+        XCTAssertEqual(InvoiceScreen.factColumns(contentWidth: 358, gap: 16), 1)
+        XCTAssertEqual(InvoiceScreen.factColumns(contentWidth: 575, gap: 16), 1)
+        XCTAssertEqual(InvoiceScreen.factColumns(contentWidth: 576, gap: 16), 2)
+        XCTAssertEqual(InvoiceScreen.factColumns(contentWidth: 708, gap: 16), 2)
+        XCTAssertEqual(InvoiceScreen.factColumns(contentWidth: 872, gap: 16), 3)
+    }
+
+    /// Astryx's touch rules for a field and its marks: 16 pt text and 24 pt boxes on an iPhone,
+    /// the body size and 18 pt on the Mac.
+    func testTouchRulesForFieldsAndMarks() throws {
+        let theme = try Library.theme("theme-astryx")
+        let ax = AXStyle(mode: theme.light, isDark: false, scale: 1)
+        #if os(iOS)
+        XCTAssertEqual(showMarkSide(ax), 24)
+        #else
+        XCTAssertEqual(showMarkSide(ax), 18)
+        #endif
+        XCTAssertEqual(showFieldHeight(ax), 36)
+    }
+
     // MARK: Fixtures
 
     private typealias JSON = [String: Any]

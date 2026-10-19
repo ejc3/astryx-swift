@@ -10,6 +10,8 @@ struct TCalModel: Decodable {
         var selected = ""
         var previousMonth = ""
         var nextMonth = ""
+        /// The two-letter weekday names, Sunday first ("Su" to "Sa").
+        var weekdays: [String] = []
     }
 
     /// The selected day, or nil when none is.
@@ -84,14 +86,13 @@ enum TCalendarMath {
         return TCalDate(moved)
     }
 
-    /// The weeks of a month: seven days per row, from the Sunday on or before the 1st to the
-    /// Saturday on or after the last day. Days outside the month are flagged.
+    /// The weeks of a month: always six rows of seven days, as the stock Calendar draws them, from the
+    /// Sunday on or before the 1st. Days outside the month are flagged.
     static func weeks(of month: TCalDate) -> [[(date: TCalDate, inMonth: Bool)]] {
         let c = TCalDate.calendar
         let first = c.date(from: DateComponents(year: month.year, month: month.month, day: 1, hour: 12))!
-        let days = c.range(of: .day, in: .month, for: first)!.count
         let lead = (c.component(.weekday, from: first) - c.firstWeekday + 7) % 7
-        let total = Int((Double(lead + days) / 7).rounded(.up)) * 7
+        let total = 42
         var out: [[(TCalDate, Bool)]] = []
         var row: [(TCalDate, Bool)] = []
         for i in 0..<total {

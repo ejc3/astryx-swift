@@ -8,9 +8,8 @@
  *   set    <toggle> <boolean>   dataExport, adminMembers, twoFactor
  *   set    search   <item id>   the chosen search result ("" clears it)
  *
- * The password fields start with the stock sample text, so the web copy matches stock. A native
- * host may draw them empty (their `words.*Placeholder` shows), which is its own presentation
- * choice: Apple's guidance is never to prefill a password field.
+ * The password fields start with the stock sample text, so the web copy matches stock. A host
+ * draws the core's value (it does not hold a state of its own for them).
  */
 import type { TemplateModule } from "../types.ts";
 import { COMMON_WORDS, type CommonWords } from "../checkout/words.ts";

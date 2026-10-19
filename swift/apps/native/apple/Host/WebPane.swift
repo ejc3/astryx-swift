@@ -22,6 +22,7 @@ final class WebBridge: NSObject, WKScriptMessageHandler {
         config.userContentController = content
         addScenarioDriver(to: config)
         webView = WKWebView(frame: .zero, configuration: config)
+        webView.letPageUseTheSafeArea()
         super.init()
         content.add(WeakHandler(self), name: "astryx")
         #if DEBUG
@@ -56,6 +57,7 @@ final class WebBridge: NSObject, WKScriptMessageHandler {
         case "ready":
             ready = true
             for store in ["theme", "app"] { if let json = latest[store] { send(store, json) } }
+            scrollForCapture(webView)
         case "dispatch":
             guard let action = body["action"], JSONSerialization.isValidJSONObject(action),
                   let data = try? JSONSerialization.data(withJSONObject: action),
@@ -78,6 +80,19 @@ func addScenarioDriver(to config: WKWebViewConfiguration) {
 }
 
 extension WKWebView {
+    /// The page runs to the display's edges, under the navigation bar and the home indicator, and
+    /// scrolls under them as the SwiftUI drawing does. It asks for that with `viewport-fit=cover`
+    /// and insets itself by `env(safe-area-inset-*)`; the scroll view adds none of its own on top
+    /// (`.automatic` leaves the page's own scrollers to the page, and the document's inset to the
+    /// safe area the web view reports).
+    @MainActor
+    func letPageUseTheSafeArea() {
+        #if os(iOS)
+        scrollView.contentInsetAdjustmentBehavior = .automatic
+        scrollView.automaticallyAdjustsScrollIndicatorInsets = true
+        #endif
+    }
+
     /// Performs a scenario step's gestures in the page, as a person would; throws what the page threw.
     @MainActor
     func performGestures(_ gestures: Any) async throws {
@@ -148,6 +163,7 @@ final class StockBridge {
         config.setURLSchemeHandler(BundledPages(), forURLScheme: "astryx")
         addScenarioDriver(to: config)
         webView = WKWebView(frame: .zero, configuration: config)
+        webView.letPageUseTheSafeArea()
         #if DEBUG
         if #available(macOS 13.3, iOS 16.4, *) { webView.isInspectable = true }
         #endif
@@ -202,6 +218,7 @@ final class OwnCoreBridge {
         config.setURLSchemeHandler(BundledPages(), forURLScheme: "astryx")
         addScenarioDriver(to: config)
         webView = WKWebView(frame: .zero, configuration: config)
+        webView.letPageUseTheSafeArea()
         #if DEBUG
         if #available(macOS 13.3, iOS 16.4, *) { webView.isInspectable = true }
         #endif
@@ -242,3 +259,21 @@ struct OwnCorePane: UIViewRepresentable {
     func updateUIView(_ view: WKWebView, context: Context) {}
 }
 #endif
+
+/// `-AXScrollY <points>` (screen captures): once the page has drawn, scroll it that far, the
+/// document and the page's own tallest scrolling box (templates scroll an inner element), so a
+/// capture can see below the fold without a pointer. Off unless the argument is given.
+func scrollForCapture(_ webView: WKWebView) {
+    let y = UserDefaults.standard.double(forKey: "AXScrollY")
+    guard y > 0 else { return }
+    DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+        webView.evaluateJavaScript("""
+        (() => { const y = \(y); window.scrollTo(0, y);
+          let best = null; for (const e of document.querySelectorAll('*')) {
+            const o = getComputedStyle(e).overflowY;
+            if ((o === 'auto' || o === 'scroll') && e.scrollHeight > e.clientHeight + 1 &&
+                (!best || e.clientHeight > best.clientHeight)) best = e; }
+          if (best) best.scrollTop = y; })()
+        """)
+    }
+}

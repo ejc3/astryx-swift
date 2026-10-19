@@ -1,5 +1,6 @@
 import AstryxKit
 import Foundation
+import QuartzCore
 
 /// Runs the core in the headless runtime and carries its two stores to `model`. Every
 /// action the views send goes to the core as JSON; every snapshot the core sends comes
@@ -35,8 +36,11 @@ final class ClientHost: NSObject, AXClientServices {
 
     /// One snapshot, to both drawings.
     private func deliver(_ store: String, _ json: String) {
+        let began = CACurrentMediaTime()
         model.receive(store: store, snapshotJSON: json)
         web.changed(store: store, snapshotJSON: json)
+        FrameMeter.shared.noteSnapshot(bytes: json.utf8.count, seconds: CACurrentMediaTime() - began,
+                                       step: model.app?.scenarios?.playing.map { "\($0.progress) \($0.caption)" })
         guard store == "app", let data = json.data(using: .utf8),
               let snapshot = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return }
         if let surface = snapshot["surface"] as? [String: Any], let template = surface["stockTemplate"] as? String { stock.show(template) }
@@ -145,6 +149,7 @@ final class ClientHost: NSObject, AXClientServices {
                 let queued = self.waiting
                 self.waiting = []
                 for action in queued { self.call("dispatch", action) }
+                if UserDefaults.standard.bool(forKey: "AXFrameMeter") { FrameMeter.shared.start() }
                 // `-AXScenario inbox:web` (the UI tests, a demo) starts a scenario at once.
                 if let scenario = UserDefaults.standard.string(forKey: "AXScenario") {
                     self.call("dispatch", "{\"type\":\"press\",\"id\":\"scenario.start:\(scenario)\"}")

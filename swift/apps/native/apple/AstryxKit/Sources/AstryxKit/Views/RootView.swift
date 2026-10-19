@@ -248,6 +248,7 @@ struct SurfaceLayout: View {
             // the cell; the cell is what the layout gives it.
             Color.clear
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .modifier(WebExtendsUnderBars(extends: !showsCaption))
                 .overlay(alignment: .topLeading) {
                     switch drawing {
                     case .web: web
@@ -283,6 +284,26 @@ struct SurfaceLayout: View {
         .background(ax.surface)
         .overlay(alignment: .bottom) { Rectangle().fill(ax.border).frame(height: 1) }
         .accessibilityElement(children: .combine)
+    }
+}
+
+/// A web drawing alone on a phone runs to the display's edges, under the navigation bar and the
+/// home indicator, as the SwiftUI drawing's scroll view does (HIG Layout: content extends to the
+/// edges, bars float over it). The page insets itself by `env(safe-area-inset-*)` (it sets
+/// `viewport-fit=cover`) and scrolls under the bars.
+private struct WebExtendsUnderBars: ViewModifier {
+    let extends: Bool
+
+    func body(content: Content) -> some View {
+        #if os(iOS)
+        if extends {
+            content.ignoresSafeArea(.container, edges: [.top, .bottom])
+        } else {
+            content
+        }
+        #else
+        content
+        #endif
     }
 }
 
@@ -410,23 +431,28 @@ private struct SidebarRow: View {
     let item: NavItem
     let selected: Bool
     @Environment(\.ax) private var ax
+    /// Increased on the selected row of a focused sidebar, which the system fills with the accent
+    /// color: there the row's content goes to the system's on-accent style, as in Finder and Mail.
+    @Environment(\.backgroundProminence) private var prominence
+
+    private var onAccent: Bool { prominence == .increased }
 
     var body: some View {
         HStack(spacing: ax.space(3)) {
             Image(systemName: item.icon.symbol)
                 .frame(width: ax.fontSize("font-size-lg", 17) * 1.3)
-                .foregroundStyle(selected ? ax.accent : ax.iconSecondary)
+                .foregroundStyle(onAccent ? AnyShapeStyle(.primary) : AnyShapeStyle(selected ? ax.accent : ax.iconSecondary))
             Text(item.label)
                 .font(ax.fontLabel)
-                .foregroundStyle(ax.text)
+                .foregroundStyle(onAccent ? AnyShapeStyle(.primary) : AnyShapeStyle(ax.text))
             Spacer(minLength: ax.space(2))
             if let badge = item.badge {
                 Text(badge)
                     .font(ax.font("font-size-xs", 10, weight: "font-weight-semibold"))
-                    .foregroundStyle(ax.tone(.accent).text)
+                    .foregroundStyle(onAccent ? AnyShapeStyle(.primary) : AnyShapeStyle(ax.tone(.accent).text))
                     .padding(.horizontal, ax.space(2))
                     .padding(.vertical, ax.hair)
-                    .background(Capsule().fill(ax.accentMuted))
+                    .background(Capsule().fill(onAccent ? AnyShapeStyle(.quaternary) : AnyShapeStyle(ax.accentMuted)))
             }
         }
         .accessibilityElement(children: .combine)
@@ -558,51 +584,117 @@ struct ScreenView: View {
     @Environment(\.ax) private var ax
     @Environment(\.axSend) private var send
     @Environment(\.dynamicTypeSize) private var typeSize
+    @Environment(\.horizontalSizeClass) private var sizeClass
 
-    /// The page repeats the title and subtitle unless the system's title carries them. The
-    /// bar's large title keeps the subtitle to one line, so at accessibility sizes the page
-    /// draws both, wrapping.
-    private var showsHeader: Bool {
-        if inlineToolbar { return true }
-        if typeSize.isAccessibilitySize { return true }
-        if #available(iOS 26, macOS 26, *) { return false }
+    /// On a phone the bar has room for short words; an action with a long one goes in a menu at
+    /// the bar's trailing end, with its words and glyph (an icon alone does not say it).
+    private var overflowButtons: [ButtonNode] {
+        #if os(iOS)
+        guard sizeClass == .compact else { return [] }
+        return app.screen.toolbar.filter { ToolbarButton.isLong($0) }
+        #else
+        return []
+        #endif
+    }
+    private var barButtons: [ButtonNode] {
+        let overflow = Set(overflowButtons.map(\.id))
+        return app.screen.toolbar.filter { !overflow.contains($0.id) }
+    }
+
+    /// Whether the navigation bar carries the title: it does wherever there is a bar (not in a
+    /// picture with no window), unless the page draws it itself at accessibility sizes, where the
+    /// bar's subtitle cannot wrap.
+    private var barShowsTitle: Bool {
+        if inlineToolbar { return false }
+        #if os(iOS)
+        if #available(iOS 26, *), typeSize.isAccessibilitySize { return false }
+        #endif
         return true
     }
+
+    /// Whether the bar's subtitle carries the subtitle too (iOS and macOS 26, and the Mac before).
+    private var barShowsSubtitle: Bool {
+        guard barShowsTitle else { return false }
+        #if os(macOS)
+        return true
+        #else
+        if #available(iOS 26, *) { return !typeSize.isAccessibilitySize }
+        return false
+        #endif
+    }
+
+    /// The page draws a heading only for what the bar does not say: a page header that repeats
+    /// the navigation title is left out (the title in the bar is the heading), and the subtitle
+    /// is drawn where the bar has none (before the glass design on a phone) or cannot wrap it.
+    private var showsHeader: Bool { !barShowsTitle || !barShowsSubtitle }
+    private var headerShowsTitle: Bool { !barShowsTitle }
 
     var body: some View {
         Group {
             if let fixedWidth {
-                page(width: fixedWidth)
+                page(width: fixedWidth, height: 800)
             } else {
-                GeometryReader { geo in page(width: geo.size.width) }
+                GeometryReader { geo in page(width: geo.size.width, height: geo.size.height) }
             }
         }
-        .background(ax.page)
-        .modifier(ScreenTitle(screen: app.screen, large: largeTitle && scrolls, pageDrawsTitle: !inlineToolbar && typeSize.isAccessibilitySize))
+        // The page is the surface, white in the light themes, as the web's content area is: the
+        // translucent tokens (bubbles, columns, chips) then come out as they do there.
+        .background(ax.surface)
+        // A screen that scrolls inside itself (the AI chat) has no scroll view for a large title to
+        // collapse with: its title is the inline one.
+        .modifier(ScreenTitle(screen: app.screen, large: largeTitle && scrolls && !bodyScrollsItself, pageDrawsTitle: !inlineToolbar && typeSize.isAccessibilitySize))
         .toolbar {
             if !inlineToolbar {
                 ToolbarItemGroup(placement: .primaryAction) {
-                    ForEach(app.screen.toolbar, id: \.id) { button in
+                    ForEach(barButtons, id: \.id) { button in
                         ToolbarButton(node: button)
+                    }
+                    if !overflowButtons.isEmpty {
+                        ToolbarOverflowMenu(nodes: overflowButtons)
                     }
                 }
             }
         }
     }
 
+    /// A refactored template draws its own page, with its own padding (each Astryx template sets
+    /// its own); the other screens get the page's 24 pt, 16 on a phone.
+    private var bodyIsTemplate: Bool {
+        if case .template = app.screen.body { return true }
+        return false
+    }
+
+    /// A template that scrolls inside itself (the AI chat: its conversation scrolls above a pinned
+    /// composer, as the web's ChatLayout does) is given the window's height and no outer scroll.
+    private var bodyScrollsItself: Bool {
+        // The chat (a conversation above a pinned composer), the inbox (one list under its masthead)
+        // and the kanban board (columns under a pinned toolbar) size themselves to the window.
+        if case .template(let node) = app.screen.body { return ["chat", "inbox", "kanban"].contains(node.template) }
+        return false
+    }
+
     @ViewBuilder
-    private func page(width: CGFloat) -> some View {
-        let pad = width < 600 ? ax.space(4) : ax.space(6)
+    private func page(width: CGFloat, height: CGFloat) -> some View {
+        let gutter = width < 600 ? ax.space(4) : ax.space(6)
+        let pad = bodyIsTemplate ? 0 : gutter
         let content = VStack(alignment: .leading, spacing: ax.space(6)) {
-            if showsHeader { header }
+            if showsHeader {
+                // Above a template, which pads itself, the header keeps the page's gutter.
+                header
+                    .padding(.horizontal, bodyIsTemplate ? gutter : 0)
+                    .padding(.top, bodyIsTemplate ? gutter : 0)
+            }
             NodeView(node: app.screen.body)
         }
         .padding(pad)
         .frame(maxWidth: .infinity, alignment: .topLeading)
         .environment(\.axWidth, width - 2 * pad)
+        .environment(\.axHeight, height)
 
-        if scrolls {
-            ScrollView { content }
+        if scrolls && bodyScrollsItself {
+            content.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        } else if scrolls {
+            ScrollView { content }.axCaptureScroll()
         } else {
             content.fixedSize(horizontal: false, vertical: true).frame(maxHeight: .infinity, alignment: .top)
         }
@@ -611,13 +703,15 @@ struct ScreenView: View {
     private var header: some View {
         HStack(alignment: .top, spacing: ax.space(4)) {
             VStack(alignment: .leading, spacing: ax.space(1)) {
-                Text(app.screen.title)
-                    .font(ax.heading(1))
-                    .foregroundStyle(ax.text)
-                    .lineLimit(4)
-                    .minimumScaleFactor(0.5)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .accessibilityAddTraits(.isHeader)
+                if headerShowsTitle {
+                    Text(app.screen.title)
+                        .font(ax.heading(1))
+                        .foregroundStyle(ax.text)
+                        .lineLimit(4)
+                        .minimumScaleFactor(0.5)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityAddTraits(.isHeader)
+                }
                 // Wraps between words at any size; a word longer than the screen shrinks to fit
                 // before it would be broken in two.
                 Text(app.screen.subtitle)
@@ -637,14 +731,32 @@ struct ScreenView: View {
     }
 }
 
-/// A toolbar button of the screen, as the platform's own prominent or bordered button.
-private struct ToolbarButton: View {
+/// A toolbar button of the screen, as the platform's own button: it shows its words (an icon
+/// alone does not say "Follow" or "Today"), and a primary action is the prominent style. On a
+/// phone's bar the words stand alone, without the glyph, to fit; only a plus, the standard Add
+/// symbol, stays an icon. Every one is also a command in the menu bar (see `AstryxCommands`).
+struct ToolbarButton: View {
     let node: ButtonNode
     @Environment(\.ax) private var ax
     @Environment(\.axSend) private var send
+    @Environment(\.horizontalSizeClass) private var sizeClass
+
+    /// More words than a phone's bar has room for: these go in the overflow menu.
+    static func isLong(_ node: ButtonNode) -> Bool {
+        node.label.count > 14
+    }
+
+
+    private var compact: Bool {
+        #if os(macOS)
+        false
+        #else
+        sizeClass == .compact
+        #endif
+    }
 
     var body: some View {
-        Button(role: node.variant == .destructive ? .destructive : nil) {
+        let button = Button(role: node.variant == .destructive ? .destructive : nil) {
             send(.press(id: node.id))
         } label: {
             if let icon = node.icon {
@@ -656,6 +768,50 @@ private struct ToolbarButton: View {
         .help(node.label)
         .disabled(node.disabled ?? false)
         .tint(node.variant == .destructive ? ax.danger : ax.accent)
+        // On a phone's bar the words alone: a glyph rarely says the action ("+" reads as Add, not
+        // Follow or Invite), and the words are what the web page shows.
+        if !compact {
+            styled(button.labelStyle(.titleAndIcon))
+        } else {
+            styled(button.labelStyle(.titleOnly))
+        }
+    }
+
+    @ViewBuilder
+    private func styled(_ button: some View) -> some View {
+        if node.variant == .primary {
+            button.buttonStyle(.borderedProminent)
+        } else {
+            button
+        }
+    }
+}
+
+/// A phone's bar menu for the actions whose words are too long for the bar: each with its words
+/// and glyph, as a menu item.
+private struct ToolbarOverflowMenu: View {
+    let nodes: [ButtonNode]
+    @Environment(\.axSend) private var send
+
+    var body: some View {
+        Menu {
+            ForEach(nodes, id: \.id) { node in
+                Button(role: node.variant == .destructive ? .destructive : nil) {
+                    send(.press(id: node.id))
+                } label: {
+                    if let icon = node.icon {
+                        Label(node.label, systemImage: icon.symbol)
+                    } else {
+                        Text(node.label)
+                    }
+                }
+                .disabled(node.disabled ?? false)
+            }
+        } label: {
+            Image(systemName: "ellipsis.circle")
+        }
+        // The menu has no title of its own: it is named for what it holds.
+        .accessibilityLabel(nodes.map(\.label).joined(separator: ", "))
     }
 }
 
@@ -737,4 +893,33 @@ var chromeTarget: CGFloat {
     #else
     28
     #endif
+}
+
+/// `-AXScrollY <points>` (screen captures): the page opens scrolled that far, so a capture can see
+/// below the fold without a pointer. Off unless the argument is given.
+extension View {
+    @ViewBuilder
+    func axCaptureScroll() -> some View {
+        let y = UserDefaults.standard.double(forKey: "AXScrollY")
+        if #available(iOS 18, macOS 15, *), y > 0 {
+            modifier(AXCaptureScroll(y: y))
+        } else {
+            self
+        }
+    }
+}
+
+@available(iOS 18, macOS 15, *)
+private struct AXCaptureScroll: ViewModifier {
+    let y: Double
+    @State private var position = ScrollPosition()
+
+    func body(content: Content) -> some View {
+        content
+            .scrollPosition($position)
+            .task {
+                try? await Task.sleep(for: .seconds(1))
+                position.scrollTo(y: y)
+            }
+    }
 }
