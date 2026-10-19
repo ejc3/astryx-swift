@@ -632,7 +632,7 @@ struct ScreenView: View {
         if scrolls && bodyScrollsItself {
             content.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         } else if scrolls {
-            ScrollView { content }
+            ScrollView { content }.axCaptureScroll()
         } else {
             content.fixedSize(horizontal: false, vertical: true).frame(maxHeight: .infinity, alignment: .top)
         }
@@ -793,4 +793,33 @@ var chromeTarget: CGFloat {
     #else
     28
     #endif
+}
+
+/// `-AXScrollY <points>` (screen captures): the page opens scrolled that far, so a capture can see
+/// below the fold without a pointer. Off unless the argument is given.
+extension View {
+    @ViewBuilder
+    func axCaptureScroll() -> some View {
+        let y = UserDefaults.standard.double(forKey: "AXScrollY")
+        if #available(iOS 18, macOS 15, *), y > 0 {
+            modifier(AXCaptureScroll(y: y))
+        } else {
+            self
+        }
+    }
+}
+
+@available(iOS 18, macOS 15, *)
+private struct AXCaptureScroll: ViewModifier {
+    let y: Double
+    @State private var position = ScrollPosition()
+
+    func body(content: Content) -> some View {
+        content
+            .scrollPosition($position)
+            .task {
+                try? await Task.sleep(for: .seconds(1))
+                position.scrollTo(y: y)
+            }
+    }
 }

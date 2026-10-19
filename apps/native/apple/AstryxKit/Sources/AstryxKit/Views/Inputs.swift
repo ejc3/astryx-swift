@@ -338,8 +338,9 @@ struct AXSegmented: View {
     @Environment(\.axStatic) private var isStatic
 
     var body: some View {
-        // Astryx's SegmentedControl keeps its label for assistive technology only.
-        AXField(label: "") {
+        // The core decides whether the label shows (`labelHidden`), as the web page does; hidden,
+        // it is still the control's accessibility label.
+        AXField(label: node.labelHidden == true ? "" : node.label) {
             if isStatic {
                 StaticSegmented(options: node.options, value: node.value)
                     .accessibilityLabel(node.label)

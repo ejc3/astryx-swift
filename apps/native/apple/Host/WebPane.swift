@@ -56,6 +56,7 @@ final class WebBridge: NSObject, WKScriptMessageHandler {
         case "ready":
             ready = true
             for store in ["theme", "app"] { if let json = latest[store] { send(store, json) } }
+            scrollForCapture(webView)
         case "dispatch":
             guard let action = body["action"], JSONSerialization.isValidJSONObject(action),
                   let data = try? JSONSerialization.data(withJSONObject: action),
@@ -242,3 +243,21 @@ struct OwnCorePane: UIViewRepresentable {
     func updateUIView(_ view: WKWebView, context: Context) {}
 }
 #endif
+
+/// `-AXScrollY <points>` (screen captures): once the page has drawn, scroll it that far, the
+/// document and the page's own tallest scrolling box (templates scroll an inner element), so a
+/// capture can see below the fold without a pointer. Off unless the argument is given.
+func scrollForCapture(_ webView: WKWebView) {
+    let y = UserDefaults.standard.double(forKey: "AXScrollY")
+    guard y > 0 else { return }
+    DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+        webView.evaluateJavaScript("""
+        (() => { const y = \(y); window.scrollTo(0, y);
+          let best = null; for (const e of document.querySelectorAll('*')) {
+            const o = getComputedStyle(e).overflowY;
+            if ((o === 'auto' || o === 'scroll') && e.scrollHeight > e.clientHeight + 1 &&
+                (!best || e.clientHeight > best.clientHeight)) best = e; }
+          if (best) best.scrollTop = y; })()
+        """)
+    }
+}

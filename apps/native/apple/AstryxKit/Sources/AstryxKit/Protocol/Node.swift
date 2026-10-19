@@ -286,6 +286,8 @@ public struct ChoiceNode: Decodable, Sendable {
     public let label: String
     public let options: [Option]
     public let value: String
+    /// The label is for assistive technology only (the core says so; the web follows it too).
+    public let labelHidden: Bool?
 }
 
 public struct SliderNode: Decodable, Sendable {
