@@ -10,30 +10,47 @@ struct DashActiveUsers: View {
     @Environment(\.ax) private var ax
     @Environment(\.axSend) private var send
     @Environment(\.axWidth) private var width
+    @Environment(\.dynamicTypeSize) private var typeSize
     @ScaledMetric(relativeTo: .body) private var compactHeight: CGFloat = 220
     @ScaledMetric(relativeTo: .body) private var regularHeight: CGFloat = 300
 
+    private var title: some View {
+        Text(chart.title)
+            .font(ax.heading(3))
+            .foregroundStyle(ax.text)
+            .fixedSize(horizontal: false, vertical: true)
+            .accessibilityAddTraits(.isHeader)
+    }
+
+    private func reload(fills: Bool) -> some View {
+        Button {
+            send(.press(id: "tpl.dashboard.reload"))
+        } label: {
+            HStack(spacing: ax.space(2)) {
+                Image(systemName: "arrow.clockwise")
+                Text(chart.reloadLabel)
+            }
+        }
+        .buttonStyle(AXButtonStyle(variant: .secondary, ax: ax, fills: fills))
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: ax.space(6)) {
-            HStack(alignment: .center, spacing: ax.space(3)) {
-                Text(chart.title)
-                    .font(ax.heading(3))
-                    .foregroundStyle(ax.text)
-                    .accessibilityAddTraits(.isHeader)
-                Spacer(minLength: ax.space(2))
-                Button {
-                    send(.press(id: "tpl.dashboard.reload"))
-                } label: {
-                    HStack(spacing: ax.space(2)) {
-                        Image(systemName: "arrow.clockwise")
-                        Text(chart.reloadLabel).lineLimit(1)
-                    }
+            AXAdaptiveRow {
+                HStack(alignment: .center, spacing: ax.space(3)) {
+                    title
+                    Spacer(minLength: ax.space(2))
+                    reload(fills: false).axOneLine()
                 }
-                .buttonStyle(AXButtonStyle(variant: .secondary, ax: ax))
+            } column: {
+                VStack(alignment: .leading, spacing: ax.space(3)) {
+                    title
+                    reload(fills: true)
+                }
             }
             VStack(alignment: .leading, spacing: ax.space(3)) {
                 DashLineChart(chart: chart, words: words)
-                    .frame(height: width < 500 ? min(compactHeight, 330) : min(regularHeight, 450))
+                    .frame(height: width < 500 ? min(compactHeight, typeSize.isAccessibilitySize ? 420 : 330) : min(regularHeight, 450))
                 FlowLayout(spacing: ax.space(6), crossAlignment: 0.5) {
                     ForEach(Array(chart.series.enumerated()), id: \.element.id) { index, series in
                         HStack(spacing: ax.space(2)) {
@@ -88,6 +105,8 @@ private struct DashLineChart: View {
     let words: DashModel.Words
     @State private var selected: Double?
     @Environment(\.ax) private var ax
+    @Environment(\.axWidth) private var width
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     /// The model's domain widened to hold every point, as Recharts does with a numeric axis
     /// (its domain grows to the data unless `allowDataOverflow` is set), so all points show.
@@ -108,6 +127,23 @@ private struct DashLineChart: View {
     }
     private var ticks: [DashModel.ActiveUsers.Tick] {
         chart.xTicks.filter { xRange.contains($0.at) }
+    }
+    /// The time labels under the chart. At accessibility sizes a label is as wide as a third of a
+    /// phone, so the labels thin out (the middle one on a narrow screen, the two ends on a wider
+    /// one) instead of overprinting each other.
+    private var shownTicks: [DashModel.ActiveUsers.Tick] {
+        guard typeSize.isAccessibilitySize, ticks.count > 1 else { return ticks }
+        if width < 500 {
+            let middle = (xRange.lowerBound + xRange.upperBound) / 2
+            return [ticks.min { abs($0.at - middle) < abs($1.at - middle) }!]
+        }
+        return ticks.count > 2 ? [ticks[0], ticks[ticks.count - 1]] : ticks
+    }
+    /// The value labels at the side: every other one at accessibility sizes, where each is as
+    /// tall as a fifth of the chart.
+    private var shownYTicks: [Double] {
+        guard typeSize.isAccessibilitySize, chart.yTicks.count > 3 else { return chart.yTicks }
+        return chart.yTicks.enumerated().filter { $0.offset % 2 == 0 }.map(\.element)
     }
     private var picked: DashModel.ActiveUsers.Point? {
         guard let selected else { return nil }
@@ -147,7 +183,7 @@ private struct DashLineChart: View {
         .chartXSelection(value: $selected)
         .chartLegend(.hidden)
         .chartXAxis {
-            AxisMarks(values: ticks.map(\.at)) { value in
+            AxisMarks(values: shownTicks.map(\.at)) { value in
                 AxisValueLabel(collisionResolution: .disabled) {
                     if let at = value.as(Double.self), let tick = ticks.first(where: { $0.at == at }) {
                         Text(tick.label)
@@ -158,7 +194,7 @@ private struct DashLineChart: View {
             }
         }
         .chartYAxis {
-            AxisMarks(position: .leading, values: chart.yTicks) { value in
+            AxisMarks(position: .leading, values: shownYTicks) { value in
                 AxisGridLine(stroke: StrokeStyle(lineWidth: 1)).foregroundStyle(ax.border)
                 AxisValueLabel {
                     if let v = value.as(Double.self) {

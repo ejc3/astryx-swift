@@ -24,17 +24,31 @@ private struct SectionHeader<Badge: View, Buttons: View>: View {
     @ViewBuilder var badge: Badge
     @ViewBuilder var buttons: Buttons
     @Environment(\.ax) private var ax
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
-        ViewThatFits(in: .horizontal) {
-            HStack(spacing: ax.space(2)) {
-                titleRow
-                Spacer(minLength: ax.space(2))
-                buttons
-            }
+        // Title and buttons in a row; else the buttons under the title; at accessibility sizes
+        // a column of full-width buttons.
+        if typeSize.isAccessibilitySize {
             VStack(alignment: .leading, spacing: ax.space(2)) {
                 titleRow
-                HStack(spacing: ax.space(2)) { buttons }
+                VStack(spacing: ax.space(2)) { buttons }.environment(\.axFillButtons, true)
+            }
+        } else {
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: ax.space(2)) {
+                    titleRow
+                    Spacer(minLength: ax.space(2))
+                    buttons
+                }
+                VStack(alignment: .leading, spacing: ax.space(2)) {
+                    titleRow
+                    HStack(spacing: ax.space(2)) { buttons }
+                }
+                VStack(alignment: .leading, spacing: ax.space(2)) {
+                    titleRow
+                    VStack(spacing: ax.space(2)) { buttons }.environment(\.axFillButtons, true)
+                }
             }
         }
     }
@@ -42,6 +56,7 @@ private struct SectionHeader<Badge: View, Buttons: View>: View {
     private var titleRow: some View {
         HStack(spacing: ax.space(2)) {
             Text(title).font(ax.heading(2)).foregroundStyle(ax.text).accessibilityAddTraits(.isHeader)
+                .fixedSize(horizontal: false, vertical: true)
             badge
         }
     }
@@ -50,6 +65,7 @@ private struct SectionHeader<Badge: View, Buttons: View>: View {
 struct OrderItems: View {
     let model: OrderModel
     @Environment(\.ax) private var ax
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
         VStack(alignment: .leading, spacing: ax.space(4)) {
@@ -63,23 +79,40 @@ struct OrderItems: View {
             }
             VStack(alignment: .leading, spacing: ax.space(4)) {
                 ForEach(Array(model.products.enumerated()), id: \.offset) { _, product in
-                    HStack(alignment: .top, spacing: ax.space(3)) {
-                        COSThumbnail(src: product.image, name: product.name, side: 56)
-                        VStack(alignment: .leading, spacing: 0) {
-                            Text(product.name).font(ax.fontLabel).foregroundStyle(ax.text)
-                            ForEach(Array(product.lines.enumerated()), id: \.offset) { _, line in
-                                Text(line).font(ax.fontSmall).foregroundStyle(ax.textSecondary)
-                            }
+                    let details = VStack(alignment: .leading, spacing: 0) {
+                        Text(product.name).font(ax.fontLabel).foregroundStyle(ax.text)
+                        ForEach(Array(product.lines.enumerated()), id: \.offset) { _, line in
+                            Text(line).font(ax.fontSmall).foregroundStyle(ax.textSecondary)
                         }
-                        .fixedSize(horizontal: false, vertical: true)
-                        Spacer(minLength: ax.space(2))
-                        VStack(alignment: .trailing, spacing: 0) {
-                            Text(product.amount).font(ax.fontStrong).foregroundStyle(ax.text)
-                            Text(COSPart.join(product.unit)).font(ax.fontSmall).foregroundStyle(ax.textSecondary)
-                        }
-                        .lineLimit(1)
                     }
-                    .accessibilityElement(children: .combine)
+                    .fixedSize(horizontal: false, vertical: true)
+                    if typeSize.isAccessibilitySize {
+                        // Name and lines get the whole width under the picture, and the
+                        // amount a line of its own, so no word is broken to make room.
+                        VStack(alignment: .leading, spacing: ax.space(2)) {
+                            COSThumbnail(src: product.image, name: product.name, side: 56)
+                            details
+                            VStack(alignment: .leading, spacing: 0) {
+                                Text(product.amount).font(ax.fontStrong).foregroundStyle(ax.text)
+                                Text(COSPart.join(product.unit)).font(ax.fontSmall).foregroundStyle(ax.textSecondary)
+                            }
+                            .fixedSize(horizontal: false, vertical: true)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .accessibilityElement(children: .combine)
+                    } else {
+                        HStack(alignment: .top, spacing: ax.space(3)) {
+                            COSThumbnail(src: product.image, name: product.name, side: 56)
+                            details
+                            Spacer(minLength: ax.space(2))
+                            VStack(alignment: .trailing, spacing: 0) {
+                                Text(product.amount).font(ax.fontStrong).foregroundStyle(ax.text)
+                                Text(COSPart.join(product.unit)).font(ax.fontSmall).foregroundStyle(ax.textSecondary)
+                            }
+                            .lineLimit(1)
+                        }
+                        .accessibilityElement(children: .combine)
+                    }
                 }
             }
         }

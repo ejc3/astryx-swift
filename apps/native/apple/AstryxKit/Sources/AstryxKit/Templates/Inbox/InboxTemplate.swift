@@ -29,6 +29,7 @@ struct InboxScreen: View {
     @Environment(\.axSend) private var send
     @Environment(\.axStatic) private var isStatic
     @Environment(\.axWidth) private var width
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     /// The pane's width once the handle has moved it; until then two thirds of the surface.
     @State private var movedPane: CGFloat?
@@ -102,23 +103,41 @@ struct InboxScreen: View {
         let subtitle = Text(model.subtitle.joined())
             .font(ax.fontBase)
             .foregroundStyle(ax.textSecondary)
-        let refresh = Button {
-        } label: {
-            Label(model.text.refresh, systemImage: "arrow.clockwise")
+        func refresh(fills: Bool) -> some View {
+            Button {
+            } label: {
+                Label(model.text.refresh, systemImage: "arrow.clockwise")
+            }
+            .buttonStyle(AXButtonStyle(variant: .ghost, ax: ax, fills: fills))
+            .disabled(model.isInert("refresh"))
         }
-        .buttonStyle(AXButtonStyle(variant: .ghost, ax: ax))
-        .disabled(model.isInert("refresh"))
-        let compose = Button {
-            send(.press(id: inboxAction("compose")))
-        } label: {
-            Label(model.text.compose, systemImage: "square.and.pencil")
+        func compose(fills: Bool) -> some View {
+            Button {
+                send(.press(id: inboxAction("compose")))
+            } label: {
+                Label(model.text.compose, systemImage: "square.and.pencil")
+            }
+            .buttonStyle(AXButtonStyle(variant: .primary, ax: ax, fills: fills))
         }
-        .buttonStyle(AXButtonStyle(variant: .primary, ax: ax))
-        return ViewThatFits(in: .horizontal) {
-            HStack(spacing: ax.space(3)) { subtitle; Spacer(minLength: ax.space(2)); refresh; compose }
-            VStack(alignment: .leading, spacing: ax.space(2)) {
-                subtitle
-                HStack(spacing: ax.space(2)) { refresh; compose }
+        // The subtitle and the two buttons in a row; else the buttons under the subtitle; else
+        // (and at accessibility sizes at once) a column of full-width buttons.
+        let stacked = VStack(alignment: .leading, spacing: ax.space(2)) {
+            subtitle
+            refresh(fills: true)
+            compose(fills: true)
+        }
+        return Group {
+            if typeSize.isAccessibilitySize {
+                stacked
+            } else {
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: ax.space(3)) { subtitle.axOneLine(); Spacer(minLength: ax.space(2)); refresh(fills: false).axOneLine(); compose(fills: false).axOneLine() }
+                    VStack(alignment: .leading, spacing: ax.space(2)) {
+                        subtitle
+                        HStack(spacing: ax.space(2)) { refresh(fills: false).axOneLine(); compose(fills: false).axOneLine() }
+                    }
+                    stacked
+                }
             }
         }
         .accessibilityElement(children: .contain)

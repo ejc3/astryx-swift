@@ -8,6 +8,11 @@ struct OrderHeader: View {
     @Environment(\.ax) private var ax
     @Environment(\.axSend) private var send
     @Environment(\.axWidth) private var width
+    @Environment(\.dynamicTypeSize) private var typeSize
+
+    /// Restock and Edit under the title instead of beside it, and then one above the other
+    /// at accessibility sizes.
+    private var stacked: Bool { narrow || typeSize.isAccessibilitySize }
 
     private var panelShown: Bool { narrow ? model.panelDialog : model.sidePanel }
 
@@ -32,17 +37,22 @@ struct OrderHeader: View {
                     Text(model.number)
                         .font(ax.heading(1))
                         .foregroundStyle(ax.text)
-                        .lineLimit(1)
+                        .lineLimit(typeSize.isAccessibilitySize ? nil : 1)
+                        .fixedSize(horizontal: false, vertical: true)
                         .accessibilityAddTraits(.isHeader)
                     facts
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                if !narrow {
+                if !stacked {
                     HStack(spacing: ax.space(2)) { restock; edit }
                 }
             }
-            if narrow {
-                HStack(spacing: ax.space(2)) { restock; edit }
+            if stacked {
+                if typeSize.isAccessibilitySize {
+                    VStack(spacing: ax.space(2)) { restock; edit }.environment(\.axFillButtons, true)
+                } else {
+                    HStack(spacing: ax.space(2)) { restock; edit }
+                }
             }
             HStack(spacing: ax.space(2)) {
                 OrderTabs(model: model)
@@ -64,12 +74,12 @@ struct OrderHeader: View {
     }
 
     private var restock: some View {
-        COSButton(label: model.words.restock, variant: .secondary, fills: narrow) {}
+        COSButton(label: model.words.restock, variant: .secondary, fills: stacked) {}
             .disabled(model.isInert("restock"))
     }
 
     private var edit: some View {
-        COSButton(label: model.words.edit, variant: .secondary, fills: narrow) {}
+        COSButton(label: model.words.edit, variant: .secondary, fills: stacked) {}
             .disabled(model.isInert("edit"))
     }
 

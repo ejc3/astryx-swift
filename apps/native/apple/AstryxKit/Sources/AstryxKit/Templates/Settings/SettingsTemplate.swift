@@ -67,6 +67,7 @@ private struct SettingsSectionMenu: View {
     let label: String
     let actions: SettingsSender
     @Environment(\.ax) private var ax
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
         let shown = items.first(where: \.isSelected)?.label ?? ""
@@ -82,7 +83,8 @@ private struct SettingsSectionMenu: View {
             }
         } label: {
             HStack(spacing: ax.space(2)) {
-                Text(shown).font(ax.fontLabel).foregroundStyle(ax.text).lineLimit(1)
+                Text(shown).font(ax.fontLabel).foregroundStyle(ax.text).lineLimit(typeSize.isAccessibilitySize ? nil : 1)
+                    .fixedSize(horizontal: false, vertical: true)
                 Spacer(minLength: 0)
                 Image(systemName: "chevron.up.chevron.down")
                     .font(.system(size: ax.fontSize("font-size-xs", 10), weight: .semibold))

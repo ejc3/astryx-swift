@@ -219,6 +219,7 @@ func axScale(for size: DynamicTypeSize) -> CGFloat {
 
 private struct AXStyleKey: EnvironmentKey { static let defaultValue = AXStyle.fallback }
 private struct AXStaticKey: EnvironmentKey { static let defaultValue = false }
+private struct AXFillButtonsKey: EnvironmentKey { static let defaultValue = false }
 private struct AXWidthKey: EnvironmentKey { static let defaultValue: CGFloat = 800 }
 
 /// A closure that sends an Action; the root view sets it, nodes call it.
@@ -244,6 +245,11 @@ extension EnvironmentValues {
     var axStatic: Bool {
         get { self[AXStaticKey.self] }
         set { self[AXStaticKey.self] = newValue }
+    }
+    /// Set by a column of stacked buttons: the buttons inside take the column's whole width.
+    var axFillButtons: Bool {
+        get { self[AXFillButtonsKey.self] }
+        set { self[AXFillButtonsKey.self] = newValue }
     }
     var axSend: AXSender {
         get { self[AXSendKey.self] }

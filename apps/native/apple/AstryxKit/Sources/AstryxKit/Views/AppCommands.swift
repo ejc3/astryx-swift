@@ -27,10 +27,13 @@ private struct ScenarioCommandItems: View {
     var body: some View {
         if let scenarios = model.app?.scenarios {
             ForEach(scenarios.list) { item in
-                Menu("\(item.template): \(item.title)") {
-                    ForEach(scenarios.drivers, id: \.value) { driver in
-                        Button(driver.label) {
-                            model.perform(.press(id: scenarios.startId(item, driver)))
+                // The template names the menu; the scenario's own title heads its choices.
+                Menu(item.template) {
+                    Section(item.title) {
+                        ForEach(scenarios.drivers, id: \.value) { driver in
+                            Button(driver.label) {
+                                model.perform(.press(id: scenarios.startId(item, driver)))
+                            }
                         }
                     }
                 }

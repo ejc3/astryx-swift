@@ -29,6 +29,7 @@ struct InvoiceScreen: View {
     @Environment(\.axSend) private var send
     @Environment(\.axStatic) private var isStatic
     @Environment(\.axWidth) private var width
+    @Environment(\.dynamicTypeSize) private var typeSize
     @State private var query: String
     @State private var showingFilters = false
 
@@ -80,20 +81,35 @@ struct InvoiceScreen: View {
 
     // MARK: Masthead
 
+    private var mastheadTitle: some View {
+        Text(model.title)
+            .font(ax.heading(1))
+            .foregroundStyle(ax.text)
+            .fixedSize(horizontal: false, vertical: true)
+            .accessibilityAddTraits(.isHeader)
+    }
+
+    private func download(fills: Bool) -> some View {
+        Button {
+        } label: {
+            Label(model.words.downloadPdf, systemImage: "arrow.down.to.line")
+        }
+        .buttonStyle(AXButtonStyle(variant: .secondary, ax: ax, fills: fills))
+        .disabled(model.isInert("downloadPdf"))
+    }
+
     private var masthead: some View {
         VStack(alignment: .leading, spacing: ax.space(5)) {
-            HStack(alignment: .center, spacing: ax.space(3)) {
-                Text(model.title)
-                    .font(ax.heading(1))
-                    .foregroundStyle(ax.text)
-                    .accessibilityAddTraits(.isHeader)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                Button {
-                } label: {
-                    Label(model.words.downloadPdf, systemImage: "arrow.down.to.line")
+            AXAdaptiveRow {
+                HStack(alignment: .center, spacing: ax.space(3)) {
+                    mastheadTitle.frame(maxWidth: .infinity, alignment: .leading)
+                    download(fills: false).axOneLine()
                 }
-                .buttonStyle(AXButtonStyle(variant: .secondary, ax: ax))
-                .disabled(model.isInert("downloadPdf"))
+            } column: {
+                VStack(alignment: .leading, spacing: ax.space(3)) {
+                    mastheadTitle
+                    download(fills: true)
+                }
             }
             details
         }
@@ -101,7 +117,8 @@ struct InvoiceScreen: View {
 
     /// The invoice facts, label over value, in as many columns as fit.
     private var details: some View {
-        let columns = width >= 760 ? 3 : 2
+        // One column at accessibility sizes: two would break a long value inside a word.
+        let columns = typeSize.isAccessibilitySize ? 1 : width >= 760 ? 3 : 2
         let rows = stride(from: 0, to: model.details.count, by: columns).map { start in
             Array(model.details[start..<min(start + columns, model.details.count)])
         }
@@ -182,10 +199,18 @@ struct InvoiceScreen: View {
     /// Where the header cells cannot sort or filter (a phone; the system table, which sorts by its
     /// own headers): a Sort menu with checkmarks, and the filters in a popover, or a sheet on a phone.
     private var sortAndFilter: some View {
-        HStack(spacing: ax.space(2)) {
-            if !usesSystemTable { sortMenu }
-            filterButton
-            Spacer(minLength: 0)
+        // Side by side, and one above the other at accessibility sizes.
+        AXAdaptiveRow {
+            HStack(spacing: ax.space(2)) {
+                if !usesSystemTable { sortMenu }
+                filterButton.axOneLine()
+                Spacer(minLength: 0)
+            }
+        } column: {
+            VStack(alignment: .leading, spacing: ax.space(2)) {
+                if !usesSystemTable { sortMenu }
+                filterButton.fixedSize(horizontal: false, vertical: true)
+            }
         }
     }
 

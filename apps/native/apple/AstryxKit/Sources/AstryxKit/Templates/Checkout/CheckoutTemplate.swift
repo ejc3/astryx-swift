@@ -157,24 +157,32 @@ private struct CheckoutActionBar: View {
     let actions: CheckoutSender
     let narrow: Bool
     @Environment(\.ax) private var ax
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
         VStack(alignment: .leading, spacing: ax.space(2)) {
             if let blocked = model.actions.blocked {
                 COSStatus(tone: .danger, message: blocked)
             }
-            ViewThatFits(in: .horizontal) {
-                HStack(spacing: ax.space(3)) {
-                    if narrow { total }
-                    back
-                    next
-                }
-                VStack(spacing: ax.space(2)) {
+            if typeSize.isAccessibilitySize {
+                // At accessibility sizes nothing sits beside anything: the total, then the way
+                // forward, then back, each as wide as the bar so a label wraps between words.
+                column
+            } else {
+                ViewThatFits(in: .horizontal) {
                     HStack(spacing: ax.space(3)) {
                         if narrow { total }
+                        back(fills: false)
                         next
                     }
-                    back
+                    VStack(spacing: ax.space(2)) {
+                        HStack(spacing: ax.space(3)) {
+                            if narrow { total }
+                            next
+                        }
+                        back(fills: false)
+                    }
+                    column
                 }
             }
         }
@@ -187,6 +195,14 @@ private struct CheckoutActionBar: View {
         .accessibilityElement(children: .contain)
     }
 
+    private var column: some View {
+        VStack(alignment: .leading, spacing: ax.space(2)) {
+            if narrow { total }
+            next.frame(maxWidth: .infinity)
+            back(fills: true)
+        }
+    }
+
     private var total: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text(model.words.summary.total).font(ax.fontSmall).foregroundStyle(ax.textSecondary)
@@ -196,8 +212,8 @@ private struct CheckoutActionBar: View {
         .accessibilityElement(children: .combine)
     }
 
-    private var back: some View {
-        CheckoutBarButton(label: model.actions.backLabel, prominent: false, fills: false) { actions.press("back") }
+    private func back(fills: Bool) -> some View {
+        CheckoutBarButton(label: model.actions.backLabel, prominent: false, fills: fills) { actions.press("back") }
     }
 
     private var next: some View {
@@ -214,6 +230,7 @@ private struct CheckoutBarButton: View {
     let action: () -> Void
     @Environment(\.ax) private var ax
     @Environment(\.axStatic) private var isStatic
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
         if #available(iOS 26, macOS 26, *), !isStatic {
@@ -235,7 +252,13 @@ private struct CheckoutBarButton: View {
     private var title: some View {
         Text(label)
             .font(ax.fontLabel)
-            .lineLimit(1)
+            // One line until the text is so large that one line cannot hold it; then it wraps
+            // between words and the button grows, never a cut label.
+            .lineLimit(typeSize.isAccessibilitySize ? nil : 1)
+            .multilineTextAlignment(.center)
+            // The label's own width inside the button, so the bar's ViewThatFits can tell
+            // when the row does not fit, instead of the label being cut short.
+            .fixedSize(horizontal: !typeSize.isAccessibilitySize, vertical: true)
             .frame(maxWidth: fills ? .infinity : nil)
     }
 }

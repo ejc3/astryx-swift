@@ -163,7 +163,9 @@ struct InboxIconButton: View {
             action?()
         } label: {
             Image(systemName: symbol)
-                .font(.system(size: ax.fontSize("font-size-base", 14), weight: .regular))
+                // The glyph grows with the text but stays inside its 44 pt box (past it, at the
+                // largest sizes, neighbouring glyphs would touch).
+                .font(.system(size: min(ax.fontSize("font-size-base", 14), 24), weight: .regular))
                 .foregroundStyle(ax.iconSecondary)
                 .opacity(isEnabled ? 1 : 0.4)
                 .frame(width: side, height: side)

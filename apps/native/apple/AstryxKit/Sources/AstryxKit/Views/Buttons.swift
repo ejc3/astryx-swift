@@ -27,6 +27,9 @@ struct AXButton: View {
 struct AXButtonStyle: ButtonStyle {
     let variant: ButtonNode.Variant
     let ax: AXStyle
+    /// The button takes the whole width it is given (a button in a stacked column), its label
+    /// centered and wrapping between words.
+    var fills = false
     @Environment(\.isEnabled) private var isEnabled
 
     func makeBody(configuration: Configuration) -> some View {
@@ -34,8 +37,11 @@ struct AXButtonStyle: ButtonStyle {
         configuration.label
             .font(ax.fontLabel)
             .foregroundStyle(foreground)
+            .multilineTextAlignment(.center)
+            .frame(maxWidth: fills ? .infinity : nil)
             .padding(.horizontal, ax.space(3))
             .frame(minHeight: 36 * min(ax.scale, 1.4))
+            .fixedSize(horizontal: false, vertical: true)
             .background(shape.fill(background))
             .overlay(shape.strokeBorder(variant == .secondary ? ax.borderStrong : .clear, lineWidth: 1))
             .opacity(isEnabled ? (configuration.isPressed ? 0.75 : 1) : 0.45)

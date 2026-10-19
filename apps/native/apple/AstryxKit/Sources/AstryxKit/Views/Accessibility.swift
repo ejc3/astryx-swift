@@ -129,3 +129,46 @@ private struct AXTriangle: Shape {
         return path
     }
 }
+
+// MARK: Rows that stack
+
+extension View {
+    /// The view at its one-line width, so that `ViewThatFits` can tell whether a row of them
+    /// fits (a flexible `Text` would otherwise squeeze into any width and report a fit).
+    func axOneLine() -> some View {
+        fixedSize(horizontal: true, vertical: false)
+    }
+
+    /// A control in a stacked column: the full width, its label wrapping between words
+    /// (never inside one) and growing in height rather than being cut.
+    func axStackedFill() -> some View {
+        frame(maxWidth: .infinity)
+            .fixedSize(horizontal: false, vertical: true)
+    }
+}
+
+/// A row of controls that becomes a column when they cannot sit side by side: at once at
+/// accessibility text sizes (the HIG: stack instead of truncate), and at any size when the
+/// row is wider than the screen. Build the row with `axOneLine()` on what must not wrap and
+/// the column with `axStackedFill()` on its buttons.
+struct AXAdaptiveRow<Row: View, Column: View>: View {
+    @Environment(\.dynamicTypeSize) private var typeSize
+    private let row: Row
+    private let column: Column
+
+    init(@ViewBuilder row: () -> Row, @ViewBuilder column: () -> Column) {
+        self.row = row()
+        self.column = column()
+    }
+
+    var body: some View {
+        if typeSize.isAccessibilitySize {
+            column
+        } else {
+            ViewThatFits(in: .horizontal) {
+                row
+                column
+            }
+        }
+    }
+}

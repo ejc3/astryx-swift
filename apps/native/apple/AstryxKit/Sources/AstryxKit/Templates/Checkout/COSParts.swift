@@ -451,17 +451,24 @@ struct COSButton: View {
     var fills = false
     let action: () -> Void
     @Environment(\.ax) private var ax
+    @Environment(\.dynamicTypeSize) private var typeSize
+    @Environment(\.axFillButtons) private var fillButtons
 
     var body: some View {
+        let wide = fills || fillButtons
         Button(action: action) {
             HStack(spacing: ax.space(2)) {
                 if let icon { Image(systemName: icon) }
-                Text(label).lineLimit(1)
+                // One line until the text is so large that one line cannot hold it.
+                // The label's own width inside the button, so a row of buttons that does not
+                // fit says so (to ViewThatFits) instead of cutting a label short.
+                Text(label).lineLimit(typeSize.isAccessibilitySize ? nil : 1)
+                    .fixedSize(horizontal: !typeSize.isAccessibilitySize, vertical: true)
             }
-            .frame(maxWidth: fills ? .infinity : nil)
+            .frame(maxWidth: wide ? .infinity : nil)
             .frame(minHeight: cosTouch)
         }
-        .buttonStyle(AXButtonStyle(variant: variant, ax: ax))
+        .buttonStyle(AXButtonStyle(variant: variant, ax: ax, fills: wide))
     }
 }
 

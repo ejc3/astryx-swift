@@ -186,10 +186,19 @@ struct InvoiceCards: View {
                             .multilineTextAlignment(.leading)
                             .fixedSize(horizontal: false, vertical: true)
                         Text(row.category).font(ax.fontSmall).foregroundStyle(ax.textSecondary)
-                        HStack {
-                            Text(row.card.calculation).font(ax.fontSmall.monospacedDigit()).foregroundStyle(ax.textSecondary)
-                            Spacer(minLength: ax.space(2))
-                            Text(row.amount).font(ax.fontStrong.monospacedDigit()).foregroundStyle(ax.text)
+                            .fixedSize(horizontal: false, vertical: true)
+                        // The calculation and the amount in one row; one above the other when
+                        // they are too wide to share it (never a number broken in two).
+                        ViewThatFits(in: .horizontal) {
+                            HStack {
+                                Text(row.card.calculation).font(ax.fontSmall.monospacedDigit()).foregroundStyle(ax.textSecondary)
+                                Spacer(minLength: ax.space(2))
+                                Text(row.amount).font(ax.fontStrong.monospacedDigit()).foregroundStyle(ax.text)
+                            }
+                            VStack(alignment: .leading, spacing: ax.hair) {
+                                Text(row.card.calculation).font(ax.fontSmall.monospacedDigit()).foregroundStyle(ax.textSecondary)
+                                Text(row.amount).font(ax.fontStrong.monospacedDigit()).foregroundStyle(ax.text)
+                            }
                         }
                     }
                     .padding(.vertical, ax.space(3))

@@ -511,6 +511,9 @@ struct StaticSidebar: View {
 struct ScreenTitle: ViewModifier {
     let screen: Screen
     var large: Bool = false
+    /// The page draws the title and subtitle itself (at accessibility sizes, where the
+    /// navigation bar's subtitle cannot wrap), so the bar keeps no title of its own.
+    var pageDrawsTitle: Bool = false
 
     func body(content: Content) -> some View {
         #if os(macOS)
@@ -519,10 +522,17 @@ struct ScreenTitle: ViewModifier {
             .navigationSubtitle(screen.subtitle)
         #else
         if #available(iOS 26, *) {
-            content
-                .navigationTitle(screen.title)
-                .navigationSubtitle(screen.subtitle)
-                .toolbarTitleDisplayMode(large ? .large : .inline)
+            if pageDrawsTitle {
+                content
+                    .navigationTitle(screen.title)
+                    .toolbarTitleDisplayMode(.inline)
+                    .toolbar(removing: .title)
+            } else {
+                content
+                    .navigationTitle(screen.title)
+                    .navigationSubtitle(screen.subtitle)
+                    .toolbarTitleDisplayMode(large ? .large : .inline)
+            }
         } else {
             content
                 .navigationTitle(screen.title)
@@ -547,10 +557,14 @@ struct ScreenView: View {
     var largeTitle: Bool = true
     @Environment(\.ax) private var ax
     @Environment(\.axSend) private var send
+    @Environment(\.dynamicTypeSize) private var typeSize
 
-    /// The page repeats the title and subtitle unless the system's title carries them.
+    /// The page repeats the title and subtitle unless the system's title carries them. The
+    /// bar's large title keeps the subtitle to one line, so at accessibility sizes the page
+    /// draws both, wrapping.
     private var showsHeader: Bool {
         if inlineToolbar { return true }
+        if typeSize.isAccessibilitySize { return true }
         if #available(iOS 26, macOS 26, *) { return false }
         return true
     }
@@ -564,7 +578,7 @@ struct ScreenView: View {
             }
         }
         .background(ax.page)
-        .modifier(ScreenTitle(screen: app.screen, large: largeTitle && scrolls))
+        .modifier(ScreenTitle(screen: app.screen, large: largeTitle && scrolls, pageDrawsTitle: !inlineToolbar && typeSize.isAccessibilitySize))
         .toolbar {
             if !inlineToolbar {
                 ToolbarItemGroup(placement: .primaryAction) {
@@ -600,10 +614,18 @@ struct ScreenView: View {
                 Text(app.screen.title)
                     .font(ax.heading(1))
                     .foregroundStyle(ax.text)
+                    .lineLimit(4)
+                    .minimumScaleFactor(0.5)
+                    .fixedSize(horizontal: false, vertical: true)
                     .accessibilityAddTraits(.isHeader)
+                // Wraps between words at any size; a word longer than the screen shrinks to fit
+                // before it would be broken in two.
                 Text(app.screen.subtitle)
                     .font(ax.fontBase)
                     .foregroundStyle(ax.textSecondary)
+                    .lineLimit(8)
+                    .minimumScaleFactor(0.5)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             Spacer(minLength: 0)
             if inlineToolbar {

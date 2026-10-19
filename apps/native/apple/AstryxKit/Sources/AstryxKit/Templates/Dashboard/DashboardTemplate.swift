@@ -60,15 +60,30 @@ private struct DashSectionHeader: View {
     @Environment(\.ax) private var ax
 
     var body: some View {
-        HStack(alignment: .center, spacing: ax.space(3)) {
-            Text(title)
-                .font(ax.heading(3))
-                .foregroundStyle(ax.text)
-                .accessibilityAddTraits(.isHeader)
-            Spacer(minLength: ax.space(2))
-            Button {} label: { Text(more).lineLimit(1) }
-                .buttonStyle(AXButtonStyle(variant: .secondary, ax: ax))
+        // A single long word ("Demographics") shrinks to fit the width rather than break.
+        let heading = Text(title)
+            .font(ax.heading(3))
+            .foregroundStyle(ax.text)
+            .lineLimit(3)
+            .minimumScaleFactor(0.6)
+            .fixedSize(horizontal: false, vertical: true)
+            .accessibilityAddTraits(.isHeader)
+        func button(fills: Bool) -> some View {
+            Button {} label: { Text(more) }
+                .buttonStyle(AXButtonStyle(variant: .secondary, ax: ax, fills: fills))
                 .disabled(isInert)
+        }
+        return AXAdaptiveRow {
+            HStack(alignment: .center, spacing: ax.space(3)) {
+                heading
+                Spacer(minLength: ax.space(2))
+                button(fills: false).axOneLine()
+            }
+        } column: {
+            VStack(alignment: .leading, spacing: ax.space(3)) {
+                heading
+                button(fills: true)
+            }
         }
     }
 }
@@ -322,26 +337,42 @@ private struct DashTable: View {
     @Environment(\.ax) private var ax
     @Environment(\.axWidth) private var width
 
+    private var cardTitle: some View {
+        Text(data.title)
+            .font(ax.heading(4))
+            .foregroundStyle(ax.text)
+            .fixedSize(horizontal: false, vertical: true)
+            .accessibilityAddTraits(.isHeader)
+    }
+
+    private var cardLink: some View {
+        Button {} label: {
+            Text(data.linkLabel).font(ax.fontLabel).foregroundStyle(ax.accent)
+                .frame(minHeight: InboxTarget.side)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(linkInert)
+        .opacity(linkInert ? 0.45 : 1)
+    }
+
     var body: some View {
         // The card's inner width decides between a table and stacked rows.
         let inner = width - 2 * ax.space(4)
         let tabular = inner >= 400
         DashCard {
             VStack(alignment: .leading, spacing: ax.space(4)) {
-                HStack(alignment: .firstTextBaseline) {
-                    Text(data.title)
-                        .font(ax.heading(4))
-                        .foregroundStyle(ax.text)
-                        .accessibilityAddTraits(.isHeader)
-                    Spacer(minLength: ax.space(2))
-                    Button {} label: {
-                        Text(data.linkLabel).font(ax.fontLabel).foregroundStyle(ax.accent)
-                            .frame(minHeight: InboxTarget.side)
-                            .contentShape(Rectangle())
+                AXAdaptiveRow {
+                    HStack(alignment: .firstTextBaseline) {
+                        cardTitle
+                        Spacer(minLength: ax.space(2))
+                        cardLink.axOneLine()
                     }
-                    .buttonStyle(.plain)
-                    .disabled(linkInert)
-                    .opacity(linkInert ? 0.45 : 1)
+                } column: {
+                    VStack(alignment: .leading, spacing: 0) {
+                        cardTitle
+                        cardLink
+                    }
                 }
                 VStack(spacing: 0) {
                     if tabular { header }

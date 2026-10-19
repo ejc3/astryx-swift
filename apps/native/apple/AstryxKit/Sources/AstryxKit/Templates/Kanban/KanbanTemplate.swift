@@ -43,6 +43,7 @@ struct KanbanScreen: View {
     @Environment(\.axSend) private var send
     @Environment(\.axStatic) private var isStatic
     @Environment(\.axWidth) private var width
+    @Environment(\.dynamicTypeSize) private var typeSize
     @State private var drag = KanbanDragState()
 
     var body: some View {
@@ -67,6 +68,7 @@ struct KanbanScreen: View {
             Text(model.title)
                 .font(ax.heading(3))
                 .foregroundStyle(ax.text)
+                .fixedSize(horizontal: false, vertical: true)
                 .accessibilityAddTraits(.isHeader)
             AXBadge(text: "\(model.total)", tone: .neutral)
                 .accessibilityLabel("\(model.total)")
@@ -84,21 +86,66 @@ struct KanbanScreen: View {
         }
         .buttonStyle(AXButtonStyle(variant: .primary, ax: ax))
         .disabled(model.isInert("addTask"))
-        return ViewThatFits(in: .horizontal) {
-            HStack(spacing: ax.space(2)) {
-                heading
-                Spacer(minLength: ax.space(3))
-                sprintPicker
-                tools
-                add
+        // Where the words do not fit beside the sprint and the tools: the plus alone, still
+        // named for VoiceOver and a tooltip by the core's word.
+        let addIcon = Button {
+        } label: {
+            Image(systemName: "plus")
+                .font(.system(size: ax.fontSize("font-size-lg", 17) * 0.95, weight: .semibold))
+                .foregroundStyle(ax.onAccent)
+                .frame(width: chromeTarget, height: chromeTarget)
+                .background(RoundedRectangle(cornerRadius: ax.radiusElement, style: .continuous).fill(ax.accent))
+                .opacity(model.isInert("addTask") ? 0.45 : 1)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(model.isInert("addTask"))
+        .accessibilityLabel(model.words.addTask)
+        .help(model.words.addTask)
+        // At accessibility sizes nothing sits beside anything: each control has a row to itself,
+        // the button as wide as the screen with its words wrapping between words.
+        let stacked = VStack(alignment: .leading, spacing: ax.space(3)) {
+            heading
+            sprintPicker
+            tools
+            Button {
+            } label: {
+                Label(model.words.addTask, systemImage: "plus")
             }
-            VStack(alignment: .leading, spacing: ax.space(2)) {
-                heading
-                HStack(spacing: ax.space(2)) {
-                    sprintPicker
-                    Spacer(minLength: 0)
-                    tools
-                    add
+            .buttonStyle(AXButtonStyle(variant: .primary, ax: ax, fills: true))
+            .disabled(model.isInert("addTask"))
+        }
+        return Group {
+            if typeSize.isAccessibilitySize {
+                stacked
+            } else {
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: ax.space(2)) {
+                        heading
+                        Spacer(minLength: ax.space(3))
+                        sprintPicker
+                        tools
+                        add
+                    }
+                    VStack(alignment: .leading, spacing: ax.space(2)) {
+                        heading
+                        HStack(spacing: ax.space(2)) {
+                            sprintPicker
+                            Spacer(minLength: 0)
+                            tools
+                            add
+                        }
+                    }
+                    VStack(alignment: .leading, spacing: ax.space(2)) {
+                        heading
+                        HStack(spacing: ax.space(2)) {
+                            sprintPicker
+                            Spacer(minLength: 0)
+                            tools
+                            addIcon
+                        }
+                    }
+                    stacked
                 }
             }
         }
@@ -134,7 +181,7 @@ struct KanbanScreen: View {
             .menuStyle(.button)
             .buttonStyle(.plain)
             .menuIndicator(.hidden)
-            .fixedSize()
+            .fixedSize(horizontal: !typeSize.isAccessibilitySize, vertical: true)
             .accessibilityLabel(model.words.sprint)
             .accessibilityValue(current)
         }
@@ -142,7 +189,8 @@ struct KanbanScreen: View {
 
     private func sprintLabel(_ text: String) -> some View {
         HStack(spacing: ax.space(2)) {
-            Text(text).font(ax.fontLabel).foregroundStyle(ax.text).lineLimit(1)
+            Text(text).font(ax.fontLabel).foregroundStyle(ax.text).lineLimit(typeSize.isAccessibilitySize ? nil : 1)
+            if typeSize.isAccessibilitySize { Spacer(minLength: 0) }
             Image(systemName: "chevron.up.chevron.down")
                 .font(.system(size: ax.fontSize("font-size-xs", 10), weight: .semibold))
                 .foregroundStyle(ax.iconSecondary)
