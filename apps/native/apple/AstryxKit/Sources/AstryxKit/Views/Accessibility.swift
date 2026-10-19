@@ -3,8 +3,23 @@ import SwiftUI
 /// Shared pieces of the accessibility work: hit targets, checkbox semantics, Reduce Motion and
 /// Differentiate Without Color.
 
-/// The smallest hit region the HIG allows for a control (Buttons, Accessibility: 44 x 44 pt).
+/// The smallest hit region the HIG allows for a control (Accessibility): 44 x 44 pt on a touch
+/// screen, and on the Mac, whose default control size is 28 x 28 pt, 28.
+#if os(iOS)
 let axMinTarget: CGFloat = 44
+#else
+let axMinTarget: CGFloat = 28
+#endif
+
+/// The height of a text field, select or the like: Astryx's `size-element-md` (32) on the Mac;
+/// on a touch screen at least the 44 pt target. Grows with Dynamic Type.
+func axControlHeight(_ ax: AXStyle) -> CGFloat {
+    #if os(iOS)
+    max(axMinTarget, 36 * min(ax.scale, 1.4))
+    #else
+    32 * min(ax.scale, 1.4)
+    #endif
+}
 
 /// Places `content` at its own size and adds a clear hit area of at least 44 x 44 pt around its
 /// center, without changing the size the layout gives it. The control stays as compact as the
@@ -96,11 +111,13 @@ struct AXToneMark: View {
 struct AXToneDot: View {
     let tone: Tone
     var diameter: CGFloat = 5
+    /// A color to paint with instead of the tone's (the dots of a selected day, in on-accent).
+    var color: Color? = nil
     @Environment(\.ax) private var ax
     @Environment(\.accessibilityDifferentiateWithoutColor) private var differentiate
 
     var body: some View {
-        let color = ax.tone(tone).solid
+        let color = self.color ?? ax.fillTone(tone)
         Group {
             if differentiate {
                 switch tone {

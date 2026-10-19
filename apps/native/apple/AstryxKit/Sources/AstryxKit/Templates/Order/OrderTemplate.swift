@@ -24,28 +24,26 @@ struct OrderScreen: View {
     @Environment(\.ax) private var ax
     @Environment(\.axWidth) private var width
     @Environment(\.axSend) private var send
+    @Environment(\.axStatic) private var isStatic
 
+    /// The template owns its outer padding, as the web page's header and content do (16).
+    private var pad: CGFloat { ax.space(4) }
     private var narrow: Bool { width < orderNarrowWidth }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            OrderHeader(model: model, narrow: narrow)
-            AXDivider()
-            if narrow {
-                OrderMain(model: model, narrow: true)
-                    .padding(.top, ax.space(4))
+        Group {
+            if isStatic {
+                VStack(alignment: .leading, spacing: 0) {
+                    header
+                    content
+                }
             } else {
-                HStack(alignment: .top, spacing: 0) {
-                    OrderMain(model: model, narrow: false)
-                        .padding(.top, ax.space(4))
-                        .padding(.trailing, model.sidePanel ? ax.space(4) : 0)
-                        .frame(maxWidth: .infinity, alignment: .topLeading)
-                    if model.sidePanel {
-                        Rectangle().fill(ax.border).frame(width: 1)
-                        OrderPanelContent(model: model)
-                            .padding(.top, ax.space(4))
-                            .padding(.leading, ax.space(4))
-                            .frame(width: 320 + ax.space(4), alignment: .topLeading)
+                // The header stays at the top while the page scrolls under it, as the web's does.
+                LazyVStack(alignment: .leading, spacing: 0, pinnedViews: [.sectionHeaders]) {
+                    Section {
+                        content
+                    } header: {
+                        header
                     }
                 }
             }
@@ -62,6 +60,38 @@ struct OrderScreen: View {
                 .environment(\.ax, ax)
                 .environment(\.axSend, send)
                 .environment(\.cosWords, model.words.common)
+        }
+    }
+
+    /// The header and the full-width rule under it, on the page's ground so the page scrolls under it.
+    private var header: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            OrderHeader(model: model, narrow: narrow)
+                .environment(\.axWidth, max(width - 2 * pad, 0))
+                .padding([.horizontal, .top], pad)
+            AXDivider()
+        }
+        .background(ax.surface)
+    }
+
+    @ViewBuilder
+    private var content: some View {
+        if narrow {
+            OrderMain(model: model, narrow: true)
+                .padding(pad)
+                .environment(\.axWidth, max(width - 2 * pad, 0))
+        } else {
+            HStack(alignment: .top, spacing: 0) {
+                OrderMain(model: model, narrow: false)
+                    .padding(pad)
+                    .frame(maxWidth: .infinity, alignment: .topLeading)
+                if model.sidePanel {
+                    Rectangle().fill(ax.border).frame(width: 1)
+                    OrderPanelContent(model: model)
+                        .padding(pad)
+                        .frame(width: 320 + 2 * pad, alignment: .topLeading)
+                }
+            }
         }
     }
 }

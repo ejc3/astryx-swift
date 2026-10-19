@@ -452,7 +452,8 @@
       "value": "",
       "placeholder": "Ask Studio AI…",
       "attachLabel": "Attach",
-      "voiceLabel": "Voice input"
+      "voiceLabel": "Voice input",
+      "sendLabel": "Send"
      }
     },
     "revenue": {

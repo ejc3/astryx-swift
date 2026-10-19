@@ -161,7 +161,7 @@ export function settings(s: State): Screen {
   const emailError = checks.email(st.email);
   return {
     id: "settings", title: "Settings", subtitle: "Your account and how the app looks",
-    toolbar: [button("settings.save", "Save", "primary", "check")],
+    toolbar: [],
     body: v("lg",
       ...(st.deleted ? [{ kind: "banner", tone: "danger", title: "Account scheduled for deletion", text: "It will be deleted in 30 days unless you cancel.", action: button("settings.restore", "Cancel deletion", "secondary", "undo") } satisfies Node] : []),
       card("Profile", [

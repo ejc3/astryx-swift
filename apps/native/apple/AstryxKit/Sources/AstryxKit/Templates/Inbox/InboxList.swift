@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// What a row or thread action does here. The core has no archive, move or delete action (the
-/// model lists them as `inert`), so those are drawn disabled and never reach this function.
+/// model lists them as `inert`); they are drawn enabled as the web draws them, and do nothing.
 /// "Reply" on a row opens that thread and starts the reply, both actions the core has.
 @MainActor
 func inboxPerform(_ action: String, row id: String, send: AXSender) {
@@ -34,7 +34,6 @@ struct InboxRowMenu: View {
             } label: {
                 Label(action.label, systemImage: inboxSymbol(action.id))
             }
-            .disabled(inert.contains(action.id))
         }
     }
 }
@@ -57,29 +56,28 @@ struct InboxRowView: View {
     @Environment(\.axSend) private var send
     @State private var hovering = false
 
-    private let fromWidth: CGFloat = 190
-    private let tagsWidth: CGFloat = 190
-    private let receivedWidth: CGFloat = 118
+    private let fromWidth = InboxColumns.from
+    private let tagsWidth = InboxColumns.tags
+    private let receivedWidth = InboxColumns.received
 
     private var showsHoverActions: Bool { hovering && !layout.isTouch && !layout.isStacked }
 
     var body: some View {
+        // The unread dot sits in a gutter left of the checkbox (the web's row-status column).
         HStack(alignment: layout.isStacked ? .top : .center, spacing: ax.space(3)) {
+            Circle()
+                .fill(row.status == nil ? Color.clear : ax.accent)
+                .frame(width: InboxColumns.dot, height: InboxColumns.dot)
+                .padding(.top, layout.isStacked ? ax.space(2) : 0)
+                .accessibilityHidden(true)
             if !layout.isStacked {
                 InboxCheckbox(checked: selected, label: row.selectionLabel, selected: words.selected, notSelected: words.notSelected, action: onToggle)
             }
             Button {
                 send(.press(id: inboxAction("open:\(row.id)")))
             } label: {
-                HStack(alignment: layout.isStacked ? .top : .center, spacing: ax.space(3)) {
-                    Circle()
-                        .fill(row.status == nil ? Color.clear : ax.accent)
-                        .frame(width: 8, height: 8)
-                        .padding(.top, layout.isStacked ? ax.space(2) : 0)
-                        .accessibilityHidden(true)
-                    if layout.isStacked { stacked } else { wide }
-                }
-                .contentShape(Rectangle())
+                Group { if layout.isStacked { stacked } else { wide } }
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .accessibilityElement(children: .ignore)
@@ -92,7 +90,6 @@ struct InboxRowView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(background)
         .overlay(alignment: .trailing) { hoverActions.padding(.trailing, ax.space(4)) }
-        .overlay(alignment: .bottom) { InboxHairline() }
         .onHover { hovering = $0 }
         .contextMenu { InboxRowMenu(row: row, actions: layout.actions(of: row), inert: inert) }
     }
@@ -106,7 +103,6 @@ struct InboxRowView: View {
                     InboxIconButton(symbol: inboxSymbol(action.id), label: action.ariaLabel, help: action.label) {
                         inboxPerform(action.id, row: row.id, send: send)
                     }
-                    .disabled(inert.contains(action.id))
                 }
             }
             .frame(width: receivedWidth, alignment: .trailing)
@@ -160,7 +156,7 @@ struct InboxRowView: View {
     private var wide: some View {
         HStack(spacing: ax.space(3)) {
             HStack(spacing: ax.space(2)) {
-                AXAvatar(name: row.sender, initials: InboxPeople.initials(row.sender), hue: InboxPeople.hue(row.sender), size: .sm)
+                InboxAvatar(name: row.sender, initials: InboxPeople.initials(row.sender))
                 Text(row.sender)
                     .font(ax.font("font-size-base", 14, weight: weight))
                     .foregroundStyle(ax.text)
@@ -174,6 +170,7 @@ struct InboxRowView: View {
                     .foregroundStyle(ax.text)
                     .lineLimit(1)
                     .layoutPriority(1)
+                // The preview takes only the room the subject leaves.
                 Text("\u{2014} \(row.preview)")
                     .font(ax.fontBase)
                     .foregroundStyle(ax.textSecondary)
@@ -317,8 +314,6 @@ struct InboxListColumn: View {
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .disabled(model.isInert(action.id))
-                .opacity(model.isInert(action.id) ? 0.4 : 1)
             }
         }
         let summary = HStack(spacing: ax.space(3)) {
@@ -344,17 +339,18 @@ struct InboxListColumn: View {
     private var columnHeader: some View {
         let cols = model.text.columns
         return HStack(spacing: ax.space(3)) {
+            // The same columns as a row: the dot's gutter, the checkbox, then From over the avatar.
+            Color.clear.frame(width: InboxColumns.dot, height: 1)
             InboxCheckbox(checked: allVisibleSelected, label: cols.conversation, selected: model.text.selected, notSelected: model.text.notSelected, action: toggleAll)
-            Color.clear.frame(width: 8, height: 1)
-            Text(cols.from).frame(width: 190, alignment: .leading)
+            Text(cols.from).frame(width: InboxColumns.from, alignment: .leading)
             Text(cols.subject).frame(maxWidth: .infinity, alignment: .leading)
-            if !layout.isTight { Text(cols.tags).frame(width: 190, alignment: .leading) }
-            Text(cols.received).frame(width: 118, alignment: .trailing)
+            if !layout.isTight { Text(cols.tags).frame(width: InboxColumns.tags, alignment: .leading) }
+            Text(cols.received).frame(width: InboxColumns.received, alignment: .trailing)
         }
-        .font(ax.font("font-size-sm", 12, weight: "font-weight-medium"))
+        .font(ax.font("font-size-base", 14, weight: "font-weight-semibold"))
         .foregroundStyle(ax.textSecondary)
         .padding(.horizontal, ax.space(4))
-        .padding(.vertical, ax.hair)
+        .padding(.vertical, ax.space(1))
         .overlay(alignment: .bottom) { InboxHairline() }
         .accessibilityElement(children: .contain)
     }

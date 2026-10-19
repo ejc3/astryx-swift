@@ -16,7 +16,7 @@ export function isScreen(id: string): id is ScreenId {
   return (SCREENS as readonly string[]).includes(id) || (id.startsWith("t.") && templateById(id.slice(2)) !== undefined);
 }
 
-export type SortColumn = "name" | "role" | "team" | "joined" | "projects";
+export type SortColumn = "name" | "role" | "status" | "team" | "joined" | "projects";
 
 export type State = {
   screen: ScreenId;
@@ -354,10 +354,6 @@ function press(s: State, id: string): State {
       return toast({ ...s, profile: { ...s.profile, following } }, "neutral", following ? "You're following Maya." : "You unfollowed Maya.");
     }
 
-    case "settings.save": {
-      if (checks.required(s.settings.name, "your name") || checks.email(s.settings.email)) return toast(s, "danger", "Fix the highlighted fields first.");
-      return toast(s, "success", "Settings saved.");
-    }
     case "settings.delete": return { ...s, dialog: "delete-account" };
 
     case "dialog.cancel": return { ...s, dialog: null };

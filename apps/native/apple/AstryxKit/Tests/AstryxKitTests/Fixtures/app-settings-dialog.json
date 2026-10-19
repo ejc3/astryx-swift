@@ -150,15 +150,7 @@
   "id": "settings",
   "title": "Settings",
   "subtitle": "Your account and how the app looks",
-  "toolbar": [
-   {
-    "kind": "button",
-    "id": "settings.save",
-    "label": "Save",
-    "variant": "primary",
-    "icon": "check"
-   }
-  ],
+  "toolbar": [],
   "body": {
    "kind": "stack",
    "axis": "vertical",

@@ -88,14 +88,15 @@ enum TChatBlock {
     }
 }
 
-/// Markdown drawn with the theme's type: `compact` for a chat bubble, regular for a document.
+/// Markdown drawn with the theme's type: `compact` for a chat bubble, regular for a document. In a
+/// bubble the blocks sit 4 points apart on Astryx's 20 point line, as the stock page's do.
 struct TChatMarkdown: View {
     let text: String
     var compact = true
     @Environment(\.ax) private var ax
 
     var body: some View {
-        VStack(alignment: .leading, spacing: compact ? ax.space(2) : ax.space(3)) {
+        VStack(alignment: .leading, spacing: compact ? ax.space(1) : ax.space(3)) {
             ForEach(Array(TChatBlock.parse(text).enumerated()), id: \.offset) { _, block in
                 blockView(block)
             }
@@ -103,7 +104,18 @@ struct TChatMarkdown: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
+    private var bodySize: CGFloat { ax.fontSize("font-size-base", 14) }
     private var bodyFont: Font { compact ? ax.fontBase : ax.font("font-size-base", 14).leading(.loose) }
+
+    /// A paragraph or list text on the body line height.
+    private func lines(_ text: Text) -> some View {
+        text
+            .font(bodyFont)
+            .foregroundStyle(ax.text)
+            .fixedSize(horizontal: false, vertical: true)
+            .lineSpacing(compact ? ax.lineSpacing(size: bodySize, ratio: ax.bodyLeading) : 0)
+            .frame(minHeight: compact ? bodySize * ax.bodyLeading : nil, alignment: .topLeading)
+    }
 
     @ViewBuilder
     private func blockView(_ block: TChatBlock) -> some View {
@@ -118,10 +130,7 @@ struct TChatMarkdown: View {
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityAddTraits(.isHeader)
         case .paragraph(let text):
-            Text(inline(text))
-                .font(bodyFont)
-                .foregroundStyle(ax.text)
-                .fixedSize(horizontal: false, vertical: true)
+            lines(Text(inline(text)))
         case .ordered(let items):
             list(items, markers: items.indices.map { "\($0 + 1)." })
         case .bullets(let items):
@@ -131,19 +140,18 @@ struct TChatMarkdown: View {
         }
     }
 
+    /// Items 2 points apart, each padded 4 above and below, the marker in a 16 point column.
     private func list(_ items: [String], markers: [String]) -> some View {
-        VStack(alignment: .leading, spacing: ax.space(1)) {
+        VStack(alignment: .leading, spacing: ax.hair) {
             ForEach(Array(items.enumerated()), id: \.offset) { index, item in
                 HStack(alignment: .firstTextBaseline, spacing: ax.space(2)) {
                     Text(markers[index])
                         .font(bodyFont.monospacedDigit())
-                        .foregroundStyle(ax.textSecondary)
-                        .frame(minWidth: 18, alignment: .trailing)
-                    Text(inline(item))
-                        .font(bodyFont)
                         .foregroundStyle(ax.text)
-                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(minWidth: 16, alignment: .leading)
+                    lines(Text(inline(item)))
                 }
+                .padding(.vertical, compact ? ax.space(1) : 0)
             }
         }
     }
@@ -152,49 +160,63 @@ struct TChatMarkdown: View {
     private func inline(_ source: String) -> AttributedString { TChatMarkdown.inline(source, ax: ax) }
 
     static func inline(_ source: String, ax: AXStyle) -> AttributedString {
-        var out = (try? AttributedString(markdown: source, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace))) ?? AttributedString(source)
-        for run in out.runs {
+        let parsed = (try? AttributedString(markdown: source, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace))) ?? AttributedString(source)
+        var out = AttributedString()
+        // A run cannot be padded, so the code's ground gets its 4 points either side from a thin and a
+        // hair space in the body font (in the monospaced font a space would be a full character).
+        let pad = "\u{2009}\u{200A}"
+        func padding() -> AttributedString {
+            var piece = AttributedString(pad)
+            piece.font = .system(size: ax.fontSize("font-size-base", 14))
+            piece.backgroundColor = ax.muted
+            return piece
+        }
+        for run in parsed.runs {
+            var piece = AttributedString(parsed[run.range])
             if let intent = run.inlinePresentationIntent, intent.contains(.code) {
-                out[run.range].font = ax.font("font-size-sm", 12.5, design: .monospaced)
-                out[run.range].backgroundColor = ax.muted
+                piece.font = .system(size: ax.fontSize("font-size-base", 14), design: .monospaced)
+                piece.backgroundColor = ax.muted
+                out += padding()
+                out += piece
+                out += padding()
+                continue
             }
+            out += piece
         }
         return out
     }
 }
 
-/// A pipe table: a header row and rows with hairlines between, as the web's Markdown table.
+/// A pipe table as the stock page draws it: columns as wide as their text, a secondary semibold
+/// header, 8 points of padding in each cell and a hairline under every row, with no frame.
 private struct TChatTable: View {
     let header: [String]
     let rows: [[String]]
     @Environment(\.ax) private var ax
 
     var body: some View {
-        VStack(spacing: 0) {
+        Grid(alignment: .leading, horizontalSpacing: 0, verticalSpacing: 0) {
             row(header, strong: true)
             ForEach(Array(rows.enumerated()), id: \.offset) { _, cells in
-                Rectangle().fill(ax.border).frame(height: 1)
                 row(cells, strong: false)
             }
         }
-        .overlay(RoundedRectangle(cornerRadius: ax.radiusElement, style: .continuous).strokeBorder(ax.border, lineWidth: 1))
-        .clipShape(RoundedRectangle(cornerRadius: ax.radiusElement, style: .continuous))
+        .fixedSize(horizontal: false, vertical: true)
         .accessibilityElement(children: .contain)
     }
 
+    @ViewBuilder
     private func row(_ cells: [String], strong: Bool) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: ax.space(3)) {
-            ForEach(Array(cells.enumerated()), id: \.offset) { index, cell in
+        GridRow {
+            ForEach(Array(cells.enumerated()), id: \.offset) { _, cell in
                 Text(TChatMarkdown.inline(cell, ax: ax))
                     .font(strong ? ax.fontStrong : ax.fontBase)
-                    .foregroundStyle(strong ? ax.text : ax.text)
+                    .foregroundStyle(strong ? ax.textSecondary : ax.text)
                     .fixedSize(horizontal: false, vertical: true)
-                    .frame(maxWidth: index == 0 ? .infinity : nil, alignment: .leading)
+                    .padding(ax.space(2))
+                    .accessibilityElement(children: .combine)
             }
         }
-        .padding(.horizontal, ax.space(3))
-        .padding(.vertical, ax.space(2))
-        .background(strong ? ax.muted.opacity(0.6) : Color.clear)
-        .accessibilityElement(children: .combine)
+        Rectangle().fill(ax.border).frame(height: 1)
     }
 }

@@ -172,7 +172,7 @@ export type View = {
     actions: { label: string; icon: "download" | "close" }[];
     messages: ChatLine[];
     suggestions: string[];
-    composer: { value: string; placeholder: string; attachLabel: string; voiceLabel: string };
+    composer: { value: string; placeholder: string; attachLabel: string; voiceLabel: string; sendLabel: string };
   };
   revenue: {
     heading: string;
@@ -288,7 +288,7 @@ export const showcase: TemplateModule<ShowcaseState, View> = {
         ],
         messages: CHAT,
         suggestions: SUGGESTED_QUESTIONS,
-        composer: { value: s.chatDraft, placeholder: "Ask Studio AI…", attachLabel: "Attach", voiceLabel: "Voice input" },
+        composer: { value: s.chatDraft, placeholder: "Ask Studio AI…", attachLabel: "Attach", voiceLabel: "Voice input", sendLabel: "Send" },
       },
       revenue: {
         heading: "Revenue",

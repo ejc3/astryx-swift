@@ -35,7 +35,6 @@ struct InboxPaneView: View {
         HStack(spacing: ax.hair) {
             ForEach(pane.actions) { action in
                 InboxIconButton(symbol: inboxSymbol(action.id), label: action.ariaLabel, help: action.label)
-                    .disabled(model.isInert(action.id))
             }
         }
     }

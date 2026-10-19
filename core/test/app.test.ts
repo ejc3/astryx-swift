@@ -131,6 +131,41 @@ test("people: sort toggles direction, the role filter resets the page, selection
   assert.equal(app(c).toast?.text, "Reminder sent to 1 person.");
 });
 
+test("people: Role shows the role, Status shows the badge, and the pager names its buttons", () => {
+  const c = createClient(clock);
+  go(c, "people");
+  const all = nodes(app(c).screen.body);
+  const table = all.find((n) => n.kind === "table") as Extract<Node, { kind: "table" }>;
+  assert.deepEqual(table.columns.map((x) => x.label), ["Name", "Role", "Status", "Team", "Joined", "Projects"]);
+  const row = table.rows[0]!;
+  assert.equal(row.cells.length, table.columns.length);
+  assert.equal(row.cells[1]!.badge, undefined);
+  assert.notEqual(row.cells[1]!.text, row.cells[2]!.text);
+  assert.ok(row.cells[2]!.badge);
+  const pager = all.find((n) => n.kind === "pagination") as Extract<Node, { kind: "pagination" }>;
+  assert.equal(pager.previousLabel, "Previous page");
+  assert.equal(pager.nextLabel, "Next page");
+  c.dispatch({ type: "press", id: "people.sort:status" });
+  assert.equal(((nodes(app(c).screen.body).find((n) => n.kind === "table") as Extract<Node, { kind: "table" }>).columns[2]!).sort, "asc");
+});
+
+test("settings: no Save (every setting applies as it changes); the fields still validate live", () => {
+  const c = createClient(clock);
+  const snap = go(c, "settings");
+  assert.deepEqual(snap.screen.toolbar, []);
+  c.dispatch({ type: "press", id: "settings.save" });
+  assert.equal(app(c).toast, null);
+  c.dispatch({ type: "set", id: "settings.email", value: "nope" });
+  const field = nodes(app(c).screen.body).find((n) => n.kind === "textInput" && n.id === "settings.email") as Extract<Node, { kind: "textInput" }>;
+  assert.ok(field.error);
+});
+
+test("tasks: the board names the width below which its columns stack", () => {
+  const c = createClient(clock);
+  const board = nodes(go(c, "tasks").screen.body).find((n) => n.kind === "board") as Extract<Node, { kind: "board" }>;
+  assert.equal(board.stackBelow, 760);
+});
+
 test("checkout: a step with errors is refused and says why; test data passes every step", () => {
   const c = createClient(clock);
   go(c, "checkout");

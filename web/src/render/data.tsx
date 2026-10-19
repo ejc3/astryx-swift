@@ -35,20 +35,25 @@ function CellView({ cell }: { cell: Cell }) {
   );
 }
 
+/** The narrowest a table's first column (a name and its second line) and each other column may be: six of them and a checkbox fit a 690 px card. */
+const COL_FIRST = 150, COL_REST = 88;
+/** From this many columns a table uses tight cell padding. */
+const DENSE_FROM = 6;
+
 export function TableNode({ node }: { node: Of<"table"> }) {
   const selectable = node.rows.some((r) => r.selectId !== undefined);
   return (
-    <div className="an-table">
-      <div className="an-table-inner" style={{ minWidth: node.columns.length * 150 + (selectable ? 72 : 0) }}>
+    <div className="an-table" {...(node.columns.length >= DENSE_FROM ? { "data-dense": "" } : {})}>
+      <div className="an-table-inner" style={{ minWidth: node.columns.length >= DENSE_FROM ? (selectable ? 44 : 0) + COL_FIRST + (node.columns.length - 1) * COL_REST : node.columns.length * 150 + (selectable ? 72 : 0) }}>
       <Table>
         <TableHeader>
           <TableRow isHeaderRow>
-            {selectable ? <TableHeaderCell scope="col" style={{ width: 72 }}><span /></TableHeaderCell> : null}
+            {selectable ? <TableHeaderCell scope="col" style={{ width: node.columns.length >= DENSE_FROM ? 44 : 72 }}><span /></TableHeaderCell> : null}
             {node.columns.map((c, ci) => (
               <TableHeaderCell
                 key={c.id}
                 scope="col"
-                {...(ci === 0 ? { style: { width: "32%" } } : {})}
+                {...(node.columns.length >= DENSE_FROM ? { style: { minWidth: ci === 0 ? COL_FIRST : COL_REST } } : ci === 0 ? { style: { width: "32%" } } : {})}
                 {...(c.sort === "asc" ? { "aria-sort": "ascending" as const } : c.sort === "desc" ? { "aria-sort": "descending" as const } : c.sort === "none" ? { "aria-sort": "none" as const } : {})}
               >
                 <HStack gap={1} align="center" {...(c.align === "end" ? { justify: "end" as const } : {})}>

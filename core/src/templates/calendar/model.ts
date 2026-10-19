@@ -20,12 +20,14 @@ export type CalendarState = {
   focusDate: IsoDate;
 };
 
-/** Words only the native drawing speaks (VoiceOver); the web ignores them. */
+/** Words the native drawing speaks (VoiceOver) or draws (the weekday names); the web's Calendar has its own. */
 export type CalendarWords = {
   today: string;
   selected: string;
   previousMonth: string;
   nextMonth: string;
+  /** The two-letter weekday names the grid's header shows, Sunday first: "Su" to "Sa". */
+  weekdays: string[];
 };
 
 export type View = {
@@ -38,7 +40,13 @@ export type CalendarView = View;
 
 const ISO = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
 
-const WORDS: CalendarWords = { today: "Today", selected: "Selected", previousMonth: "Previous month", nextMonth: "Next month" };
+const WORDS: CalendarWords = {
+  today: "Today",
+  selected: "Selected",
+  previousMonth: "Previous month",
+  nextMonth: "Next month",
+  weekdays: ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"],
+};
 
 export const calendar: TemplateModule<CalendarState, View> = {
   id: "calendar",

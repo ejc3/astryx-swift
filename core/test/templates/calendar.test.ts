@@ -11,8 +11,10 @@ const view = (s: ReturnType<typeof start>) => {
 
 test("the view carries the words the native drawing speaks", () => {
   const { words } = calendar.view(start(), NOW);
-  assert.deepEqual(Object.keys(words).sort(), ["nextMonth", "previousMonth", "selected", "today"]);
-  assert.ok(Object.values(words).every((w) => w.length > 0));
+  assert.deepEqual(Object.keys(words).sort(), ["nextMonth", "previousMonth", "selected", "today", "weekdays"]);
+  const { weekdays, ...sentences } = words;
+  assert.ok(Object.values(sentences).every((w) => w.length > 0));
+  assert.deepEqual(weekdays, ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"]);
 });
 
 test("opens on April 15, 2026, whatever today is", () => {

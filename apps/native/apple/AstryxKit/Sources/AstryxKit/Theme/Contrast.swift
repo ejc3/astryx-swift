@@ -111,7 +111,11 @@ enum AXContrast {
 /// - `color-text-secondary`: 4.5:1 on every ground, 7:1 under Increase Contrast.
 /// - `color-text-disabled` (placeholders and the dates, steppers and hints that stay tappable):
 ///   4.5:1 on the page and the cards, from the theme's value toward the secondary text.
-/// - `color-border-emphasized` (field, checkbox and chip outlines): 3:1.
+/// - `color-border-emphasized` (field, checkbox and chip outlines): the theme's own, and only under
+///   Increase Contrast 4.5:1 (the web draws the theme's outline, and so does the native drawing
+///   until the person asks for more).
+/// - `color-text-inactive`: the theme's disabled gray as it is, for inactive content that is not a
+///   control's own words (an out-of-month date), as the web draws it.
 /// - `color-text-<hue>` on its tinted ground (badges, counts): 4.5:1.
 /// - `color-on-accent`, `-error`, `-success`, `-warning`: white or dark ink, whichever reads better
 ///   on the fill, when the theme's own choice falls under 4.5:1 (white on the dark blue is 3.1).
@@ -182,6 +186,8 @@ enum AXPalette {
             }
         }
         if let disabled = color("color-text-disabled") {
+            // Out-of-month days and the like use the raw token (WCAG exempts inactive content).
+            set("color-text-inactive", disabled)
             let secondary = color("color-text-secondary") ?? primary
             let plainGrounds = grounds.plain + [grounds.muted]
             var stronger = AXContrast.reaching(disabled, toward: secondary, ratio: textRatio, on: plainGrounds)
@@ -190,12 +196,11 @@ enum AXPalette {
             }
             set("color-text-disabled", stronger)
         }
-        // Outlines of fields, checkboxes and chips.
-        if let border = color("color-border-emphasized") {
-            let ratio = increased ? AXContrast.text : AXContrast.control
-            set("color-border-emphasized", AXContrast.reaching(border, toward: primary, ratio: ratio, on: grounds.plain + [grounds.muted]))
-        }
         if increased {
+            // Outlines of fields, checkboxes and chips: raised only when the person asks for more.
+            if let border = color("color-border-emphasized") {
+                set("color-border-emphasized", AXContrast.reaching(border, toward: primary, ratio: AXContrast.text, on: grounds.plain + [grounds.muted]))
+            }
             if let hairline = color("color-border") {
                 set("color-border", AXContrast.reaching(hairline.over(grounds.card), toward: primary, ratio: AXContrast.control, on: grounds.plain))
             }

@@ -40,18 +40,33 @@ struct InvoiceScreen: View {
         _query = State(initialValue: model.query)
     }
 
+    /// The page's own padding: the stock template pads its content 16 points on every side.
+    private var pad: CGFloat { ax.space(4) }
+
     /// Below this the table cannot hold its five columns and each line becomes a small card.
     static let tableFrom: CGFloat = 640
-    private var isTable: Bool { width >= Self.tableFrom }
+    private var isTable: Bool { width - 2 * pad >= Self.tableFrom }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: ax.space(6)) {
-            masthead
-            controls
-            if !model.filters.isEmpty { activeFilters }
-            lines
-            if let banner = model.banner { bannerView(banner) }
+        // The masthead, the controls and the lines, 32 points apart; the masthead is held 16 clear
+        // of the controls on top of that, as the stock page's is.
+        VStack(alignment: .leading, spacing: ax.space(8)) {
+            masthead.padding(.bottom, ax.space(4))
+            if model.filters.isEmpty {
+                controls
+            } else {
+                VStack(alignment: .leading, spacing: ax.space(3)) {
+                    controls
+                    activeFilters
+                }
+            }
+            VStack(alignment: .leading, spacing: ax.space(6)) {
+                lines
+                if let banner = model.banner { bannerView(banner) }
+            }
         }
+        .padding(pad)
+        .environment(\.axWidth, width - 2 * pad)
         .frame(maxWidth: .infinity, alignment: .topLeading)
         .modifier(InvoiceSearch(prompt: model.words.searchPlaceholder, query: $query))
         .syncedText(id: invoiceAction("query"), value: model.query, text: $query)
@@ -73,7 +88,8 @@ struct InvoiceScreen: View {
     /// Where the lines are drawn by the system's `Table`: the Mac, on a device, wide enough for it.
     private var usesSystemTable: Bool {
         #if os(macOS)
-        return isTable && !isStatic
+        if #available(macOS 14.4, *) { return isTable && !isStatic }
+        return false
         #else
         return false
         #endif
@@ -95,11 +111,10 @@ struct InvoiceScreen: View {
             Label(model.words.downloadPdf, systemImage: "arrow.down.to.line")
         }
         .buttonStyle(AXButtonStyle(variant: .secondary, ax: ax, fills: fills))
-        .disabled(model.isInert("downloadPdf"))
     }
 
     private var masthead: some View {
-        VStack(alignment: .leading, spacing: ax.space(5)) {
+        VStack(alignment: .leading, spacing: ax.space(6)) {
             AXAdaptiveRow {
                 HStack(alignment: .center, spacing: ax.space(3)) {
                     mastheadTitle.frame(maxWidth: .infinity, alignment: .leading)
@@ -118,17 +133,21 @@ struct InvoiceScreen: View {
     /// The invoice facts, label over value, in as many columns as fit.
     private var details: some View {
         // One column at accessibility sizes: two would break a long value inside a word.
-        let columns = typeSize.isAccessibilitySize ? 1 : width >= 760 ? 3 : 2
+        let columns = typeSize.isAccessibilitySize ? 1 : width - 2 * pad >= 760 ? 3 : 2
         let rows = stride(from: 0, to: model.details.count, by: columns).map { start in
             Array(model.details[start..<min(start + columns, model.details.count)])
         }
-        return Grid(alignment: .topLeading, horizontalSpacing: ax.space(6), verticalSpacing: ax.space(4)) {
+        let size = ax.fontSize("font-size-base", 14)
+        return Grid(alignment: .topLeading, horizontalSpacing: ax.space(4), verticalSpacing: ax.space(4)) {
             ForEach(Array(rows.enumerated()), id: \.offset) { _, row in
                 GridRow {
                     ForEach(Array(row.enumerated()), id: \.offset) { _, detail in
+                        // The label (medium, secondary) over the value (regular), 2 points apart, on 20 point lines.
                         VStack(alignment: .leading, spacing: ax.hair) {
-                            Text(detail.label).font(ax.fontSmall).foregroundStyle(ax.textSecondary)
-                            Text(detail.value).font(ax.fontLabel).foregroundStyle(ax.text)
+                            Text(detail.label).font(ax.fontLabel).foregroundStyle(ax.textSecondary)
+                                .axLeading(ax, size: size, ratio: ax.bodyLeading)
+                            Text(detail.value).font(ax.fontBase).foregroundStyle(ax.text)
+                                .axLeading(ax, size: size, ratio: ax.bodyLeading)
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .accessibilityElement(children: .combine)
@@ -348,7 +367,7 @@ struct InvoiceScreen: View {
             VStack(alignment: .leading, spacing: ax.space(4)) {
                 if usesSystemTable {
                     #if os(macOS)
-                    InvoiceSystemTable(model: model)
+                    if #available(macOS 14.4, *) { InvoiceSystemTable(model: model) }
                     #endif
                 } else if isTable {
                     InvoiceTable(model: model)
@@ -379,11 +398,16 @@ struct InvoiceScreen: View {
             InboxHairline()
             ForEach(Array(model.totals.enumerated()), id: \.offset) { index, total in
                 totalRow(total)
+                    // The system table's rows are inset from its edges: the figures sit under the Amount column's.
+                    .padding(.trailing, usesSystemTable ? Self.tableRowInset : 0)
                 if index == model.totals.count - 2 || index == model.totals.count - 1 { InboxHairline() }
             }
         }
         .accessibilityElement(children: .contain)
     }
+
+    /// How far the system table's `.inset` style holds a row's content in from the table's edge.
+    static let tableRowInset: CGFloat = 16
 
     private func totalRow(_ total: InvoiceModel.Total) -> some View {
         let strong = total.emphasis == .strong

@@ -35,7 +35,7 @@ public struct Icon: Codable, Sendable, Hashable, RawRepresentable {
 
     /// Every name in `ICONS` of core/src/ui.ts, with its SF Symbol.
     public static let symbols: [String: String] = [
-        "home": "house", "chart": "chart.bar", "inbox": "tray", "check": "checkmark.circle",
+        "home": "house", "chart": "chart.bar", "inbox": "tray", "check": "checkmark",
         "people": "person.2", "gear": "gearshape", "cart": "cart", "calendar": "calendar",
         "chat": "bubble.left.and.bubble.right", "person": "person", "star": "star",
         "star-fill": "star.fill", "archive": "archivebox", "trash": "trash",

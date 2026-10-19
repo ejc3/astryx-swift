@@ -1,26 +1,30 @@
 import SwiftUI
 
-/// A label above a control, with the core's hint or error below it.
+/// A label above a control, with the core's hint between them (Astryx's `description`) and the
+/// core's error below the control (its `status`). The label is secondary text, regular weight.
 struct AXField<Content: View>: View {
     let label: String
     var hint: String? = nil
     var error: String? = nil
     @ViewBuilder var content: Content
     @Environment(\.ax) private var ax
+    @Environment(\.axInRow) private var inRow
 
     var body: some View {
         VStack(alignment: .leading, spacing: ax.space(1)) {
             if !label.isEmpty {
-                Text(label).font(ax.fontLabel).foregroundStyle(ax.text)
+                Text(label).font(ax.fontBase).foregroundStyle(ax.textSecondary)
+                    .axLeading(ax, size: ax.fontSize("font-size-base", 14), ratio: ax.bodyLeading)
+            }
+            if let hint {
+                Text(hint).font(ax.fontSmall).foregroundStyle(ax.textSecondary)
             }
             content
             if let error {
                 Text(error).font(ax.fontSmall).foregroundStyle(ax.tone(.danger).text)
-            } else if let hint {
-                Text(hint).font(ax.fontSmall).foregroundStyle(ax.textSecondary)
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: inRow ? nil : .infinity, alignment: .leading)
     }
 }
 
@@ -70,6 +74,16 @@ struct AXTextInput: View {
     @State private var text: String
     @Environment(\.ax) private var ax
     @Environment(\.axStatic) private var isStatic
+    @Environment(\.axInRow) private var inRow
+
+    /// A single-line field is `axControlHeight` high (32 on the Mac), its text centered.
+    private var fieldPadding: CGFloat {
+        #if os(macOS)
+        ax.space(1)
+        #else
+        ax.space(2) + 2
+        #endif
+    }
 
     init(node: TextInputNode) {
         self.node = node
@@ -87,12 +101,13 @@ struct AXTextInput: View {
                 field
             }
             .padding(.horizontal, ax.space(3))
-            .padding(.vertical, node.multiline == true ? ax.space(2) : ax.space(2) + 2)
-            .frame(minHeight: max(axMinTarget, 36 * min(ax.scale, 1.4)))
+            .padding(.vertical, node.multiline == true ? ax.space(2) : fieldPadding)
+            .frame(minHeight: axControlHeight(ax))
+            .frame(width: inRow && node.multiline != true ? 223 * min(ax.scale, 1.4) : nil)
             .background(RoundedRectangle(cornerRadius: radius, style: .continuous).fill(ax.surface))
             .overlay(
                 RoundedRectangle(cornerRadius: radius, style: .continuous)
-                    .strokeBorder(node.error == nil ? ax.borderStrong : ax.danger, lineWidth: 1)
+                    .strokeBorder(node.error == nil ? ax.border : ax.danger, lineWidth: 1)
             )
         }
         .syncedText(id: node.id, value: node.value, text: $text)
@@ -110,13 +125,13 @@ struct AXTextInput: View {
             Text(shown.isEmpty ? node.placeholder : shown)
                 .font(ax.fontBase)
                 .foregroundStyle(shown.isEmpty ? ax.textDisabled : ax.text)
-                .frame(maxWidth: .infinity, minHeight: node.multiline == true ? 72 * min(ax.scale, 1.4) : 0, alignment: .topLeading)
+                .frame(maxWidth: .infinity, minHeight: node.multiline == true ? 60 * min(ax.scale, 1.4) : 0, alignment: .topLeading)
         } else if node.multiline == true {
             TextEditor(text: $text)
                 .scrollContentBackground(.hidden)
                 .font(ax.fontBase)
                 .foregroundStyle(ax.text)
-                .frame(minHeight: 72 * min(ax.scale, 1.4))
+                .frame(minHeight: 60 * min(ax.scale, 1.4))
                 .overlay(alignment: .topLeading) {
                     if text.isEmpty {
                         Text(node.placeholder)
@@ -141,44 +156,42 @@ struct AXTextInput: View {
     }
 }
 
-/// `switch`: a native Toggle tinted with the accent. It sends `set` with the new Bool.
+/// `switch`: a native Toggle tinted with the accent, at the row's trailing edge, its label before
+/// it in secondary text. It sends `set` with the new Bool.
 struct AXSwitch: View {
     let node: SwitchNode
     @Environment(\.ax) private var ax
     @Environment(\.axSend) private var send
     @Environment(\.axStatic) private var isStatic
 
-    var body: some View {
-        if isStatic {
-            HStack {
-                VStack(alignment: .leading, spacing: ax.hair) {
-                    Text(node.label).font(ax.fontLabel).foregroundStyle(ax.text)
-                    if let description = node.description {
-                        Text(description).font(ax.fontSmall).foregroundStyle(ax.textSecondary)
-                    }
-                }
-                Spacer(minLength: ax.space(3))
-                StaticSwitch(on: node.on)
+    private var labels: some View {
+        VStack(alignment: .leading, spacing: ax.hair) {
+            Text(node.label).font(ax.fontBase).foregroundStyle(ax.textSecondary)
+                .axLeading(ax, size: ax.fontSize("font-size-base", 14), ratio: ax.bodyLeading)
+            if let description = node.description {
+                Text(description).font(ax.fontSmall).foregroundStyle(ax.textSecondary)
             }
-        } else {
-            toggle
         }
     }
 
-    private var toggle: some View {
-        Toggle(isOn: Binding(
-            get: { node.on },
-            set: { send(.set(id: node.id, value: .bool($0))) }
-        )) {
-            VStack(alignment: .leading, spacing: ax.hair) {
-                Text(node.label).font(ax.fontLabel).foregroundStyle(ax.text)
-                if let description = node.description {
-                    Text(description).font(ax.fontSmall).foregroundStyle(ax.textSecondary)
-                }
+    var body: some View {
+        HStack(alignment: .center, spacing: ax.space(3)) {
+            labels
+            Spacer(minLength: ax.space(3))
+            if isStatic {
+                StaticSwitch(on: node.on)
+            } else {
+                Toggle(node.label, isOn: Binding(
+                    get: { node.on },
+                    set: { send(.set(id: node.id, value: .bool($0))) }
+                ))
+                .labelsHidden()
+                .toggleStyle(.switch)
+                .tint(ax.accent)
+                .accessibilityLabel(node.label)
+                .accessibilityHint(node.description ?? "")
             }
         }
-        .toggleStyle(.switch)
-        .tint(ax.accent)
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
@@ -207,27 +220,71 @@ struct AXCheckmark: View {
     }
 }
 
-/// `checkbox`: sends `set` with the new Bool.
-struct AXCheckbox: View {
-    let node: CheckboxNode
+/// A checkbox in the platform's own look: the system checkbox on the Mac (a Mac convention, HIG
+/// Toggles), the drawn box on a touch screen, and the drawn box in a picture with no window. It
+/// carries `label` for VoiceOver; `title` is the text beside it, when there is one.
+struct AXCheckControl: View {
+    let checked: Bool
+    let label: String
+    var title: String? = nil
+    let toggle: () -> Void
     @Environment(\.ax) private var ax
-    @Environment(\.axSend) private var send
+    @Environment(\.axStatic) private var isStatic
 
     var body: some View {
-        Button {
-            send(.set(id: node.id, value: .bool(!node.checked)))
-        } label: {
+        #if os(macOS)
+        if isStatic { drawn } else { system }
+        #else
+        drawn
+        #endif
+    }
+
+    #if os(macOS)
+    @ViewBuilder
+    private var system: some View {
+        let binding = Binding(get: { checked }, set: { _ in toggle() })
+        Group {
+            if let title {
+                Toggle(isOn: binding) { Text(title).font(ax.fontBase).foregroundStyle(ax.text) }
+            } else {
+                Toggle(label, isOn: binding).labelsHidden()
+            }
+        }
+        .toggleStyle(.checkbox)
+        .tint(ax.accent)
+        .frame(minHeight: axMinTarget)
+        .accessibilityLabel(label)
+    }
+    #endif
+
+    private var drawn: some View {
+        Button(action: toggle) {
             HStack(spacing: ax.space(2)) {
-                AXCheckmark(checked: node.checked)
-                Text(node.label).font(ax.fontBase).foregroundStyle(ax.text)
+                AXCheckmark(checked: checked)
+                if let title { Text(title).font(ax.fontBase).foregroundStyle(ax.text) }
                 Spacer(minLength: 0)
             }
             .frame(minHeight: axMinTarget)
             .contentShape(Rectangle())
+            .axTapTarget(keepLayout: true)
         }
         .buttonStyle(.plain)
         .accessibilityElement(children: .combine)
-        .axToggleSemantics(isOn: node.checked)
+        .accessibilityLabel(label)
+        .axToggleSemantics(isOn: checked)
+    }
+}
+
+/// `checkbox`: sends `set` with the new Bool.
+struct AXCheckbox: View {
+    let node: CheckboxNode
+    @Environment(\.axSend) private var send
+
+    var body: some View {
+        AXCheckControl(checked: node.checked, label: node.label, title: node.label) {
+            send(.set(id: node.id, value: .bool(!node.checked)))
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
@@ -252,7 +309,7 @@ struct AXRadio: View {
                                 .frame(width: 18 * min(ax.scale, 1.5), height: 18 * min(ax.scale, 1.5))
                                 .padding(.top, 1)
                             VStack(alignment: .leading, spacing: ax.hair) {
-                                Text(option.label).font(ax.fontLabel).foregroundStyle(ax.text)
+                                Text(option.label).font(ax.fontBase).foregroundStyle(ax.text)
                                 if let description = option.description {
                                     Text(description).font(ax.fontSmall).foregroundStyle(ax.textSecondary)
                                         .multilineTextAlignment(.leading)
@@ -281,9 +338,11 @@ struct AXSegmented: View {
     @Environment(\.axStatic) private var isStatic
 
     var body: some View {
-        AXField(label: node.label) {
+        // Astryx's SegmentedControl keeps its label for assistive technology only.
+        AXField(label: "") {
             if isStatic {
                 StaticSegmented(options: node.options, value: node.value)
+                    .accessibilityLabel(node.label)
             } else {
             Picker(node.label, selection: Binding(
                 get: { node.value },
@@ -306,6 +365,7 @@ struct AXSelect: View {
     let node: ChoiceNode
     @Environment(\.ax) private var ax
     @Environment(\.axSend) private var send
+    @Environment(\.axInRow) private var inRow
 
     var body: some View {
         AXField(label: node.label) {
@@ -326,16 +386,18 @@ struct AXSelect: View {
                     Text(node.options.first { $0.value == node.value }?.label ?? node.value)
                         .font(ax.fontBase)
                         .foregroundStyle(ax.text)
-                    Spacer(minLength: 0)
+                    if !inRow { Spacer(minLength: 0) }
                     Image(systemName: "chevron.up.chevron.down")
                         .font(.system(size: ax.fontSize("font-size-xs", 10), weight: .semibold))
                         .foregroundStyle(ax.iconSecondary)
                 }
                 .padding(.horizontal, ax.space(3))
-                .frame(minHeight: max(axMinTarget, 36 * min(ax.scale, 1.4)))
+                .frame(minHeight: axControlHeight(ax))
                 .background(RoundedRectangle(cornerRadius: ax.radiusElement, style: .continuous).fill(ax.surface))
-                .overlay(RoundedRectangle(cornerRadius: ax.radiusElement, style: .continuous).strokeBorder(ax.borderStrong, lineWidth: 1))
+                .overlay(RoundedRectangle(cornerRadius: ax.radiusElement, style: .continuous).strokeBorder(ax.border, lineWidth: 1))
                 .contentShape(Rectangle())
+                // In a row the select hugs its value, as in a flex row.
+                .fixedSize(horizontal: inRow, vertical: false)
             }
             .menuStyle(.button)
             .buttonStyle(.plain)
@@ -362,23 +424,21 @@ struct AXSlider: View {
     }
 
     var body: some View {
-        AXField(label: "") {
-            VStack(alignment: .leading, spacing: ax.space(1)) {
-                HStack {
-                    Text(node.label).font(ax.fontLabel).foregroundStyle(ax.text)
-                    Spacer(minLength: ax.space(2))
-                    Text(node.valueText).font(ax.fontBase.monospacedDigit()).foregroundStyle(ax.textSecondary)
-                }
+        // The label above; the value text beside the track, as Astryx's Slider draws it.
+        AXField(label: node.label) {
+            HStack(spacing: ax.space(3)) {
                 if isStatic {
                     StaticSlider(fraction: (node.value - node.min) / max(node.max - node.min, 1))
                 } else {
-                Slider(value: $value, in: node.min...max(node.max, node.min + node.step), step: node.step > 0 ? node.step : 1) { editing in
-                    dragging = editing
+                    Slider(value: $value, in: node.min...max(node.max, node.min + node.step), step: node.step > 0 ? node.step : 1) { editing in
+                        dragging = editing
+                    }
+                    .tint(ax.accent)
+                    .accessibilityLabel(node.label)
+                    .accessibilityValue(node.valueText)
                 }
-                .tint(ax.accent)
-                .accessibilityLabel(node.label)
-                .accessibilityValue(node.valueText)
-                }
+                Text(node.valueText).font(ax.fontBase.monospacedDigit()).foregroundStyle(ax.textSecondary)
+                    .accessibilityHidden(true)
             }
         }
         .onChange(of: value) { _, new in
@@ -396,6 +456,15 @@ struct AXTabs: View {
     @Environment(\.ax) private var ax
     @Environment(\.axSend) private var send
 
+    /// Astryx's tab is 36 high; on a touch screen it is at least the 44 pt target.
+    private var tabHeight: CGFloat {
+        #if os(macOS)
+        36 * min(ax.scale, 1.4)
+        #else
+        axMinTarget
+        #endif
+    }
+
     var body: some View {
         AXHScroll {
             HStack(spacing: ax.space(1)) {
@@ -408,17 +477,13 @@ struct AXTabs: View {
                             Text(tab.label)
                                 .font(selected ? ax.fontStrong : ax.fontLabel)
                                 .foregroundStyle(selected ? ax.text : ax.textSecondary)
+                            // The count is a neutral badge on every tab, the chosen one included.
                             if let count = tab.count {
-                                Text(count)
-                                    .font(ax.font("font-size-xs", 10, weight: "font-weight-semibold").monospacedDigit())
-                                    .foregroundStyle(selected ? ax.tone(.accent).text : ax.textSecondary)
-                                    .padding(.horizontal, ax.space(half: 1))
-                                    .padding(.vertical, 1)
-                                    .background(Capsule().fill(selected ? ax.accentMuted : ax.muted))
+                                AXBadge(text: count, tone: .neutral)
                             }
                         }
                         .padding(.horizontal, ax.space(3))
-                        .frame(minHeight: axMinTarget)
+                        .frame(minHeight: tabHeight)
                         .overlay(alignment: .bottom) {
                             Rectangle().fill(selected ? ax.accent : .clear).frame(height: 2)
                         }

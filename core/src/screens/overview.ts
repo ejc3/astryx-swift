@@ -24,7 +24,7 @@ export function overview(s: State): Screen {
       card("Badges and tokens", [
         wrap("xs", ...tones.map((t) => badge(t[0]!.toUpperCase() + t.slice(1), t))),
         wrap("xs", ...o.tags.map((t): Node => ({ kind: "token", text: t, tone: "accent", removeId: `overview.untag:${t}` }))),
-        o.tags.length === 0 ? text("All tokens removed. Reset brings them back.", "caption") : text(`${plural(o.tags.length, "token")}. Tap × to remove one.`, "caption"),
+        o.tags.length === 0 ? text("All tokens removed. Reset brings them back.", "caption") : text(`${plural(o.tags.length, "token")}. Remove one with ×.`, "caption"),
       ]),
       card("People", [
         h("sm", ...PEOPLE.slice(0, 4).map((p, i): Node => ({ kind: "avatar", name: p.name, initials: initials(p.name), hue: hueOf(p.name), size: (["sm", "md", "lg", "md"] as const)[i]!, ...(p.status === "active" ? { status: "success" as const, statusLabel: "Online" } : p.status === "away" ? { status: "warning" as const, statusLabel: "Away" } : {}) }))),
@@ -50,7 +50,7 @@ export function overview(s: State): Screen {
       card("Empty state", [{ kind: "empty", icon: "sparkle", title: "Nothing here yet", text: "Empty states are nodes too, with a way forward.", action: button("navigate:dashboard", "Open the dashboard", "primary") }]),
     ),
   );
-  return { id: "overview", title: "Components", subtitle: "Astryx's components, drawn natively", toolbar: [button("overview.reset", "Reset", "ghost", "undo")], body };
+  return { id: "overview", title: "Components", subtitle: "Astryx's components, from one core", toolbar: [button("overview.reset", "Reset", "ghost", "undo")], body };
 }
 
 export function dashboard(s: State): Screen {

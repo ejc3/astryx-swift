@@ -241,6 +241,8 @@ export type CheckoutView = {
 export type View = CheckoutView;
 
 export type CheckoutWords = CommonWords & {
+  /** The page heading (the stock page writes it inline). */
+  title: string;
   secureCheckout: string;
   progress: string;
   cart: { heading: string; limited: string; remove: string; promoLabel: string; promoPlaceholder: string; apply: string; quantity: string };
@@ -260,6 +262,7 @@ export type CheckoutWords = CommonWords & {
 
 const WORDS: CheckoutWords = {
   ...COMMON_WORDS,
+  title: "Checkout",
   secureCheckout: "Secure checkout",
   progress: "Checkout progress",
   cart: {

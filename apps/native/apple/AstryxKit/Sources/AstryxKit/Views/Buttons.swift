@@ -4,6 +4,8 @@ import SwiftUI
 /// It sends `press` with its id.
 struct AXButton: View {
     let node: ButtonNode
+    /// Astryx's `sm` button (28 high), for a card's action and a back button.
+    var small = false
     @Environment(\.ax) private var ax
     @Environment(\.axSend) private var send
     @Environment(\.dynamicTypeSize) private var typeSize
@@ -19,7 +21,7 @@ struct AXButton: View {
                     .multilineTextAlignment(.center)
             }
         }
-        .buttonStyle(AXButtonStyle(variant: node.variant, ax: ax))
+        .buttonStyle(AXButtonStyle(variant: node.variant, ax: ax, small: small))
         .disabled(node.disabled ?? false)
     }
 }
@@ -30,7 +32,19 @@ struct AXButtonStyle: ButtonStyle {
     /// The button takes the whole width it is given (a button in a stacked column), its label
     /// centered and wrapping between words.
     var fills = false
+    /// Astryx's `sm` size: 28 high rather than 32.
+    var small = false
     @Environment(\.isEnabled) private var isEnabled
+
+    /// Astryx's `size-element-md` (32), `sm` (28); on a touch screen the md button is 36 with its
+    /// tap region reaching 44.
+    private var height: CGFloat {
+        #if os(macOS)
+        (small ? 28 : 32) * min(ax.scale, 1.4)
+        #else
+        (small ? 28 : 36) * min(ax.scale, 1.4)
+        #endif
+    }
 
     func makeBody(configuration: Configuration) -> some View {
         let shape = RoundedRectangle(cornerRadius: ax.radiusElement, style: .continuous)
@@ -40,13 +54,12 @@ struct AXButtonStyle: ButtonStyle {
             .multilineTextAlignment(.center)
             .frame(maxWidth: fills ? .infinity : nil)
             .padding(.horizontal, ax.space(3))
-            .frame(minHeight: 36 * min(ax.scale, 1.4))
+            .frame(minHeight: height)
             .fixedSize(horizontal: false, vertical: true)
             .background(shape.fill(background))
-            .overlay(shape.strokeBorder(variant == .secondary ? ax.borderStrong : .clear, lineWidth: 1))
-            .opacity(isEnabled ? (configuration.isPressed ? 0.75 : 1) : 0.45)
+            .opacity(isEnabled ? (configuration.isPressed ? 0.75 : 1) : 0.5)
             .contentShape(shape)
-            // The button is drawn 36 pt high; the taps around it still count (44 x 44 pt).
+            // The button is drawn 32 pt high (36 on a touch screen); the taps around it still count.
             .axTapTarget(keepLayout: true)
     }
 
@@ -55,7 +68,7 @@ struct AXButtonStyle: ButtonStyle {
         case .primary: ax.onAccent
         case .destructive: ax.color("color-on-error")
         case .secondary: ax.text
-        case .ghost: ax.accent
+        case .ghost: ax.text
         }
     }
 
@@ -63,7 +76,7 @@ struct AXButtonStyle: ButtonStyle {
         switch variant {
         case .primary: ax.accent
         case .destructive: ax.danger
-        case .secondary: ax.surface
+        case .secondary: ax.color("color-neutral")
         case .ghost: .clear
         }
     }
@@ -72,24 +85,34 @@ struct AXButtonStyle: ButtonStyle {
 /// `iconButton`: a square icon control. Its label is the accessibility label.
 struct AXIconButton: View {
     let node: IconButtonNode
+    /// Astryx's `sm` icon button, 28 square.
+    var small = false
+    /// No action behind it (the first page has no previous): drawn dimmed, and it does nothing.
+    var disabled = false
     @Environment(\.ax) private var ax
     @Environment(\.axSend) private var send
 
     var body: some View {
         let selected = node.selected ?? false
-        let side = 36 * min(ax.scale, 1.4)
+        #if os(macOS)
+        let side = (small ? 28 : 32) * min(ax.scale, 1.4)
+        #else
+        let side = (small ? 28 : 36) * min(ax.scale, 1.4)
+        #endif
         Button {
             send(.press(id: node.id))
         } label: {
             Image(systemName: node.icon.symbol)
-                .font(.system(size: ax.fontSize("font-size-lg", 17) * 0.95))
-                .foregroundStyle(selected ? ax.accent : ax.iconSecondary)
+                .font(.system(size: ax.fontSize("font-size-lg", 17) * (small ? 0.8 : 0.95)))
+                .foregroundStyle(selected ? ax.text : ax.iconSecondary)
                 .frame(width: side, height: side)
-                .background(RoundedRectangle(cornerRadius: ax.radiusElement, style: .continuous).fill(selected ? ax.accentMuted : .clear))
+                .background(RoundedRectangle(cornerRadius: ax.radiusElement, style: .continuous).fill(selected ? ax.color("color-neutral") : .clear))
                 .contentShape(Rectangle())
                 .axTapTarget(keepLayout: true)
         }
         .buttonStyle(.plain)
+        .disabled(disabled)
+        .opacity(disabled ? 0.5 : 1)
         .accessibilityLabel(node.label)
         .accessibilityAddTraits(selected ? .isSelected : [])
     }

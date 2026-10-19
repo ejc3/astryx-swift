@@ -11,6 +11,7 @@ struct DashActiveUsers: View {
     @Environment(\.axSend) private var send
     @Environment(\.axWidth) private var width
     @Environment(\.dynamicTypeSize) private var typeSize
+    @Environment(\.accessibilityDifferentiateWithoutColor) private var differentiate
     @ScaledMetric(relativeTo: .body) private var compactHeight: CGFloat = 220
     @ScaledMetric(relativeTo: .body) private var regularHeight: CGFloat = 300
 
@@ -18,6 +19,7 @@ struct DashActiveUsers: View {
         Text(chart.title)
             .font(ax.heading(3))
             .foregroundStyle(ax.text)
+            .axLeading(ax, size: ax.fontSize("text-heading-3-size", 17), ratio: ax.headingLeading(3))
             .fixedSize(horizontal: false, vertical: true)
             .accessibilityAddTraits(.isHeader)
     }
@@ -27,7 +29,7 @@ struct DashActiveUsers: View {
             send(.press(id: "tpl.dashboard.reload"))
         } label: {
             HStack(spacing: ax.space(2)) {
-                Image(systemName: "arrow.clockwise")
+                Image(systemName: "arrow.triangle.2.circlepath")
                 Text(chart.reloadLabel)
             }
         }
@@ -54,8 +56,15 @@ struct DashActiveUsers: View {
                 FlowLayout(spacing: ax.space(6), crossAlignment: 0.5) {
                     ForEach(Array(chart.series.enumerated()), id: \.element.id) { index, series in
                         HStack(spacing: ax.space(2)) {
-                            DashLineSwatch(color: ax.color(series.color.token), dash: DashSeriesLook.dash(index))
+                            // Small squares in the series' color; with Differentiate Without Color on, the
+                            // line's own pattern, so the legend says what the lines say.
+                            if differentiate {
+                                DashLineSwatch(color: ax.color(series.color.token), dash: DashSeriesLook.dash(index, differentiate: true))
+                            } else {
+                                DashSwatch(color: ax.color(series.color.token))
+                            }
                             Text(series.name).font(ax.fontSmall).foregroundStyle(ax.textSecondary)
+                                .axLeading(ax, size: ax.fontSize("font-size-sm", 12), ratio: ax.supportingLeading)
                         }
                     }
                 }
@@ -65,14 +74,16 @@ struct DashActiveUsers: View {
     }
 }
 
-/// What tells the series apart besides hue: a dash pattern each (solid, dashed, dotted) and, on
-/// the point being read, a symbol each. The legend draws the same patterns.
+/// What tells the series apart besides hue: a symbol each on the point being read and, only when
+/// the person turns on Differentiate Without Color, a dash pattern each (solid, dashed, dotted),
+/// which the legend draws too. Otherwise every line is solid, as on the web.
 enum DashSeriesLook {
-    static func dash(_ index: Int) -> [CGFloat] {
+    static func dash(_ index: Int, differentiate: Bool) -> [CGFloat] {
+        guard differentiate else { return [] }
         switch index % 3 {
-        case 0: []
-        case 1: [7, 4]
-        default: [1.5, 4]
+        case 0: return []
+        case 1: return [7, 4]
+        default: return [1.5, 4]
         }
     }
 
@@ -107,6 +118,7 @@ private struct DashLineChart: View {
     @Environment(\.ax) private var ax
     @Environment(\.axWidth) private var width
     @Environment(\.dynamicTypeSize) private var typeSize
+    @Environment(\.accessibilityDifferentiateWithoutColor) private var differentiate
 
     /// The model's domain widened to hold every point, as Recharts does with a numeric axis
     /// (its domain grows to the data unless `allowDataOverflow` is set), so all points show.
@@ -132,6 +144,14 @@ private struct DashLineChart: View {
     /// phone, so the labels thin out (the middle one on a narrow screen, the two ends on a wider
     /// one) instead of overprinting each other.
     private var shownTicks: [DashModel.ActiveUsers.Tick] {
+        // On a phone the labels would touch: keep the ends and the one near a third of the way.
+        if !typeSize.isAccessibilitySize, width < 500, ticks.count > 3 {
+            let span = max(xRange.upperBound - xRange.lowerBound, 0.0001)
+            return ticks.filter { tick in
+                let f = (tick.at - xRange.lowerBound) / span
+                return f < 0.01 || f > 0.99 || (f > 0.2 && f < 0.55)
+            }
+        }
         guard typeSize.isAccessibilitySize, ticks.count > 1 else { return ticks }
         if width < 500 {
             let middle = (xRange.lowerBound + xRange.upperBound) / 2
@@ -153,6 +173,7 @@ private struct DashLineChart: View {
     var body: some View {
         Chart {
             ForEach(Array(chart.series.enumerated()), id: \.element.id) { index, series in
+                let dash = DashSeriesLook.dash(index, differentiate: differentiate)
                 ForEach(visible) { point in
                     LineMark(
                         x: .value(words.timeTitle, point.hour),
@@ -160,7 +181,7 @@ private struct DashLineChart: View {
                         series: .value(chart.title, series.name)
                     )
                     .foregroundStyle(ax.color(series.color.token))
-                    .lineStyle(StrokeStyle(lineWidth: 2, lineCap: DashSeriesLook.dash(index).isEmpty ? .round : .butt, lineJoin: .round, dash: DashSeriesLook.dash(index)))
+                    .lineStyle(StrokeStyle(lineWidth: 2, lineCap: dash.isEmpty ? .round : .butt, lineJoin: .round, dash: dash))
                     .interpolationMethod(.linear)
                 }
             }
@@ -184,7 +205,10 @@ private struct DashLineChart: View {
         .chartLegend(.hidden)
         .chartXAxis {
             AxisMarks(values: shownTicks.map(\.at)) { value in
-                AxisValueLabel(collisionResolution: .disabled) {
+                // The last label ends at the plot's right edge, as the web's does: centered on the
+                // edge it would be cut off, so it hangs from it.
+                let last = value.as(Double.self).map { $0 == shownTicks.last?.at } ?? false
+                AxisValueLabel(anchor: last ? .topTrailing : .top, collisionResolution: .disabled) {
                     if let at = value.as(Double.self), let tick = ticks.first(where: { $0.at == at }) {
                         Text(tick.label)
                             .font(ax.fontSmall)
@@ -212,13 +236,18 @@ private struct DashTooltip: View {
     let point: DashModel.ActiveUsers.Point
     let series: [DashModel.ActiveUsers.Series]
     @Environment(\.ax) private var ax
+    @Environment(\.accessibilityDifferentiateWithoutColor) private var differentiate
 
     var body: some View {
         VStack(alignment: .leading, spacing: ax.space(1)) {
             Text(point.label).font(ax.fontSmall).foregroundStyle(ax.textSecondary)
             ForEach(Array(series.enumerated()), id: \.element.id) { index, s in
                 HStack(spacing: ax.space(2)) {
-                    DashLineSwatch(color: ax.color(s.color.token), dash: DashSeriesLook.dash(index))
+                    if differentiate {
+                        DashLineSwatch(color: ax.color(s.color.token), dash: DashSeriesLook.dash(index, differentiate: true))
+                    } else {
+                        DashSwatch(color: ax.color(s.color.token))
+                    }
                     Text("\(s.name): \(DashNumbers.plain(point.value(for: s.key)))")
                         .font(ax.fontSmall.monospacedDigit())
                         .foregroundStyle(ax.text)

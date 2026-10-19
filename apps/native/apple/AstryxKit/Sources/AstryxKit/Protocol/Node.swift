@@ -424,6 +424,9 @@ public struct PaginationNode: Decodable, Sendable {
     public let label: String
     public let previousId: String?
     public let nextId: String?
+    /// The step buttons' names for assistive technology; a core without them gives none.
+    public let previousLabel: String?
+    public let nextLabel: String?
 }
 
 // MARK: Collections
@@ -574,6 +577,9 @@ public struct BoardColumn: Decodable, Sendable {
 
 public struct BoardNode: Decodable, Sendable {
     public let columns: [BoardColumn]
+    /// The board's own width below which its columns stack one above the other (the core's rule,
+    /// which the web page follows too). Older cores send none: the columns then never stack.
+    public let stackBelow: Double?
 }
 
 /// `template`: a screen the core hands over as a typed view model for one Astryx template

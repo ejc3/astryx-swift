@@ -40,6 +40,11 @@ test("the chat shows five lines and the order details, with a link, an amount an
   assert.deepEqual(chat.suggestions, ["Reschedule delivery", "Update shipping address", "Start a return"]);
 });
 
+test("the chat composer names its send button", () => {
+  const c = view(start()).chat.composer;
+  assert.deepEqual([c.attachLabel, c.voiceLabel, c.sendLabel], ["Attach", "Voice input", "Send"]);
+});
+
 test("revenue amounts are signed and grouped, and a refund is muted", () => {
   const r = view(start()).revenue;
   assert.deepEqual(r.items.map((i) => i.amount), ["+$248", "−$89", "+$156", "+$412", "+$95"]);

@@ -8,12 +8,12 @@ struct AXProgress: View {
     var body: some View {
         VStack(alignment: .leading, spacing: ax.space(1)) {
             HStack {
-                Text(node.label).font(ax.fontLabel).foregroundStyle(ax.text)
+                Text(node.label).font(ax.fontBase).foregroundStyle(ax.text)
                 Spacer(minLength: ax.space(2))
-                Text(node.valueText).font(ax.fontSmall.monospacedDigit()).foregroundStyle(ax.textSecondary)
+                Text(node.valueText).font(ax.fontBase.monospacedDigit()).foregroundStyle(ax.textSecondary)
             }
             Capsule()
-                .fill(ax.track.opacity(0.55))
+                .fill(ax.muted)
                 .frame(height: 8)
                 .overlay(alignment: .leading) {
                     GeometryReader { geo in
@@ -29,7 +29,8 @@ struct AXProgress: View {
     }
 }
 
-/// `metric`: a figure with its change and a sparkline of the trend.
+/// `metric`: a figure with its change and a sparkline of the trend. The figure is a level 2
+/// heading, the change 10 pt in the tone's text color, the sparkline 32 high.
 struct AXMetric: View {
     let node: MetricNode
     @Environment(\.ax) private var ax
@@ -37,22 +38,24 @@ struct AXMetric: View {
     var body: some View {
         VStack(alignment: .leading, spacing: ax.space(1)) {
             Text(node.label).font(ax.fontSmall).foregroundStyle(ax.textSecondary)
+                .axLeading(ax, size: ax.fontSize("font-size-sm", 12), ratio: ax.supportingLeading)
             Text(node.value)
-                .font(.system(size: ax.fontSize("font-size-3xl", 29), weight: ax.weight(600)).monospacedDigit())
+                .font(ax.heading(2).monospacedDigit())
                 .foregroundStyle(ax.text)
                 .minimumScaleFactor(0.7)
                 .lineLimit(1)
+                .axLeading(ax, size: ax.fontSize("text-heading-2-size", 20), ratio: ax.headingLeading(2))
             if let delta = node.delta {
-                HStack(spacing: ax.space(1)) {
-                    Image(systemName: delta.up ? "arrow.up.right" : "arrow.down.right")
-                        .font(.system(size: ax.fontSize("font-size-xs", 10), weight: .bold))
-                    Text(delta.text).font(ax.font("font-size-sm", 12, weight: "font-weight-medium"))
+                HStack(spacing: ax.hair) {
+                    Image(systemName: delta.up ? "arrow.up" : "arrow.down")
+                        .font(.system(size: ax.fontSize("font-size-xs", 10), weight: .regular))
+                    Text(delta.text).font(ax.fontXSmall)
                 }
-                .foregroundStyle(ax.tone(delta.tone).text)
+                .foregroundStyle(ax.textTone(delta.tone))
             }
             if let trend = node.trend, trend.count > 1 {
                 Sparkline(values: trend, color: ax.accent)
-                    .frame(height: 36)
+                    .frame(height: 32)
                     .padding(.top, ax.space(2))
                     .accessibilityHidden(true)
             }
@@ -64,17 +67,18 @@ struct AXMetric: View {
     }
 }
 
-/// A line over a soft fill; values run 0 to 1 and the core has already normalized them.
+/// A line over a flat fill at 12 %; values run 0 to 1 and the core has already normalized them.
 struct Sparkline: View {
     let values: [Double]
     let color: Color
 
     var body: some View {
         GeometryReader { geo in
+            let pad: CGFloat = 2
             let points = values.enumerated().map { index, value in
                 CGPoint(
                     x: geo.size.width * CGFloat(index) / CGFloat(max(values.count - 1, 1)),
-                    y: geo.size.height * (1 - CGFloat(min(max(value, 0), 1))) * 0.9 + geo.size.height * 0.05
+                    y: geo.size.height - pad - CGFloat(min(max(value, 0), 1)) * (geo.size.height - 2 * pad)
                 )
             }
             ZStack {
@@ -85,7 +89,7 @@ struct Sparkline: View {
                     path.addLine(to: CGPoint(x: last.x, y: geo.size.height))
                     path.closeSubpath()
                 }
-                .fill(LinearGradient(colors: [color.opacity(0.22), color.opacity(0)], startPoint: .top, endPoint: .bottom))
+                .fill(color.opacity(0.12))
                 Path { path in
                     guard let first = points.first else { return }
                     path.move(to: first)
@@ -97,36 +101,37 @@ struct Sparkline: View {
     }
 }
 
-/// `bars`: a column chart. Heights run 0 to 1; the highlighted bar is in the accent color.
+/// `bars`: a column chart, 180 high. Heights run 0 to 1; only the highlighted bar shows its value,
+/// in the accent color, the others at 16 % accent. The chart's name is a 10 pt caption below.
 struct AXBars: View {
     let node: BarsNode
     @Environment(\.ax) private var ax
-    @Environment(\.axWidth) private var width
 
     var body: some View {
-        let slot = width / CGFloat(max(node.bars.count, 1))
-        // Value labels go over every bar when each has room, else over the highlighted ones.
-        let labelAll = slot >= 40 * ax.scale
-        let chartHeight: CGFloat = 120
-        VStack(alignment: .leading, spacing: ax.space(3)) {
-            Text(node.label).font(ax.fontLabel).foregroundStyle(ax.text)
-            HStack(alignment: .bottom, spacing: ax.space(2)) {
+        let chartHeight: CGFloat = 180
+        // A value row and a label row of 12 pt each, with the gap, leave the track for the fills.
+        let line = ax.fontSize("font-size-xs", 10) * 1.2
+        let track = max(chartHeight - 2 * (line + ax.space(1)), 20)
+        VStack(alignment: .leading, spacing: ax.space(2)) {
+            HStack(alignment: .bottom, spacing: ax.space(1)) {
                 ForEach(Array(node.bars.enumerated()), id: \.offset) { _, bar in
                     VStack(spacing: ax.space(1)) {
-                        Text(labelAll || bar.highlight ? bar.valueText : " ")
+                        Text(bar.highlight ? bar.valueText : " ")
                             .font(ax.font("font-size-xs", 10, weight: bar.highlight ? "font-weight-semibold" : "font-weight-normal").monospacedDigit())
                             .foregroundStyle(bar.highlight ? ax.text : ax.textSecondary)
                             .lineLimit(1)
                             .minimumScaleFactor(0.6)
+                            .frame(height: line)
                         Spacer(minLength: 0)
-                        RoundedRectangle(cornerRadius: ax.radiusInner, style: .continuous)
-                            .fill(bar.highlight ? ax.accent : ax.accent.opacity(0.35))
-                            .frame(height: max(chartHeight * CGFloat(min(max(bar.value, 0), 1)), 2))
+                        UnevenRoundedRectangle(topLeadingRadius: ax.radiusInner, bottomLeadingRadius: 0, bottomTrailingRadius: 0, topTrailingRadius: ax.radiusInner, style: .continuous)
+                            .fill(bar.highlight ? ax.accent : ax.accentSoft)
+                            .frame(height: max(track * CGFloat(min(max(bar.value, 0), 1)), 2))
                         Text(bar.label)
                             .font(ax.fontXSmall)
                             .foregroundStyle(ax.textSecondary)
                             .lineLimit(1)
                             .minimumScaleFactor(0.6)
+                            .frame(height: line)
                     }
                     .frame(maxWidth: .infinity)
                     .accessibilityElement(children: .ignore)
@@ -134,13 +139,16 @@ struct AXBars: View {
                     .accessibilityValue(bar.valueText)
                 }
             }
-            .frame(height: chartHeight + 36)
+            .frame(height: chartHeight)
+            Text(node.label).font(ax.fontXSmall).foregroundStyle(ax.textSecondary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
-/// `stepper`: progress through steps, done / current / upcoming.
+/// `stepper`: progress through steps, done / current / upcoming, as Astryx's Stepper draws it: a
+/// bar above each step (accent when done or current), then a marker (a check when done, a radio
+/// dot when current, the step's number in a gray disc when upcoming) and the label.
 struct AXStepper: View {
     let node: StepperNode
     @Environment(\.ax) private var ax
@@ -148,22 +156,16 @@ struct AXStepper: View {
 
     var body: some View {
         ViewThatFits(in: .horizontal) {
-            HStack(alignment: .center, spacing: 0) {
+            HStack(alignment: .top, spacing: ax.space(2)) {
                 ForEach(Array(node.steps.enumerated()), id: \.offset) { index, step in
-                    if index > 0 {
-                        Rectangle()
-                            .fill(node.steps[index - 1].state == .done ? ax.accent : ax.border)
-                            .frame(height: 2)
-                            .frame(minWidth: 12, maxWidth: .infinity)
-                            .padding(.horizontal, ax.space(2))
-                    }
-                    stepLabel(step, lineLimit: 1)
-                        .fixedSize()
+                    stepView(step, index: index, lineLimit: 1)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
             VStack(alignment: .leading, spacing: ax.space(3)) {
-                ForEach(Array(node.steps.enumerated()), id: \.offset) { _, step in
-                    stepLabel(step, lineLimit: nil)
+                ForEach(Array(node.steps.enumerated()), id: \.offset) { index, step in
+                    stepView(step, index: index, lineLimit: nil)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
         }
@@ -171,15 +173,22 @@ struct AXStepper: View {
         .accessibilityElement(children: .contain)
     }
 
-    /// A step's marker and name; a button when the core gave it a `selectId`.
+    /// A step: its bar, then its marker and name; a button when the core gave it a `selectId`.
     @ViewBuilder
-    private func stepLabel(_ step: StepperNode.Step, lineLimit: Int?) -> some View {
-        let content = HStack(spacing: ax.space(2)) {
-            marker(step.state)
-            Text(step.label)
-                .font(step.state == .current ? ax.fontStrong : ax.fontBase)
-                .foregroundStyle(step.state == .upcoming ? ax.textSecondary : ax.text)
-                .lineLimit(lineLimit)
+    private func stepView(_ step: StepperNode.Step, index: Int, lineLimit: Int?) -> some View {
+        let content = VStack(alignment: .leading, spacing: ax.space(2)) {
+            Capsule()
+                .fill(step.state == .upcoming ? ax.color("color-neutral") : ax.accent)
+                .frame(maxWidth: .infinity)
+                .frame(height: 4)
+            HStack(spacing: ax.space(2)) {
+                marker(step.state, index: index)
+                Text(step.label)
+                    .font(step.state == .current ? ax.fontStrong : ax.fontBase)
+                    .foregroundStyle(step.state == .upcoming ? ax.textSecondary : ax.text)
+                    .lineLimit(lineLimit)
+                    .fixedSize(horizontal: lineLimit == 1, vertical: true)
+            }
         }
         .contentShape(Rectangle())
         if let selectId = step.selectId {
@@ -192,8 +201,8 @@ struct AXStepper: View {
     }
 
     @ViewBuilder
-    private func marker(_ state: StepperNode.Step.State) -> some View {
-        let side = 22 * min(ax.scale, 1.5)
+    private func marker(_ state: StepperNode.Step.State, index: Int) -> some View {
+        let side = 20 * min(ax.scale, 1.5)
         switch state {
         case .done:
             Circle().fill(ax.accent).frame(width: side, height: side)
@@ -202,7 +211,8 @@ struct AXStepper: View {
             Circle().strokeBorder(ax.accent, lineWidth: 2).frame(width: side, height: side)
                 .overlay(Circle().fill(ax.accent).frame(width: side * 0.4, height: side * 0.4))
         case .upcoming:
-            Circle().strokeBorder(ax.borderStrong, lineWidth: 2).frame(width: side, height: side)
+            Circle().fill(ax.color("color-neutral")).frame(width: side, height: side)
+                .overlay(Text("\(index + 1)").font(ax.fontXSmall.monospacedDigit()).foregroundStyle(ax.textSecondary))
         }
     }
 }
@@ -216,15 +226,16 @@ struct AXBanner: View {
     var body: some View {
         let colors = ax.tone(node.tone)
         HStack(alignment: .top, spacing: ax.space(3)) {
-            Image(systemName: bannerIcon.symbol)
+            Image(systemName: bannerSymbol)
                 .font(.system(size: ax.fontSize("font-size-lg", 17)))
-                .foregroundStyle(colors.text)
+                .foregroundStyle(ax.fillTone(node.tone))
             VStack(alignment: .leading, spacing: ax.space(1)) {
-                Text(node.title).font(ax.fontStrong).foregroundStyle(colors.text)
-                Text(node.text).font(ax.fontBase).foregroundStyle(ax.text)
+                Text(node.title).font(ax.fontStrong).foregroundStyle(ax.text)
+                Text(node.text).font(ax.fontSmall).foregroundStyle(ax.textSecondary)
+                    .lineSpacing(ax.lineSpacing(size: ax.fontSize("font-size-sm", 12), ratio: ax.supportingLeading))
                     .fixedSize(horizontal: false, vertical: true)
                 if let action = node.action {
-                    AXButton(node: action).padding(.top, ax.space(1))
+                    AXButton(node: action, small: true).padding(.top, ax.space(1))
                 }
             }
             Spacer(minLength: 0)
@@ -246,15 +257,15 @@ struct AXBanner: View {
         .padding(ax.space(3))
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(RoundedRectangle(cornerRadius: ax.radiusContainer, style: .continuous).fill(colors.muted))
-        .overlay(RoundedRectangle(cornerRadius: ax.radiusContainer, style: .continuous).strokeBorder(colors.border.opacity(0.6), lineWidth: 1))
         .accessibilityElement(children: .contain)
     }
 
-    private var bannerIcon: Icon {
+    /// The filled glyph of the tone, in the tone's color.
+    private var bannerSymbol: String {
         switch node.tone {
-        case .success: Icon(rawValue: "check")
-        case .warning, .danger: Icon(rawValue: "warning")
-        default: Icon(rawValue: "info")
+        case .success: "checkmark.circle.fill"
+        case .warning, .danger: "exclamationmark.triangle.fill"
+        default: "info.circle.fill"
         }
     }
 }
@@ -269,10 +280,8 @@ struct AXEmpty: View {
             Image(systemName: node.icon.symbol)
                 .font(.system(size: ax.fontSize("font-size-2xl", 24)))
                 .foregroundStyle(ax.iconSecondary)
-                .frame(width: 56 * min(ax.scale, 1.5), height: 56 * min(ax.scale, 1.5))
-                .background(Circle().fill(ax.muted))
             VStack(spacing: ax.hair) {
-                Text(node.title).font(ax.fontStrong).foregroundStyle(ax.text)
+                Text(node.title).font(ax.heading(3)).foregroundStyle(ax.text)
                 Text(node.text).font(ax.fontBase).foregroundStyle(ax.textSecondary)
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
@@ -285,52 +294,45 @@ struct AXEmpty: View {
     }
 }
 
-/// `metadata`: label and value pairs.
+/// `metadata`: label and value pairs in two columns, the values beginning where the column of
+/// labels ends, as Astryx's MetadataList sets them.
 struct AXMetadata: View {
     let node: MetadataNode
     @Environment(\.ax) private var ax
 
     var body: some View {
-        VStack(spacing: ax.space(2)) {
+        Grid(alignment: .topLeading, horizontalSpacing: ax.space(3), verticalSpacing: ax.space(3) + 2) {
             ForEach(Array(node.items.enumerated()), id: \.offset) { _, item in
-                HStack(alignment: .firstTextBaseline, spacing: ax.space(3)) {
+                GridRow {
                     Text(item.label).font(ax.fontBase).foregroundStyle(ax.textSecondary)
-                    Spacer(minLength: ax.space(2))
-                    Text(item.value).font(ax.fontLabel.monospacedDigit()).foregroundStyle(ax.text)
-                        .multilineTextAlignment(.trailing)
+                        .axLeading(ax, size: ax.fontSize("font-size-base", 14), ratio: ax.bodyLeading)
+                    Text(item.value).font(ax.fontBase.monospacedDigit()).foregroundStyle(ax.text)
+                        .axLeading(ax, size: ax.fontSize("font-size-base", 14), ratio: ax.bodyLeading)
+                        .gridColumnAlignment(.leading)
                 }
-                .accessibilityElement(children: .combine)
             }
         }
-        .frame(maxWidth: .infinity)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
-/// `pagination`: previous and next with the core's range between them. Each sends `press`.
+/// `pagination`: the core's range at the leading edge and two ghost icon buttons, previous and
+/// next, at the trailing edge (Astryx's Pagination with no page numbers). Each sends `press`.
 struct AXPagination: View {
     let node: PaginationNode
     @Environment(\.ax) private var ax
-    @Environment(\.axSend) private var send
 
     var body: some View {
         HStack(spacing: ax.space(3)) {
-            step("chevron.left", id: node.previousId)
-            Text(node.label).font(ax.fontBase.monospacedDigit()).foregroundStyle(ax.textSecondary)
-            step("chevron.right", id: node.nextId)
+            Text(node.label).font(ax.fontSmall.monospacedDigit()).foregroundStyle(ax.textSecondary)
+            Spacer(minLength: ax.space(2))
+            step("chevron-left", id: node.previousId, label: node.previousLabel ?? node.label)
+            step("chevron-right", id: node.nextId, label: node.nextLabel ?? node.label)
         }
-        .frame(maxWidth: .infinity, alignment: .center)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private func step(_ symbol: String, id: String?) -> some View {
-        Button {
-            if let id { send(.press(id: id)) }
-        } label: {
-            Image(systemName: symbol)
-                .font(.system(size: ax.fontSize("font-size-base", 14), weight: .semibold))
-                .frame(width: 36 * min(ax.scale, 1.4), height: 36 * min(ax.scale, 1.4))
-        }
-        .buttonStyle(AXButtonStyle(variant: .secondary, ax: ax))
-        .disabled(id == nil)
-        .accessibilityLabel(node.label)
+    private func step(_ icon: String, id: String?, label: String) -> some View {
+        AXIconButton(node: IconButtonNode(id: id ?? "", icon: Icon(rawValue: icon), label: label, selected: nil), disabled: id == nil)
     }
 }

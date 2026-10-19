@@ -180,7 +180,8 @@
       "error": "Failed"
      },
      "added": "added",
-     "removed": "removed"
+     "removed": "removed",
+     "delivered": "Delivered"
     },
     "items": [
      {
@@ -234,6 +235,7 @@
        {
         "kind": "tools",
         "expanded": true,
+        "label": "3 tool calls",
         "calls": [
          {
           "name": "read",
@@ -271,12 +273,14 @@
          "kind": "code",
          "title": "middleware.ts",
          "language": "typescript",
+         "header": "middleware.ts — typescript",
          "code": "async function authMiddleware(req: Request) {\n  try {\n    const decoded = validateToken(req.headers.authorization);\n    req.user = decoded;\n  } catch (err) {\n    if (err instanceof TokenExpiredError) {\n      // Attempt silent refresh before rejecting\n      const refreshed = await refreshToken(req.cookies.refreshToken);\n      if (refreshed) {\n        req.user = refreshed.user;\n        req.newAccessToken = refreshed.accessToken;\n        return next(req);\n      }\n    }\n    return new Response('Unauthorized', { status: 401 });\n  }\n  return next(req);\n}"
         }
        },
        {
         "kind": "tools",
         "expanded": false,
+        "label": "1 tool call",
         "calls": [
          {
           "name": "edit",
@@ -337,6 +341,7 @@
        {
         "kind": "tools",
         "expanded": true,
+        "label": "3 tool calls",
         "calls": [
          {
           "name": "read",
@@ -376,6 +381,7 @@
          "kind": "code",
          "title": "middleware.test.ts",
          "language": "typescript",
+         "header": "middleware.test.ts — typescript",
          "code": "describe('authMiddleware', () => {\n  it('refreshes an expired token silently', async () => {\n    const expiredToken = createExpiredJWT(mockUser);\n    const validRefresh = createRefreshToken(mockUser);\n\n    const req = mockRequest({\n      authorization: `Bearer ${expiredToken}`,\n      cookies: { refreshToken: validRefresh },\n    });\n\n    const res = await authMiddleware(req);\n\n    expect(res.status).toBe(200);\n    expect(req.user.id).toBe(mockUser.id);\n    expect(req.newAccessToken).toBeDefined();\n  });\n});"
         }
        },
@@ -481,6 +487,7 @@
        {
         "kind": "tools",
         "expanded": false,
+        "label": "1 tool call",
         "calls": [
          {
           "name": "edit",

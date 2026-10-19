@@ -61,14 +61,17 @@ final class TemplatesDashboardChatTests: XCTestCase {
         let model = try node("calendar").template.view.decode(TCalModel.self)
         XCTAssertEqual(model.value, "2026-04-15")
         let focus = try XCTUnwrap(TCalDate(iso: model.focusDate))
-        // April 2026 starts on a Wednesday: Mar 29 (Sunday) to May 2 (Saturday), five weeks.
+        // April 2026 starts on a Wednesday: Mar 29 (Sunday) to May 9 (Saturday). The stock Calendar
+        // always draws six weeks, so the sixth is the first week of May.
         let weeks = TCalendarMath.weeks(of: focus.firstOfMonth)
-        XCTAssertEqual(weeks.count, 5)
+        XCTAssertEqual(weeks.count, 6)
         XCTAssertEqual(weeks[0][0].date.iso, "2026-03-29")
         XCTAssertFalse(weeks[0][0].inMonth)
         XCTAssertEqual(weeks[0][3].date.iso, "2026-04-01")
         XCTAssertTrue(weeks[0][3].inMonth)
         XCTAssertEqual(weeks[4][6].date.iso, "2026-05-02")
+        XCTAssertEqual(weeks[5][6].date.iso, "2026-05-09")
+        XCTAssertEqual(model.words.weekdays, ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"])
         XCTAssertEqual(TCalendarMath.shift(focus, months: -4).iso, "2025-12-01")
         XCTAssertEqual(TCalendarMath.shift(TCalDate(year: 2026, month: 1, day: 31), months: 1).iso, "2026-02-01")
         XCTAssertNil(TCalDate(iso: "April"))

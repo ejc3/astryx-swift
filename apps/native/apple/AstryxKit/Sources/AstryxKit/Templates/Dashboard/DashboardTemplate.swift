@@ -6,7 +6,9 @@ import SwiftUI
 /// A report: nothing in it changes state. The one control that sends is Reload
 /// (`tpl.dashboard.reload`, which the core accepts and ignores for sample data); the "View
 /// more" buttons and the table links have no action in the core (the model lists them as
-/// `inert`), so they are drawn disabled.
+/// `inert`) and are drawn enabled, as the web draws them: pressing them does nothing.
+///
+/// The template pads itself (24, as the web's layout content does); the screen adds nothing.
 struct DashboardTemplate: View {
     let view: JSONValue
 
@@ -25,21 +27,23 @@ private struct DashContent: View {
     @Environment(\.axWidth) private var width
 
     var body: some View {
+        let pad = ax.space(6)
         VStack(alignment: .leading, spacing: ax.space(6)) {
             DashActiveUsers(chart: model.activeUsers, words: model.words)
             DashMetrics(metrics: model.metrics, words: model.words)
             DashDivider()
-            DashSectionHeader(title: model.demographics.title, more: model.demographics.moreLabel, isInert: model.inert.contains("viewMore"))
+            DashSectionHeader(title: model.demographics.title, more: model.demographics.moreLabel)
             DashDemographics(cards: model.demographics.cards, words: model.words)
             DashDivider()
-            DashSectionHeader(title: model.engagement.title, more: model.engagement.moreLabel, isInert: model.inert.contains("viewMore"))
+            DashSectionHeader(title: model.engagement.title, more: model.engagement.moreLabel)
             DashEngagement(
                 pages: DashTableData(model.engagement.pages),
-                events: DashTableData(model.engagement.events),
-                linksInert: model.inert.contains("tableLink")
+                events: DashTableData(model.engagement.events)
             )
         }
+        .padding(pad)
         .frame(maxWidth: .infinity, alignment: .leading)
+        .environment(\.axWidth, max(width - 2 * pad, 0))
     }
 }
 
@@ -56,7 +60,6 @@ struct DashDivider: View {
 private struct DashSectionHeader: View {
     let title: String
     let more: String
-    let isInert: Bool
     @Environment(\.ax) private var ax
 
     var body: some View {
@@ -64,6 +67,7 @@ private struct DashSectionHeader: View {
         let heading = Text(title)
             .font(ax.heading(3))
             .foregroundStyle(ax.text)
+            .axLeading(ax, size: ax.fontSize("text-heading-3-size", 17), ratio: ax.headingLeading(3))
             .lineLimit(3)
             .minimumScaleFactor(0.6)
             .fixedSize(horizontal: false, vertical: true)
@@ -71,7 +75,6 @@ private struct DashSectionHeader: View {
         func button(fills: Bool) -> some View {
             Button {} label: { Text(more) }
                 .buttonStyle(AXButtonStyle(variant: .secondary, ax: ax, fills: fills))
-                .disabled(isInert)
         }
         return AXAdaptiveRow {
             HStack(alignment: .center, spacing: ax.space(3)) {
@@ -112,6 +115,9 @@ struct DashSwatch: View {
 
 // MARK: Metrics
 
+/// The web's nested grids: an outer grid `{ minWidth: 320, fit }` of two inner grids
+/// `{ minWidth: 240, fit }`, the first holding metrics 0 and 1, the second 2 and 3. At this
+/// width the outer grid has two columns, each of whose inner grids is one column of two cards.
 private struct DashMetrics: View {
     let metrics: [DashModel.Metric]
     let words: DashModel.Words
@@ -119,22 +125,42 @@ private struct DashMetrics: View {
     @Environment(\.axWidth) private var width
 
     var body: some View {
-        let columns = width >= 900 ? 4 : (width >= 300 && ax.scale <= 1.3 ? 2 : (width >= 640 ? 2 : 1))
-        LazyVGrid(
-            columns: Array(repeating: GridItem(.flexible(minimum: 0), spacing: ax.space(4), alignment: .top), count: min(columns, max(metrics.count, 1))),
-            alignment: .leading,
-            spacing: ax.space(4)
-        ) {
-            ForEach(metrics) { DashMetricCard(metric: $0, words: words, stacked: width < 600) }
+        let gap = ax.space(4)
+        let groups = stride(from: 0, to: metrics.count, by: 2).map { Array(metrics[$0..<min($0 + 2, metrics.count)]) }
+        let outer = max(1, min(groups.count, Int((width + gap) / (320 + gap))))
+        if outer >= 2 {
+            let cell = (width - gap * CGFloat(groups.count - 1)) / CGFloat(groups.count)
+            HStack(alignment: .top, spacing: gap) {
+                ForEach(Array(groups.enumerated()), id: \.offset) { _, cards in
+                    group(cards, width: cell)
+                }
+            }
+        } else {
+            VStack(alignment: .leading, spacing: gap) {
+                ForEach(Array(groups.enumerated()), id: \.offset) { _, cards in
+                    group(cards, width: width)
+                }
+            }
         }
+    }
+
+    private func group(_ cards: [DashModel.Metric], width: CGFloat) -> some View {
+        let gap = ax.space(4)
+        let columns = max(1, min(cards.count, Int((width + gap) / (240 + gap))))
+        return LazyVGrid(
+            columns: Array(repeating: GridItem(.flexible(minimum: 0), spacing: gap, alignment: .top), count: columns),
+            alignment: .leading,
+            spacing: gap
+        ) {
+            ForEach(cards) { DashMetricCard(metric: $0, words: words) }
+        }
+        .frame(width: width, alignment: .leading)
     }
 }
 
 private struct DashMetricCard: View {
     let metric: DashModel.Metric
     let words: DashModel.Words
-    /// Value above change, so cards of a narrow two-column grid all have the same height.
-    let stacked: Bool
     @Environment(\.ax) private var ax
 
     var body: some View {
@@ -146,25 +172,22 @@ private struct DashMetricCard: View {
                     Text(metric.label)
                         .font(ax.heading(4))
                         .foregroundStyle(ax.text)
+                        .axLeading(ax, size: ax.fontSize("text-heading-4-size", 14), ratio: ax.headingLeading(4))
                         .lineLimit(2)
-                    if stacked {
+                    ViewThatFits(in: .horizontal) {
+                        HStack(alignment: .center, spacing: ax.space(2)) { figure; change }
                         VStack(alignment: .leading, spacing: ax.hair) { figure; change }
-                    } else {
-                        ViewThatFits(in: .horizontal) {
-                            HStack(alignment: .firstTextBaseline, spacing: ax.space(2)) { figure; change }
-                            VStack(alignment: .leading, spacing: ax.hair) { figure; change }
-                        }
                     }
                     Text(metric.caption)
                         .font(ax.fontSmall)
                         .foregroundStyle(ax.textSecondary)
+                        .axLeading(ax, size: ax.fontSize("font-size-sm", 12), ratio: ax.supportingLeading)
                 }
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel(metric.label)
                 .accessibilityValue("\(metric.value), \(metric.changeSpoken). \(metric.caption)")
                 DashSparkline(values: metric.sparkline, color: ax.color(DashDataColor.blue.token))
                     .frame(height: 40)
-                    .padding(.top, ax.space(1))
                     .accessibilityChartDescriptor(DashSparklineDescriptor(metric: metric, words: words))
             }
         }
@@ -175,41 +198,59 @@ private struct DashMetricCard: View {
         Text(metric.value)
             .font(ax.heading(2).monospacedDigit())
             .foregroundStyle(ax.text)
+            .axLeading(ax, size: ax.fontSize("text-heading-2-size", 20), ratio: ax.headingLeading(2))
             .lineLimit(1)
             .minimumScaleFactor(0.7)
     }
 
     private var change: some View {
         HStack(spacing: ax.space(1)) {
-            // The arrow says which way it moved; its color whether that is good news (a falling
-            // bounce rate is). The web colors by `positive`, the move's sign; this follows the meaning.
+            // The arrow says which way it moved; as on the web its color is the move's sign
+            // (`positive`): the host does not decide what is good news.
             Image(systemName: metric.direction == "down" ? "arrow.down" : "arrow.up")
-                .font(.system(size: ax.fontSize("font-size-xs", 10), weight: .bold))
-                .foregroundStyle(ax.tone(metric.favorable ? .success : .danger).solid)
+                .font(.system(size: ax.fontSize("font-size-sm", 12), weight: .regular))
+                .foregroundStyle(ax.fillTone(metric.positive ? .success : .danger))
             Text(metric.change)
                 .font(ax.fontBase.monospacedDigit())
                 .foregroundStyle(ax.textSecondary)
+                .axLeading(ax, size: ax.fontSize("font-size-base", 14), ratio: ax.bodyLeading)
                 .lineLimit(1)
         }
     }
 }
 
-/// A bare line of the trend: no axes, no fill, as the stock page's sparkline.
+/// A bare line of the trend: no axes, no fill, as the stock page's sparkline. Its scale is
+/// Recharts' default: from zero (or the lowest value, if that is below it) to the highest value
+/// rounded up to a round number, inside a 5 point margin.
 private struct DashSparkline: View {
     let values: [Double]
     let color: Color
 
+    /// The top of the scale: the maximum rounded up to a multiple of a 1, 2, 2.5 or 5 times a
+    /// power of ten step, for about four steps.
+    private var top: Double {
+        let low = min(values.min() ?? 0, 0)
+        let high = values.max() ?? 1
+        let raw = max(high - low, 0.0001) / 4
+        let magnitude = pow(10, floor(log10(raw)))
+        let step = [1.0, 2.0, 2.5, 5.0, 10.0].map { $0 * magnitude }.first { $0 >= raw } ?? 10 * magnitude
+        return max((high / step).rounded(.up) * step, low + step)
+    }
+
     var body: some View {
         GeometryReader { geo in
-            let low = values.min() ?? 0
-            let high = values.max() ?? 1
+            let low = min(values.min() ?? 0, 0)
+            let high = top
             let span = max(high - low, 0.0001)
-            let step = geo.size.width / CGFloat(max(values.count - 1, 1))
+            let margin: CGFloat = 5
+            let width = max(geo.size.width - 2 * margin, 1)
+            let height = max(geo.size.height - 2 * margin, 1)
+            let step = width / CGFloat(max(values.count - 1, 1))
             Path { path in
                 for (index, value) in values.enumerated() {
                     let point = CGPoint(
-                        x: CGFloat(index) * step,
-                        y: geo.size.height * (1 - CGFloat((value - low) / span)) * 0.92 + geo.size.height * 0.04
+                        x: margin + CGFloat(index) * step,
+                        y: margin + height * (1 - CGFloat((value - low) / span))
                     )
                     if index == 0 { path.move(to: point) } else { path.addLine(to: point) }
                 }
@@ -228,7 +269,8 @@ private struct DashDemographics: View {
     @Environment(\.axWidth) private var width
 
     var body: some View {
-        let columns = width >= 640 ? min(cards.count, 2) : 1
+        // The web's grid `{ minWidth: 320, fit }`.
+        let columns = max(1, min(cards.count, Int((width + ax.space(4)) / (320 + ax.space(4)))))
         LazyVGrid(
             columns: Array(repeating: GridItem(.flexible(minimum: 0), spacing: ax.space(4), alignment: .top), count: max(columns, 1)),
             alignment: .leading,
@@ -250,6 +292,7 @@ private struct DashSegmentCard: View {
                 Text(card.title)
                     .font(ax.heading(4))
                     .foregroundStyle(ax.text)
+                    .axLeading(ax, size: ax.fontSize("text-heading-4-size", 14), ratio: ax.headingLeading(4))
                     .accessibilityAddTraits(.isHeader)
                 DashStackedBar(segments: card.segments)
                     .frame(height: 24)
@@ -260,10 +303,12 @@ private struct DashSegmentCard: View {
                             HStack(spacing: ax.space(2)) {
                                 DashSwatch(color: ax.color(segment.color.token))
                                 Text(segment.label).font(ax.fontSmall).foregroundStyle(ax.text)
+                                    .axLeading(ax, size: ax.fontSize("font-size-sm", 12), ratio: ax.supportingLeading)
                             }
                             Text("\(DashNumbers.plain(segment.value)) - \(segment.share)%")
                                 .font(ax.fontSmall.monospacedDigit())
                                 .foregroundStyle(ax.textSecondary)
+                                .axLeading(ax, size: ax.fontSize("font-size-sm", 12), ratio: ax.supportingLeading)
                         }
                         .accessibilityElement(children: .ignore)
                         .accessibilityLabel(segment.label)
@@ -308,17 +353,17 @@ enum DashNumbers {
 private struct DashEngagement: View {
     let pages: DashTableData
     let events: DashTableData
-    let linksInert: Bool
     @Environment(\.ax) private var ax
     @Environment(\.axWidth) private var width
 
     var body: some View {
-        let sideBySide = width >= 960
+        // The web's grid `{ minWidth: 320, fit }`: side by side as soon as two columns fit.
         let gap = ax.space(4)
+        let sideBySide = width >= 2 * 320 + gap
         let cardWidth = sideBySide ? (width - gap) / 2 : width
         let tables = Group {
-            DashTable(data: pages, linkInert: linksInert)
-            DashTable(data: events, linkInert: linksInert)
+            DashTable(data: pages, pageWidth: width)
+            DashTable(data: events, pageWidth: width)
         }
         Group {
             if sideBySide {
@@ -333,37 +378,42 @@ private struct DashEngagement: View {
 
 private struct DashTable: View {
     let data: DashTableData
-    let linkInert: Bool
+    /// The width of the whole engagement section: a phone-width page stacks each row.
+    let pageWidth: CGFloat
     @Environment(\.ax) private var ax
     @Environment(\.axWidth) private var width
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     private var cardTitle: some View {
         Text(data.title)
             .font(ax.heading(4))
             .foregroundStyle(ax.text)
+            .axLeading(ax, size: ax.fontSize("text-heading-4-size", 14), ratio: ax.headingLeading(4))
             .fixedSize(horizontal: false, vertical: true)
             .accessibilityAddTraits(.isHeader)
     }
 
     private var cardLink: some View {
         Button {} label: {
-            Text(data.linkLabel).font(ax.fontLabel).foregroundStyle(ax.accent)
+            Text(data.linkLabel).font(ax.fontBase).foregroundStyle(ax.accent)
                 .frame(minHeight: InboxTarget.side)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .disabled(linkInert)
-        .opacity(linkInert ? 0.45 : 1)
     }
 
+    /// The table's least width: the name and the figures at their fixed widths and a bar of at
+    /// least 120. Narrower, it scrolls sideways inside its card, as the web's does.
+    private var tableMinimum: CGFloat { nameWidth + 120 + CGFloat(data.extraHeaders.count) * extraWidth + 3 * ax.space(3) }
+
     var body: some View {
-        // The card's inner width decides between a table and stacked rows.
         let inner = width - 2 * ax.space(4)
-        let tabular = inner >= 400
+        // A phone stacks each row; a wider page keeps the table, scrolled if it must.
+        let tabular = !typeSize.isAccessibilitySize && pageWidth >= 480
         DashCard {
-            VStack(alignment: .leading, spacing: ax.space(4)) {
+            VStack(alignment: .leading, spacing: ax.space(6)) {
                 AXAdaptiveRow {
-                    HStack(alignment: .firstTextBaseline) {
+                    HStack(alignment: .center) {
                         cardTitle
                         Spacer(minLength: ax.space(2))
                         cardLink.axOneLine()
@@ -374,30 +424,43 @@ private struct DashTable: View {
                         cardLink
                     }
                 }
-                VStack(spacing: 0) {
-                    if tabular { header }
-                    ForEach(Array(data.rows.enumerated()), id: \.element.id) { index, row in
-                        if tabular || index > 0 { DashDivider() }
-                        if tabular { tableRow(row) } else { stackedRow(row) }
+                if tabular {
+                    if inner >= tableMinimum {
+                        table(tabular: true)
+                    } else {
+                        AXHScroll { table(tabular: true).frame(width: tableMinimum) }
+                            .environment(\.axWidth, inner)
                     }
+                } else {
+                    table(tabular: false)
                 }
             }
         }
         .accessibilityElement(children: .contain)
     }
 
-    private var nameWidth: CGFloat { 132 * min(ax.scale, 1.3) }
-    private var extraWidth: CGFloat { 76 * min(ax.scale, 1.3) }
+    private func table(tabular: Bool) -> some View {
+        VStack(spacing: 0) {
+            if tabular { header }
+            ForEach(Array(data.rows.enumerated()), id: \.element.id) { index, row in
+                if tabular || index > 0 { DashDivider() }
+                if tabular { tableRow(row) } else { stackedRow(row) }
+            }
+        }
+    }
+
+    private var nameWidth: CGFloat { 160 * min(ax.scale, 1.3) }
+    private var extraWidth: CGFloat { 120 * min(ax.scale, 1.3) }
 
     private var header: some View {
         HStack(spacing: ax.space(3)) {
             Text(data.nameHeader).frame(width: nameWidth, alignment: .leading)
             Text(data.barHeader).frame(maxWidth: .infinity, alignment: .leading)
             ForEach(Array(data.extraHeaders.enumerated()), id: \.offset) { _, title in
-                Text(title).frame(width: extraWidth, alignment: .trailing).lineLimit(2)
+                Text(title).frame(width: extraWidth, alignment: .leading).lineLimit(2)
             }
         }
-        .font(ax.font("font-size-sm", 12, weight: "font-weight-medium"))
+        .font(ax.font("font-size-base", 14, weight: "font-weight-semibold"))
         .foregroundStyle(ax.textSecondary)
         .padding(.bottom, ax.space(2))
         .accessibilityHidden(true)
@@ -414,6 +477,7 @@ private struct DashTable: View {
             VStack(alignment: .leading, spacing: ax.space(1)) {
                 DashProgress(value: row.bar, max: row.max)
                 Text(row.valueLabel).font(ax.fontSmall.monospacedDigit()).foregroundStyle(ax.textSecondary)
+                    .axLeading(ax, size: ax.fontSize("font-size-sm", 12), ratio: ax.supportingLeading)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             ForEach(Array(row.extras.enumerated()), id: \.offset) { _, text in
@@ -421,7 +485,7 @@ private struct DashTable: View {
                     .font(ax.fontBase.monospacedDigit())
                     .foregroundStyle(ax.text)
                     .lineLimit(1)
-                    .frame(width: extraWidth, alignment: .trailing)
+                    .frame(width: extraWidth, alignment: .leading)
             }
         }
         .padding(.vertical, ax.space(2))

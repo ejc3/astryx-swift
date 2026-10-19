@@ -156,6 +156,7 @@ struct ShowModel: Decodable {
             let placeholder: String
             let attachLabel: String
             let voiceLabel: String
+            let sendLabel: String
         }
         let heading: String
         let actions: [Action]

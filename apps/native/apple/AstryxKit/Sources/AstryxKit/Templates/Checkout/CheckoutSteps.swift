@@ -112,6 +112,7 @@ struct CheckoutCartStep: View {
             Text("\(item.variant) \u{B7} \(item.priceEach) each")
                 .font(ax.fontSmall)
                 .foregroundStyle(ax.textSecondary)
+                .axLeading(ax, size: ax.fontSize("font-size-sm", 12), ratio: ax.supportingLeading)
                 .fixedSize(horizontal: false, vertical: true)
             ViewThatFits(in: .horizontal) {
                 HStack(spacing: ax.space(2)) { quantity(item); remove(item) }
@@ -121,12 +122,12 @@ struct CheckoutCartStep: View {
         }
         if stacked {
             VStack(alignment: .leading, spacing: ax.space(3)) {
-                COSThumbnail(src: item.src, name: item.name, side: 72)
+                COSThumbnail(src: item.src, name: item.name, side: 64)
                 details
             }
         } else {
             HStack(alignment: .top, spacing: ax.space(4)) {
-                COSThumbnail(src: item.src, name: item.name, side: 72)
+                COSThumbnail(src: item.src, name: item.name, side: 64)
                 details
             }
         }
@@ -146,7 +147,7 @@ struct CheckoutCartStep: View {
     /// The code and its Apply button level with the box; the status sits under the pair.
     private var promo: some View {
         VStack(alignment: .leading, spacing: ax.space(1)) {
-            Text(model.words.cart.promoLabel).font(ax.fontLabel).foregroundStyle(ax.text)
+            Text(model.words.cart.promoLabel).font(ax.fontLabel).foregroundStyle(ax.textSecondary)
             ViewThatFits(in: .horizontal) {
                 HStack(spacing: ax.space(2)) { promoBox; applyButton }
                 VStack(alignment: .leading, spacing: ax.space(2)) { promoBox; applyButton }
@@ -170,8 +171,10 @@ struct CheckoutCartStep: View {
     }
 }
 
-/// A quantity: minus, a number you can type, plus; 0 to 10, as the web field. VoiceOver
-/// adjusts it with swipes up and down.
+/// A quantity, 0 to 10, as the web field: a number you can type. On the Mac the number sits in a
+/// box with the system's up and down arrows at its right (HIG Steppers: a text field beside a
+/// stepper); on a touch screen it is minus, the number and plus. VoiceOver adjusts it with swipes
+/// up and down.
 struct CheckoutQuantity: View {
     /// The spoken name, "Quantity of <name>", and the field's own name ("Quantity").
     let label: String
@@ -195,49 +198,73 @@ struct CheckoutQuantity: View {
     }
 
     var body: some View {
-        let side = max(cosTouch, 36 * min(ax.scale, 1.4))
+        let side = axControlHeight(ax)
         let shape = RoundedRectangle(cornerRadius: ax.radiusElement, style: .continuous)
+        #if os(macOS)
+        HStack(spacing: 0) {
+            number
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.leading, ax.space(3))
+            arrows
+                .padding(.trailing, ax.space(2))
+        }
+        .frame(width: 96 * min(ax.scale, 1.4), height: side)
+        .background(shape.fill(ax.surface))
+        .overlay(shape.strokeBorder(ax.border, lineWidth: 1))
+        .modifier(quantityBehaviour)
+        #else
         HStack(spacing: 0) {
             stepper("minus", enabled: qty > 0) { change(max(qty - 1, 0)) }
-            Group {
-                if isStatic {
-                    Text(text)
-                } else {
-                    TextField(field, text: $text)
-                        .textFieldStyle(.plain)
-                        .multilineTextAlignment(.center)
-                        .cosContent(.integer)
-                        .modifier(CheckoutQuantityFocus(binding: focus, key: focusKey, own: $ownFocus))
-                }
-            }
-            .font(ax.fontBase.monospacedDigit())
-            .foregroundStyle(ax.text)
-            .frame(width: 40 * min(ax.scale, 1.4), height: side)
+            number
+                .multilineTextAlignment(.center)
+                .frame(width: 40 * min(ax.scale, 1.4), height: side)
             stepper("plus", enabled: qty < 10) { change(min(qty + 1, 10)) }
         }
         .background(shape.fill(ax.surface))
-        .overlay(shape.strokeBorder(ax.borderStrong, lineWidth: 1))
+        .overlay(shape.strokeBorder(ax.border, lineWidth: 1))
         .fixedSize()
-        .onChange(of: text) { _, new in
-            if let value = Int(new), (0...10).contains(value), value != qty { change(value) }
-        }
-        .onChange(of: qty) { _, new in
-            if Int(text) != new { text = String(new) }
-        }
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(label)
-        .accessibilityValue("\(qty)")
-        .accessibilityAdjustableAction { direction in
-            switch direction {
-            case .increment: if qty < 10 { change(qty + 1) }
-            case .decrement: if qty > 0 { change(qty - 1) }
-            @unknown default: break
-            }
-        }
+        .modifier(quantityBehaviour)
+        #endif
     }
 
+    /// Typing sends the new number; the model's own change shows in the box; VoiceOver adjusts.
+    private var quantityBehaviour: some ViewModifier {
+        QuantityBehaviour(
+            text: $text, qty: qty, label: label, change: change
+        )
+    }
+
+    private var number: some View {
+        Group {
+            if isStatic {
+                Text(text)
+            } else {
+                TextField(field, text: $text)
+                    .textFieldStyle(.plain)
+                    .cosContent(.integer)
+                    .modifier(CheckoutQuantityFocus(binding: focus, key: focusKey, own: $ownFocus))
+            }
+        }
+        .font(ax.fontBase.monospacedDigit())
+        .foregroundStyle(ax.text)
+    }
+
+    #if os(macOS)
+    /// The system's up and down arrows (a picture draws them by hand).
+    @ViewBuilder
+    private var arrows: some View {
+        if isStatic {
+            Image(systemName: "chevron.up.chevron.down")
+                .font(.system(size: ax.fontSize("font-size-xs", 10), weight: .semibold))
+                .foregroundStyle(ax.iconSecondary)
+        } else {
+            Stepper(label, value: Binding(get: { qty }, set: { change($0) }), in: 0...10)
+                .labelsHidden()
+        }
+    }
+    #else
     private func stepper(_ symbol: String, enabled: Bool, action: @escaping () -> Void) -> some View {
-        let side = max(cosTouch, 36 * min(ax.scale, 1.4))
+        let side = axControlHeight(ax)
         return Button(action: action) {
             Image(systemName: symbol)
                 .font(.system(size: ax.fontSize("font-size-sm", 12), weight: .semibold))
@@ -247,6 +274,36 @@ struct CheckoutQuantity: View {
         }
         .buttonStyle(.plain)
         .disabled(!enabled)
+    }
+    #endif
+}
+
+/// What a quantity does besides draw: typing changes it, the model's own change shows in the
+/// box, and VoiceOver adjusts it with swipes up and down.
+private struct QuantityBehaviour: ViewModifier {
+    @Binding var text: String
+    let qty: Int
+    let label: String
+    let change: (Int) -> Void
+
+    func body(content: Content) -> some View {
+        content
+            .onChange(of: text) { _, new in
+                if let value = Int(new), (0...10).contains(value), value != qty { change(value) }
+            }
+            .onChange(of: qty) { _, new in
+                if Int(text) != new { text = String(new) }
+            }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(label)
+            .accessibilityValue("\(qty)")
+            .accessibilityAdjustableAction { direction in
+                switch direction {
+                case .increment: if qty < 10 { change(qty + 1) }
+                case .decrement: if qty > 0 { change(qty - 1) }
+                @unknown default: break
+                }
+            }
     }
 }
 
@@ -334,7 +391,7 @@ struct CheckoutDeliveryStep: View {
             VStack(alignment: .leading, spacing: ax.space(4)) {
                 methods
                 AXDivider()
-                COSSwitch(label: model.words.delivery.gift, isOn: d.isGift) { actions.set("isGift", .bool($0)) }
+                COSCheckbox(label: model.words.delivery.gift, isOn: d.isGift) { actions.set("isGift", .bool($0)) }
                 COSField(label: d.noteLabel, optional: true, hint: d.noteDescription) {
                     COSTextBox(
                         id: CheckoutSender.id("deliveryNote"), label: d.noteLabel, value: d.note,
@@ -424,7 +481,7 @@ struct CheckoutPaymentStep: View {
                     Spacer(minLength: 0)
                 }
                 AXDivider()
-                COSSwitch(label: w.billingMatches, isOn: p.billingMatches) {
+                COSCheckbox(label: w.billingMatches, isOn: p.billingMatches) {
                     actions.set("billingMatches", .bool($0))
                 }
                 if !p.billingMatches {

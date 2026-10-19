@@ -12,7 +12,9 @@ struct CheckoutSummary: View {
         Group {
             if narrow {
                 COSCollapsible(startsOpen: false, spokenTitle: model.summary.trigger) {
-                    Text(model.summary.trigger).font(ax.fontLabel).foregroundStyle(ax.text)
+                    Text(model.summary.trigger)
+                        .font(ax.font("font-size-lg", 17, weight: "font-weight-semibold"))
+                        .foregroundStyle(ax.text)
                 } content: {
                     bodyContent
                 }

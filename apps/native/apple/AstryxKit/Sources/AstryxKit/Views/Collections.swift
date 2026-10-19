@@ -3,17 +3,65 @@ import SwiftUI
 /// The width below which a table stacks its rows instead of laying out columns.
 private let tableWideFrom: CGFloat = 520
 
+/// The columns of a table row: an optional fixed leading column (the checkbox), then the first
+/// column at 32 % of the rest (Astryx's table sets `width: 32%` on it) and the others sharing what
+/// is left, so a header and its rows line up. Each child sits vertically centered in the row.
+private struct AXColumns: Layout {
+    var spacing: CGFloat
+    /// The width of the leading fixed column, 0 for none.
+    var leading: CGFloat
+    /// The first column's share of the width after the leading column.
+    var firstShare: CGFloat = 0.32
+
+    private func widths(_ total: CGFloat, count: Int) -> [CGFloat] {
+        let hasLeading = leading > 0 && count > 1
+        let rest = max(count - (hasLeading ? 1 : 0), 1)
+        let room = max(total - (hasLeading ? leading : 0) - spacing * CGFloat(count - 1), 0)
+        var result: [CGFloat] = []
+        if hasLeading { result.append(leading) }
+        if rest == 1 {
+            result.append(room)
+        } else {
+            let first = room * firstShare
+            result.append(first)
+            result.append(contentsOf: Array(repeating: (room - first) / CGFloat(rest - 1), count: rest - 1))
+        }
+        return result
+    }
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let total = proposal.width ?? 600
+        let columns = widths(total, count: subviews.count)
+        let height = zip(subviews, columns).map { $0.sizeThatFits(ProposedViewSize(width: $1, height: nil)).height }.max() ?? 0
+        return CGSize(width: total, height: height)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        let columns = widths(bounds.width, count: subviews.count)
+        var x = bounds.minX
+        for (subview, width) in zip(subviews, columns) {
+            subview.place(at: CGPoint(x: x, y: bounds.midY), anchor: .leading, proposal: ProposedViewSize(width: width, height: bounds.height))
+            x += width + spacing
+        }
+    }
+}
+
 /// `table`: columns when wide, stacked rows when narrow. A sortable header sends `press`
 /// with its `sortId`; a row's checkbox sends `set` with its `selectId` and the new Bool.
+/// It draws no box of its own: inside a card it runs to the card's edges, with dividers
+/// between the rows and no fill behind the header, as Astryx's Table does.
 struct AXTable: View {
     let node: TableNode
     @Environment(\.ax) private var ax
     @Environment(\.axSend) private var send
     @Environment(\.axWidth) private var width
+    @Environment(\.axBleed) private var bleed
 
-    /// The first column carries the names; it gets room for a name and an address.
-    private var firstColumnMin: CGFloat { 220 * min(ax.scale, 1.4) }
     private var selectable: Bool { node.rows.contains { $0.selectId != nil } }
+    /// How far cell text is from the table's edge: the card's padding when there is one.
+    private var inset: CGFloat { bleed > 0 ? bleed : ax.space(4) }
+    /// The leading column that holds a checkbox.
+    private var selectWidth: CGFloat { selectable ? 24 : 0 }
 
     var body: some View {
         Group {
@@ -29,42 +77,42 @@ struct AXTable: View {
                 narrow
             }
         }
-        .background(ax.card)
-        .clipShape(RoundedRectangle(cornerRadius: ax.radiusContainer, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: ax.radiusContainer, style: .continuous).strokeBorder(ax.border, lineWidth: 1))
+        // A table in a card reaches the card's edges, so its dividers do.
+        .padding(.horizontal, -bleed)
+        .environment(\.axBleed, 0)
     }
 
     // MARK: Wide
 
     private var wide: some View {
         VStack(spacing: 0) {
-            HStack(spacing: ax.space(3)) {
-                if selectable { Color.clear.frame(width: 18 * min(ax.scale, 1.5), height: 1) }
-                ForEach(Array(node.columns.enumerated()), id: \.offset) { index, column in header(column).frame(minWidth: index == 0 ? firstColumnMin : 0, alignment: .leading).frame(maxWidth: .infinity, alignment: column.align == .end ? .trailing : .leading) }
+            AXColumns(spacing: ax.space(3), leading: selectWidth) {
+                if selectable { Color.clear.frame(width: selectWidth, height: 1) }
+                ForEach(Array(node.columns.enumerated()), id: \.offset) { _, column in
+                    header(column)
+                }
             }
-            .padding(.horizontal, ax.space(4))
+            .padding(.horizontal, inset)
             .padding(.vertical, ax.space(2))
-            .background(ax.muted)
             ForEach(node.rows, id: \.id) { row in
                 Rectangle().fill(ax.border).frame(height: 1)
-                HStack(spacing: ax.space(3)) {
+                AXColumns(spacing: ax.space(3), leading: selectWidth) {
                     if let selectId = row.selectId {
                         checkbox(row: row, selectId: selectId)
                     } else if selectable {
-                        Color.clear.frame(width: 18 * min(ax.scale, 1.5), height: 1)
+                        Color.clear.frame(width: selectWidth, height: 1)
                     }
                     ForEach(Array(node.columns.enumerated()), id: \.offset) { index, column in
                         let cell = index < row.cells.count ? row.cells[index] : nil
                         HStack(spacing: ax.space(2)) {
                             if let cell { AXCellView(cell: cell) }
                         }
-                        .frame(minWidth: index == 0 ? firstColumnMin : 0, alignment: .leading)
                         .frame(maxWidth: .infinity, alignment: (cell?.align ?? column.align) == .end ? .trailing : .leading)
                     }
                 }
-                .padding(.horizontal, ax.space(4))
-                .padding(.vertical, ax.space(3))
-                .background(row.selected ? ax.accentMuted.opacity(0.6) : .clear)
+                .padding(.horizontal, inset)
+                .padding(.vertical, ax.space(2))
+                .background(row.selected ? ax.accentSoft : .clear)
             }
         }
     }
@@ -72,12 +120,15 @@ struct AXTable: View {
     @ViewBuilder
     private func header(_ column: TableNode.Column) -> some View {
         let alignment: Alignment = column.align == .end ? .trailing : .leading
+        // The sort mark is always after the label, whichever side the column is aligned to.
         let label = HStack(spacing: ax.space(1)) {
-            if column.align == .end { sortMark(column) }
+            // One line, truncated at the end where the column is too narrow, as the web's header
+            // is; never broken inside a word.
             Text(column.label)
-                .font(ax.font("font-size-sm", 12, weight: "font-weight-semibold"))
-                .foregroundStyle(column.sort == nil || column.sort == Optional(TableNode.Column.Sort.none) ? ax.textSecondary : ax.text)
-            if column.align != .end { sortMark(column) }
+                .font(ax.fontLabel)
+                .foregroundStyle(ax.text)
+                .lineLimit(1)
+            sortMark(column)
         }
         if let sortId = column.sortId {
             Button {
@@ -96,22 +147,17 @@ struct AXTable: View {
     @ViewBuilder
     private func sortMark(_ column: TableNode.Column) -> some View {
         if column.sortId != nil {
+            let sorted = column.sort == .asc || column.sort == .desc
             Image(systemName: column.sort == .asc ? "arrow.up" : column.sort == .desc ? "arrow.down" : "arrow.up.arrow.down")
-                .font(.system(size: ax.fontSize("font-size-xs", 10), weight: .semibold))
-                .foregroundStyle(column.sort == .asc || column.sort == .desc ? ax.accent : ax.textDisabled)
+                .font(.system(size: ax.fontSize("font-size-base", 14), weight: .regular))
+                .foregroundStyle(sorted ? ax.accent : ax.iconSecondary)
         }
     }
 
     private func checkbox(row: TableNode.Row, selectId: String) -> some View {
-        Button {
+        AXCheckControl(checked: row.selected, label: row.cells.first?.text ?? row.id) {
             send(.set(id: selectId, value: .bool(!row.selected)))
-        } label: {
-            // An 18 pt box with a 44 x 44 pt target around it.
-            AXCheckmark(checked: row.selected).contentShape(Rectangle()).axTapTarget(keepLayout: true)
         }
-        .buttonStyle(.plain)
-        .accessibilityLabel(row.cells.first?.text ?? row.id)
-        .axToggleSemantics(isOn: row.selected)
     }
 
     // MARK: Narrow
@@ -138,14 +184,17 @@ struct AXTable: View {
                         }
                     }
                 }
-                .padding(ax.space(3))
-                .background(row.selected ? ax.accentMuted.opacity(0.6) : .clear)
+                .padding(.horizontal, inset)
+                .padding(.vertical, ax.space(3))
+                .background(row.selected ? ax.accentSoft : .clear)
             }
         }
     }
 }
 
-/// One table cell: text, optionally an avatar, a second line or a badge.
+/// One table cell: text, optionally an avatar, a second line or a badge. The text is medium
+/// weight when there is an avatar or a second line, regular otherwise; the second line is the
+/// 10 pt supporting text.
 struct AXCellView: View {
     let cell: Cell
     var prominent = false
@@ -159,93 +208,97 @@ struct AXCellView: View {
             if let badge = cell.badge {
                 AXBadge(text: badge.text, tone: badge.tone)
             } else {
-                VStack(alignment: cell.align == .end ? .trailing : .leading, spacing: ax.hair) {
+                VStack(alignment: cell.align == .end ? .trailing : .leading, spacing: 0) {
                     Text(cell.text)
-                        .font(prominent ? ax.fontStrong : ax.fontBase.monospacedDigit())
+                        .font(font)
                         .foregroundStyle(ax.text)
                         .multilineTextAlignment(cell.align == .end ? .trailing : .leading)
+                        .axLeading(ax, size: ax.fontSize("font-size-base", 14), ratio: ax.bodyLeading)
                     if let secondary = cell.secondary {
-                        Text(secondary).font(ax.fontSmall).foregroundStyle(ax.textSecondary).lineLimit(1)
+                        Text(secondary).font(ax.fontXSmall).foregroundStyle(ax.textSecondary).lineLimit(1)
+                            .axLeading(ax, size: ax.fontSize("font-size-xs", 10), ratio: ax.supportingLeading)
                     }
                 }
             }
         }
     }
+
+    private var font: Font {
+        if prominent { return ax.fontStrong }
+        let base = (cell.secondary != nil || cell.avatar != nil) ? ax.fontLabel : ax.fontBase
+        return base.monospacedDigit()
+    }
 }
 
-/// `list`: rows with a leading avatar or icon, two lines, a meta line and a trailing tone text.
-/// A row with a `selectId` is a button that sends `press`.
+/// `list`: rows with a leading avatar or icon, two lines, a meta line and a trailing badge, with
+/// dividers between them and no box of its own (Astryx's List with dividers). A row with a
+/// `selectId` is a button that sends `press`.
 struct AXList: View {
     let node: ListNode
     @Environment(\.ax) private var ax
     @Environment(\.axSend) private var send
 
     var body: some View {
-        Group {
-            if node.items.isEmpty {
-                Text(node.empty)
-                    .font(ax.fontBase)
-                    .foregroundStyle(ax.textSecondary)
-                    .frame(maxWidth: .infinity)
-                    .padding(ax.space(6))
-            } else {
-                VStack(spacing: 0) {
-                    ForEach(Array(node.items.enumerated()), id: \.element.id) { index, item in
-                        if index > 0 { Rectangle().fill(ax.border).frame(height: 1) }
-                        if let selectId = item.selectId {
-                            Button {
-                                send(.press(id: selectId))
-                            } label: {
-                                row(item)
-                            }
-                            .buttonStyle(.plain)
-                            .accessibilityAddTraits(item.selected ? [.isSelected, .isButton] : .isButton)
-                        } else {
+        if node.items.isEmpty {
+            Text(node.empty)
+                .font(ax.fontBase)
+                .foregroundStyle(ax.textSecondary)
+                .frame(maxWidth: .infinity)
+                .padding(ax.space(6))
+        } else {
+            VStack(spacing: 0) {
+                ForEach(Array(node.items.enumerated()), id: \.element.id) { index, item in
+                    if index > 0 { Rectangle().fill(ax.border).frame(height: 1) }
+                    if let selectId = item.selectId {
+                        Button {
+                            send(.press(id: selectId))
+                        } label: {
                             row(item)
                         }
+                        .buttonStyle(.plain)
+                        .accessibilityAddTraits(item.selected ? [.isSelected, .isButton] : .isButton)
+                    } else {
+                        row(item)
                     }
                 }
             }
         }
-        .background(ax.card)
-        .clipShape(RoundedRectangle(cornerRadius: ax.radiusContainer, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: ax.radiusContainer, style: .continuous).strokeBorder(ax.border, lineWidth: 1))
     }
 
     private func row(_ item: ListItem) -> some View {
-        HStack(alignment: .center, spacing: ax.space(3)) {
+        HStack(alignment: .center, spacing: ax.space(2)) {
             leading(item)
-            VStack(alignment: .leading, spacing: ax.hair) {
+            VStack(alignment: .leading, spacing: 0) {
                 Text(item.title)
-                    .font(item.emphasized ? ax.fontStrong : ax.fontLabel)
+                    .font(item.emphasized ? ax.fontStrong : ax.fontBase)
                     .foregroundStyle(ax.text)
                     .lineLimit(2)
+                    .axLeading(ax, size: ax.fontSize("font-size-base", 14), ratio: ax.bodyLeading)
                 if let subtitle = item.subtitle {
                     Text(subtitle)
-                        .font(ax.fontSmall)
-                        .foregroundStyle(item.emphasized ? ax.text : ax.textSecondary)
-                        .lineLimit(2)
+                        .font(ax.fontXSmall)
+                        .foregroundStyle(ax.textSecondary)
+                        .lineLimit(1)
+                        .axLeading(ax, size: ax.fontSize("font-size-xs", 10), ratio: ax.supportingLeading)
                 }
             }
             Spacer(minLength: ax.space(2))
-            VStack(alignment: .trailing, spacing: ax.hair) {
-                if let meta = item.meta {
-                    Text(meta).font(ax.fontSmall.monospacedDigit()).foregroundStyle(ax.textSecondary)
+            if item.trailing != nil || item.meta != nil {
+                VStack(alignment: .trailing, spacing: ax.hair) {
+                    if let trailing = item.trailing {
+                        AXBadge(text: trailing.text, tone: trailing.tone)
+                    }
+                    if let meta = item.meta {
+                        Text(meta).font(ax.fontXSmall.monospacedDigit()).foregroundStyle(ax.textSecondary)
+                            .axLeading(ax, size: ax.fontSize("font-size-xs", 10), ratio: ax.supportingLeading)
+                    }
                 }
-                if let trailing = item.trailing {
-                    Text(trailing.text)
-                        .font(ax.font("font-size-xs", 10, weight: "font-weight-semibold"))
-                        .foregroundStyle(ax.tone(trailing.tone).text)
-                }
-            }
-            if item.emphasized {
-                Circle().fill(ax.accent).frame(width: 8, height: 8).accessibilityHidden(true)
             }
         }
-        .padding(.horizontal, ax.space(3))
-        .padding(.vertical, ax.space(2) + 2)
+        .padding(.horizontal, ax.space(2))
+        .padding(.vertical, ax.space(2))
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(item.selected ? ax.accentMuted : .clear)
+        .background(RoundedRectangle(cornerRadius: ax.radiusElement, style: .continuous).fill(item.selected ? ax.accentMuted : .clear))
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
     }
@@ -256,21 +309,21 @@ struct AXList: View {
         case .avatar(let person):
             AXAvatar(name: item.title, initials: person.initials, hue: person.hue, size: .md)
         case .icon(let icon, let tone):
-            let colors = ax.tone(tone)
-            let side = 36 * min(ax.scale, 1.5)
+            let side = 32 * min(ax.scale, 1.5)
             Image(systemName: icon.symbol)
                 .font(.system(size: ax.fontSize("font-size-base", 14), weight: .medium))
-                .foregroundStyle(colors.text)
+                .foregroundStyle(ax.fillTone(tone))
                 .frame(width: side, height: side)
-                .background(RoundedRectangle(cornerRadius: ax.radiusElement, style: .continuous).fill(colors.muted))
+                .background(Circle().fill(ax.softTone(tone)))
         case nil:
             EmptyView()
         }
     }
 }
 
-/// `calendar`: a month grid with previous and next, today ringed, the selected day filled
-/// and tone dots under days with events. A day with a `selectId` sends `press`.
+/// `calendar`: a month grid with previous and next beside the title, today's number in bold
+/// accent, the selected day a filled cell and tone dots under days with events. A day with a
+/// `selectId` sends `press`.
 struct AXCalendar: View {
     let node: CalendarNode
     @Environment(\.ax) private var ax
@@ -278,24 +331,24 @@ struct AXCalendar: View {
 
     var body: some View {
         VStack(spacing: ax.space(3)) {
-            HStack {
-                navButton("chevron.left", id: node.previousId, label: node.previousLabel)
-                Spacer()
+            HStack(spacing: ax.space(2)) {
                 Text(node.title).font(ax.heading(3)).foregroundStyle(ax.text)
                     .accessibilityAddTraits(.isHeader)
-                Spacer()
-                navButton("chevron.right", id: node.nextId, label: node.nextLabel)
+                Spacer(minLength: 0)
+                AXIconButton(node: IconButtonNode(id: node.previousId, icon: Icon(rawValue: "chevron-left"), label: node.previousLabel, selected: nil))
+                AXIconButton(node: IconButtonNode(id: node.nextId, icon: Icon(rawValue: "chevron-right"), label: node.nextLabel, selected: nil))
             }
-            HStack(spacing: 0) {
-                ForEach(Array(node.weekdays.enumerated()), id: \.offset) { _, day in
-                    Text(day)
-                        .font(ax.font("font-size-xs", 10, weight: "font-weight-medium"))
-                        .foregroundStyle(ax.textSecondary)
-                        .frame(maxWidth: .infinity)
-                }
-            }
-            .accessibilityHidden(true)
             VStack(spacing: ax.space(1)) {
+                HStack(spacing: ax.space(1)) {
+                    ForEach(Array(node.weekdays.enumerated()), id: \.offset) { _, day in
+                        Text(day)
+                            .font(ax.fontXSmall)
+                            .foregroundStyle(ax.textSecondary)
+                            .padding(.vertical, ax.space(1))
+                            .frame(maxWidth: .infinity)
+                    }
+                }
+                .accessibilityHidden(true)
                 ForEach(Array(node.weeks.enumerated()), id: \.offset) { _, week in
                     HStack(spacing: ax.space(1)) {
                         ForEach(Array(week.enumerated()), id: \.offset) { _, day in
@@ -308,39 +361,24 @@ struct AXCalendar: View {
         .frame(maxWidth: .infinity)
     }
 
-    private func navButton(_ symbol: String, id: String, label: String) -> some View {
-        Button {
-            send(.press(id: id))
-        } label: {
-            Image(systemName: symbol)
-                .font(.system(size: ax.fontSize("font-size-base", 14), weight: .semibold))
-                .foregroundStyle(ax.iconSecondary)
-                .frame(width: axMinTarget, height: axMinTarget)
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(label)
-    }
-
     @ViewBuilder
     private func dayCell(_ day: CalendarDay) -> some View {
+        let ink: Color = day.selected ? ax.onAccent : day.inMonth ? ax.text : ax.textInactive
         let content = VStack(spacing: 2) {
             Text(day.label)
-                .font(ax.fontBase.monospacedDigit().weight(day.today || day.selected ? .semibold : .regular))
-                .foregroundStyle(day.selected ? ax.onAccent : day.inMonth ? ax.text : ax.textDisabled)
+                .font(ax.fontSmall.monospacedDigit().weight(day.today && !day.selected ? .bold : .regular))
+                .foregroundStyle(day.today && !day.selected ? ax.tone(.accent).text : ink)
                 .lineLimit(1)
                 .minimumScaleFactor(0.5)
-                .frame(width: 32 * min(ax.scale, 1.4), height: 32 * min(ax.scale, 1.4))
-                .background(Circle().fill(day.selected ? ax.accent : .clear))
-                .overlay(Circle().strokeBorder(day.today && !day.selected ? ax.accent : .clear, lineWidth: 1.5))
-            HStack(spacing: 2) {
+            HStack(spacing: 3) {
                 ForEach(Array(day.dots.prefix(3).enumerated()), id: \.offset) { _, tone in
-                    AXToneDot(tone: tone, diameter: 5)
+                    AXToneDot(tone: tone, diameter: 5, color: day.selected ? ax.onAccent : nil)
                 }
             }
-            .frame(height: 5)
+            .frame(height: 6)
         }
-        .frame(maxWidth: .infinity, minHeight: 44)
+        .frame(maxWidth: .infinity, minHeight: 48 * min(ax.scale, 1.4))
+        .background(RoundedRectangle(cornerRadius: ax.radiusElement, style: .continuous).fill(day.selected ? ax.accent : .clear))
         .contentShape(Rectangle())
         if let selectId = day.selectId {
             Button { send(.press(id: selectId)) } label: { content }

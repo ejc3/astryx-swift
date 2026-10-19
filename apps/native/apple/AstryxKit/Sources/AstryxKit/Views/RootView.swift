@@ -410,23 +410,28 @@ private struct SidebarRow: View {
     let item: NavItem
     let selected: Bool
     @Environment(\.ax) private var ax
+    /// Increased on the selected row of a focused sidebar, which the system fills with the accent
+    /// color: there the row's content goes to the system's on-accent style, as in Finder and Mail.
+    @Environment(\.backgroundProminence) private var prominence
+
+    private var onAccent: Bool { prominence == .increased }
 
     var body: some View {
         HStack(spacing: ax.space(3)) {
             Image(systemName: item.icon.symbol)
                 .frame(width: ax.fontSize("font-size-lg", 17) * 1.3)
-                .foregroundStyle(selected ? ax.accent : ax.iconSecondary)
+                .foregroundStyle(onAccent ? AnyShapeStyle(.primary) : AnyShapeStyle(selected ? ax.accent : ax.iconSecondary))
             Text(item.label)
                 .font(ax.fontLabel)
-                .foregroundStyle(ax.text)
+                .foregroundStyle(onAccent ? AnyShapeStyle(.primary) : AnyShapeStyle(ax.text))
             Spacer(minLength: ax.space(2))
             if let badge = item.badge {
                 Text(badge)
                     .font(ax.font("font-size-xs", 10, weight: "font-weight-semibold"))
-                    .foregroundStyle(ax.tone(.accent).text)
+                    .foregroundStyle(onAccent ? AnyShapeStyle(.primary) : AnyShapeStyle(ax.tone(.accent).text))
                     .padding(.horizontal, ax.space(2))
                     .padding(.vertical, ax.hair)
-                    .background(Capsule().fill(ax.accentMuted))
+                    .background(Capsule().fill(onAccent ? AnyShapeStyle(.quaternary) : AnyShapeStyle(ax.accentMuted)))
             }
         }
         .accessibilityElement(children: .combine)
@@ -572,12 +577,14 @@ struct ScreenView: View {
     var body: some View {
         Group {
             if let fixedWidth {
-                page(width: fixedWidth)
+                page(width: fixedWidth, height: 800)
             } else {
-                GeometryReader { geo in page(width: geo.size.width) }
+                GeometryReader { geo in page(width: geo.size.width, height: geo.size.height) }
             }
         }
-        .background(ax.page)
+        // The page is the surface, white in the light themes, as the web's content area is: the
+        // translucent tokens (bubbles, columns, chips) then come out as they do there.
+        .background(ax.surface)
         .modifier(ScreenTitle(screen: app.screen, large: largeTitle && scrolls, pageDrawsTitle: !inlineToolbar && typeSize.isAccessibilitySize))
         .toolbar {
             if !inlineToolbar {
@@ -590,18 +597,41 @@ struct ScreenView: View {
         }
     }
 
+    /// A refactored template draws its own page, with its own padding (each Astryx template sets
+    /// its own); the other screens get the page's 24 pt, 16 on a phone.
+    private var bodyIsTemplate: Bool {
+        if case .template = app.screen.body { return true }
+        return false
+    }
+
+    /// A template that scrolls inside itself (the AI chat: its conversation scrolls above a pinned
+    /// composer, as the web's ChatLayout does) is given the window's height and no outer scroll.
+    private var bodyScrollsItself: Bool {
+        if case .template(let node) = app.screen.body { return node.template == "chat" }
+        return false
+    }
+
     @ViewBuilder
-    private func page(width: CGFloat) -> some View {
-        let pad = width < 600 ? ax.space(4) : ax.space(6)
+    private func page(width: CGFloat, height: CGFloat) -> some View {
+        let gutter = width < 600 ? ax.space(4) : ax.space(6)
+        let pad = bodyIsTemplate ? 0 : gutter
         let content = VStack(alignment: .leading, spacing: ax.space(6)) {
-            if showsHeader { header }
+            if showsHeader {
+                // Above a template, which pads itself, the header keeps the page's gutter.
+                header
+                    .padding(.horizontal, bodyIsTemplate ? gutter : 0)
+                    .padding(.top, bodyIsTemplate ? gutter : 0)
+            }
             NodeView(node: app.screen.body)
         }
         .padding(pad)
         .frame(maxWidth: .infinity, alignment: .topLeading)
         .environment(\.axWidth, width - 2 * pad)
+        .environment(\.axHeight, height)
 
-        if scrolls {
+        if scrolls && bodyScrollsItself {
+            content.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        } else if scrolls {
             ScrollView { content }
         } else {
             content.fixedSize(horizontal: false, vertical: true).frame(maxHeight: .infinity, alignment: .top)
@@ -637,14 +667,17 @@ struct ScreenView: View {
     }
 }
 
-/// A toolbar button of the screen, as the platform's own prominent or bordered button.
+/// A toolbar button of the screen, as the platform's own button: it shows its words beside the
+/// glyph (an icon alone does not say "Follow" or "Fill with test data"), and a primary action is
+/// the prominent style. Every one is also a command in the menu bar (see `AstryxCommands`).
 private struct ToolbarButton: View {
     let node: ButtonNode
     @Environment(\.ax) private var ax
     @Environment(\.axSend) private var send
+    @Environment(\.horizontalSizeClass) private var sizeClass
 
     var body: some View {
-        Button(role: node.variant == .destructive ? .destructive : nil) {
+        let button = Button(role: node.variant == .destructive ? .destructive : nil) {
             send(.press(id: node.id))
         } label: {
             if let icon = node.icon {
@@ -656,6 +689,29 @@ private struct ToolbarButton: View {
         .help(node.label)
         .disabled(node.disabled ?? false)
         .tint(node.variant == .destructive ? ax.danger : ax.accent)
+        if wordsShown {
+            styled(button.labelStyle(.titleAndIcon))
+        } else {
+            styled(button.labelStyle(.iconOnly))
+        }
+    }
+
+    @ViewBuilder
+    private func styled(_ button: some View) -> some View {
+        if node.variant == .primary {
+            button.buttonStyle(.borderedProminent)
+        } else {
+            button
+        }
+    }
+
+    /// Always on the Mac; on a phone's navigation bar the glyph alone, as before.
+    private var wordsShown: Bool {
+        #if os(macOS)
+        true
+        #else
+        sizeClass != .compact
+        #endif
     }
 }
 

@@ -40,24 +40,24 @@ private struct TChatScreen: View {
         let panel = wide && model.artifact.panelOpen
         let gap = ax.space(4)
         let panelWidth = clampedPanel(total: width)
+        // The chat owns the whole pane, edge to edge (its own padding is inside the scroll view and
+        // the composer), and the conversation scrolls above the composer.
         HStack(alignment: .top, spacing: 0) {
-            VStack(alignment: .leading, spacing: ax.space(6)) {
-                TChatConversation(items: model.items, openArtifact: open)
-                TChatComposer(composer: model.composer, inert: model.inert)
-            }
-            .environment(\.axWidth, panel ? width - panelWidth - gap * 2 : width)
-            .frame(maxWidth: .infinity, alignment: .topLeading)
+            TChatColumn(model: model, open: open)
+                .environment(\.axWidth, panel ? width - panelWidth - gap * 2 : width)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             if panel {
                 handle
                     .padding(.horizontal, gap)
                 TChatArtifactPanel(artifact: model.artifact, close: { send(.press(id: "tpl.chat.closeArtifact")) })
                     .environment(\.axWidth, panelWidth)
                     .frame(width: panelWidth)
+                    .padding(.vertical, gap)
+                    .padding(.trailing, gap)
             }
         }
-        .frame(maxWidth: .infinity, alignment: .topLeading)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .environment(\.tChatWords, model.words)
-        .environment(\.tChatInert, model.inert)
         .tChatDialog(isPresented: Binding(
             get: { model.artifact.dialogOpen },
             set: { if !$0 { send(.set(id: "tpl.chat.dialog", value: .bool(false))) } }
@@ -97,11 +97,49 @@ private struct TChatScreen: View {
     }
 }
 
+/// The conversation and its composer. The messages scroll, anchored to the latest one, and the
+/// composer is pinned under them (the stock ChatLayout); drawn to an image, which has no scroll
+/// view, the two simply stack.
+private struct TChatColumn: View {
+    let model: TChatModel
+    let open: () -> Void
+    @Environment(\.ax) private var ax
+    @Environment(\.axWidth) private var width
+    @Environment(\.axStatic) private var isStatic
+
+    var body: some View {
+        let pad = width < 600 ? ax.space(4) : ax.space(8)
+        let conversation = TChatConversation(items: model.items, openArtifact: open)
+            .padding(.horizontal, pad)
+            .padding(.top, pad)
+            .environment(\.axWidth, width - 2 * pad)
+        let composer = TChatComposer(composer: model.composer)
+            .padding(.horizontal, ax.space(4))
+            .padding(.bottom, ax.space(3))
+            .environment(\.axWidth, width - 2 * ax.space(4))
+        if isStatic {
+            VStack(alignment: .leading, spacing: ax.space(6)) {
+                conversation
+                composer
+            }
+        } else {
+            ScrollView {
+                conversation
+                    // Clear of the composer, which the scroll view leaves its room under.
+                    .padding(.bottom, ax.space(6) * 3.5)
+            }
+            .defaultScrollAnchor(.bottom)
+            .safeAreaInset(edge: .bottom, spacing: 0) { composer }
+        }
+    }
+}
+
 // MARK: Composer
 
+/// The composer, as the stock ChatComposer draws it: a raised, rounded surface with the Mention and
+/// Attach buttons above the field, and the mode menu and the Send button under it.
 private struct TChatComposer: View {
     let composer: TChatModel.Composer
-    let inert: Set<String>
     @State private var text: String
     @FocusState private var focused: Bool
     @Environment(\.ax) private var ax
@@ -109,41 +147,42 @@ private struct TChatComposer: View {
     @Environment(\.axStatic) private var isStatic
     @Environment(\.tChatWords) private var words
 
-    init(composer: TChatModel.Composer, inert: Set<String>) {
+    init(composer: TChatModel.Composer) {
         self.composer = composer
-        self.inert = inert
         _text = State(initialValue: composer.draft)
     }
 
     private var canSend: Bool { !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
 
+    /// The side of the small controls: 28 on the Mac, 44 on a touch screen, growing with the text.
+    private var side: CGFloat { Swift.max(axMinTarget, 28 * Swift.min(ax.scale, 1.4)) }
+
     var body: some View {
-        let shape = RoundedRectangle(cornerRadius: ax.radiusContainer + 6, style: .continuous)
+        let shape = RoundedRectangle(cornerRadius: ax.radiusContainer + 16, style: .continuous)
         VStack(alignment: .leading, spacing: ax.space(2)) {
+            HStack(spacing: ax.space(1)) {
+                iconButton("at", label: words.mention)
+                iconButton("paperclip", label: words.attach)
+            }
             field
             // One row; at the largest text sizes, where it cannot fit, the mode menu gets its own.
             ViewThatFits(in: .horizontal) {
-                HStack(spacing: ax.space(1)) {
-                    iconButton("at", label: words.mention, id: "mention")
-                    iconButton("paperclip", label: words.attach, id: "attach")
-                    Spacer(minLength: ax.space(2))
+                HStack(spacing: ax.space(2)) {
                     modeMenu
+                    Spacer(minLength: ax.space(2))
                     sendButton
                 }
                 VStack(alignment: .leading, spacing: ax.space(1)) {
                     modeMenu
-                    HStack(spacing: ax.space(1)) {
-                        iconButton("at", label: words.mention, id: "mention")
-                        iconButton("paperclip", label: words.attach, id: "attach")
-                        Spacer(minLength: ax.space(2))
-                        sendButton
-                    }
+                    HStack { Spacer(minLength: 0); sendButton }
                 }
             }
         }
         .padding(ax.space(3))
         .background(shape.fill(ax.surface))
-        .overlay(shape.strokeBorder(focused ? ax.accent : ax.borderStrong, lineWidth: focused ? 2 : 1))
+        .shadow(color: ax.shadow, radius: 0.5, y: 1)
+        .shadow(color: ax.shadow, radius: 4, y: 2)
+        .overlay(shape.strokeBorder(ax.accent, lineWidth: focused ? 2 : 0))
         .syncedText(id: "tpl.chat.draft", value: composer.draft, text: $text)
         .accessibilityElement(children: .contain)
     }
@@ -153,10 +192,11 @@ private struct TChatComposer: View {
         if isStatic {
             Text(text.isEmpty ? composer.placeholder : text)
                 .font(ax.fontBase)
-                .foregroundStyle(text.isEmpty ? ax.textDisabled : ax.text)
-                .frame(maxWidth: .infinity, minHeight: 24 * min(ax.scale, 1.4), alignment: .topLeading)
+                .foregroundStyle(text.isEmpty ? ax.textSecondary : ax.text)
+                .padding(.horizontal, ax.space(1))
+                .frame(maxWidth: .infinity, minHeight: 22 * min(ax.scale, 1.4), alignment: .topLeading)
         } else {
-            TextField(composer.placeholder, text: $text, prompt: Text(composer.placeholder).foregroundColor(ax.textDisabled), axis: .vertical)
+            TextField(composer.placeholder, text: $text, prompt: Text(composer.placeholder).foregroundColor(ax.textSecondary), axis: .vertical)
                 .textFieldStyle(.plain)
                 .font(ax.fontBase)
                 .foregroundStyle(ax.text)
@@ -164,17 +204,21 @@ private struct TChatComposer: View {
                 .focused($focused)
                 .submitLabel(.send)
                 .onSubmit(submit)
+                .padding(.horizontal, ax.space(1))
+                .frame(minHeight: 22 * min(ax.scale, 1.4))
                 .accessibilityLabel(composer.placeholder)
         }
     }
 
+    /// Always the accent circle; with nothing to send it is drawn at half strength.
     private var sendButton: some View {
         Button(action: submit) {
             Image(systemName: "arrow.up")
-                .font(.system(size: ax.fontSize("font-size-base", 14), weight: .bold))
-                .foregroundStyle(canSend ? ax.onAccent : ax.textDisabled)
-                .frame(width: tChatSide(ax), height: tChatSide(ax))
-                .background(Circle().fill(canSend ? ax.accent : ax.muted))
+                .font(.system(size: ax.scaled(16), weight: .medium))
+                .foregroundStyle(ax.onAccent)
+                .frame(width: axControlHeight(ax), height: axControlHeight(ax))
+                .background(Circle().fill(ax.accent))
+                .opacity(canSend ? 1 : 0.5)
                 .contentShape(Circle())
         }
         .buttonStyle(.plain)
@@ -193,13 +237,14 @@ private struct TChatComposer: View {
             .pickerStyle(.inline)
             .labelsHidden()
         } label: {
-            HStack(spacing: ax.space(1)) {
+            HStack(spacing: ax.space(2)) {
                 Text(composer.modeLabel).font(ax.fontLabel)
+                // The Mac's pop-up button draws its two chevrons.
                 Image(systemName: "chevron.up.chevron.down").font(.system(size: ax.fontSize("font-size-xs", 10), weight: .semibold))
             }
-            .foregroundStyle(ax.textSecondary)
-            .padding(.horizontal, ax.space(2))
-            .frame(minHeight: tChatSide(ax))
+            .foregroundStyle(ax.text)
+            .padding(.horizontal, ax.space(3))
+            .frame(minHeight: side)
             .contentShape(Rectangle())
         }
         .menuStyle(.button)
@@ -207,18 +252,17 @@ private struct TChatComposer: View {
         .fixedSize()
     }
 
-    /// A ghost icon button with no action of its own, as the web's Mention and Attach: the core
-    /// lists them as inert, so they are drawn disabled and VoiceOver says so.
-    private func iconButton(_ symbol: String, label: String, id: String) -> some View {
+    /// A ghost icon button with no action of its own, as the web's Mention and Attach: the stock page wires
+    /// them to nothing, and they are drawn like any other control.
+    private func iconButton(_ symbol: String, label: String) -> some View {
         Button {} label: {
             Image(systemName: symbol)
-                .font(.system(size: ax.fontSize("font-size-base", 14)))
-                .foregroundStyle(ax.iconSecondary)
-                .frame(width: tChatSide(ax), height: tChatSide(ax))
+                .font(.system(size: ax.scaled(16)))
+                .foregroundStyle(ax.text)
+                .frame(width: side, height: side)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .disabled(inert.contains(id))
         .accessibilityLabel(label)
     }
 
@@ -271,13 +315,12 @@ struct TChatArtifactActions: View {
     var onClose: (() -> Void)?
     @Environment(\.ax) private var ax
     @Environment(\.tChatWords) private var words
-    @Environment(\.tChatInert) private var inert
 
     var body: some View {
         HStack(spacing: ax.space(1)) {
             Menu {
                 ForEach(artifact.versions, id: \.self) { version in
-                    Button(version) {}.disabled(inert.contains("versions"))
+                    Button(version) {}
                 }
             } label: {
                 HStack(spacing: ax.space(1)) {
@@ -353,7 +396,6 @@ struct TChatArtifactDialog: View {
     @Environment(\.axSend) private var send
     @Environment(\.axStatic) private var isStatic
     @Environment(\.tChatWords) private var words
-    @Environment(\.tChatInert) private var inert
     @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
@@ -402,7 +444,7 @@ struct TChatArtifactDialog: View {
     private var overflow: some View {
         Menu {
             Section(artifact.versions.first.map { String($0.prefix(while: { !$0.isWhitespace })) } ?? "") {
-                ForEach(artifact.versions, id: \.self) { version in Button(version) {}.disabled(inert.contains("versions")) }
+                ForEach(artifact.versions, id: \.self) { version in Button(version) {} }
             }
             Button { tChatCopy(artifact.content) } label: { Label(words.copy, systemImage: "doc.on.doc") }
             ShareLink(item: artifact.content, subject: Text(artifact.title)) { Label(words.share, systemImage: "square.and.arrow.up") }

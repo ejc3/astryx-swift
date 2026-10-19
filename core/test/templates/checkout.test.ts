@@ -204,6 +204,7 @@ test("blur on a step shows only that step's fields; the other step's stay quiet"
 
 test("the view carries the words, per-item labels and spoken step states the native hosts draw", () => {
   const v = view(start());
+  assert.equal(v.words.title, "Checkout");
   assert.equal(v.words.cart.heading, "Review your cart");
   assert.equal(v.words.done, "Done");
   assert.equal(v.items[0]!.removeLabel, "Remove Speckled Stoneware Mug");

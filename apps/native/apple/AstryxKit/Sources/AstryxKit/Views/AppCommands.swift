@@ -1,8 +1,10 @@
 import SwiftUI
 
 /// The menu bar's commands (the Mac's, and the iPad's when a keyboard is attached), every
-/// word the core's: a Scenarios menu to play each scenario from the native side or the web
-/// and to pause (⌘.) and stop it, and in the View menu the choice of drawing (⌘1 to ⌘6).
+/// word the core's: a menu named for the current screen with each of its toolbar actions (the
+/// HIG: "make every toolbar item available as a command in the menu bar"), a Scenarios menu to
+/// play each scenario from the native side or the web and to pause (⌘.) and stop it, and in the
+/// View menu the choice of drawing (⌘1 to ⌘6).
 /// The host adds the system's `SidebarCommands` and `ToolbarCommands` beside them.
 public struct AstryxCommands: Commands {
     @ObservedObject private var model: AppModel
@@ -12,11 +14,38 @@ public struct AstryxCommands: Commands {
     }
 
     public var body: some Commands {
+        // Only a screen with page actions has the menu: an empty menu would be noise in the bar.
+        if let screen = model.app?.screen, !screen.toolbar.isEmpty {
+            CommandMenu(screen.title) {
+                PageActionCommandItems(model: model)
+            }
+        }
         CommandMenu(model.app?.scenarios?.label ?? "") {
             ScenarioCommandItems(model: model)
         }
         CommandGroup(after: .toolbar) {
             SurfaceCommandItems(model: model)
+        }
+    }
+}
+
+/// The current screen's toolbar actions, each a command that does what its toolbar button does.
+private struct PageActionCommandItems: View {
+    @ObservedObject var model: AppModel
+
+    var body: some View {
+        let actions = model.app?.screen.toolbar ?? []
+        ForEach(actions, id: \.id) { action in
+            Button {
+                model.perform(.press(id: action.id))
+            } label: {
+                if let icon = action.icon {
+                    Label(action.label, systemImage: icon.symbol)
+                } else {
+                    Text(action.label)
+                }
+            }
+            .disabled(action.disabled ?? false)
         }
     }
 }

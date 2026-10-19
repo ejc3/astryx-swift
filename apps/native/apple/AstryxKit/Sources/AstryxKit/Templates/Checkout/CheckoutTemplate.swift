@@ -33,34 +33,24 @@ struct CheckoutScreen: View {
     @Environment(\.ax) private var ax
     @Environment(\.axWidth) private var width
     @Environment(\.axSend) private var send
-    @Environment(\.axStatic) private var isStatic
     @FocusState private var focus: String?
 
-    private var narrow: Bool { width <= checkoutNarrowWidth }
+    /// The template owns its outer padding, as the web page's `LayoutContent padding={4}` does.
+    private var pad: CGFloat { ax.space(4) }
+    private var inner: CGFloat { max(width - 2 * pad, 0) }
+    private var narrow: Bool { inner <= checkoutNarrowWidth }
     private var actions: CheckoutSender { CheckoutSender(send: send) }
 
     var body: some View {
-        // Back, Continue (or Pay) and, on a narrow screen, the total stay in view at the bottom of
-        // the screen: the last row of the page, pinned to the edge of the scroll view. (When drawn
-        // without a window there is no scroll view, so it is simply the last row.)
-        Group {
-            if isStatic {
-                VStack(alignment: .leading, spacing: ax.space(6)) {
-                    page
-                    if !model.isComplete { CheckoutActionBar(model: model, actions: actions, narrow: narrow) }
-                }
-            } else {
-                LazyVStack(alignment: .leading, spacing: ax.space(6), pinnedViews: [.sectionFooters]) {
-                    Section {
-                        page
-                    } footer: {
-                        if !model.isComplete { CheckoutActionBar(model: model, actions: actions, narrow: narrow) }
-                    }
-                }
-            }
+        // The page, then Back and Continue (or Pay) as its last row: in the flow, not pinned.
+        VStack(alignment: .leading, spacing: ax.space(6)) {
+            page
+            if !model.isComplete { CheckoutActionBar(model: model, actions: actions) }
         }
-        .frame(maxWidth: 1000, alignment: .topLeading)
+        .padding(pad)
+        .frame(maxWidth: 1000 + 2 * pad, alignment: .topLeading)
         .frame(maxWidth: .infinity, alignment: .top)
+        .environment(\.axWidth, inner)
         .environment(\.cosWords, model.words.common)
         .onChange(of: model.focusTicket) { _, _ in
             if let key = model.firstInvalidField { focus = key }
@@ -91,12 +81,18 @@ struct CheckoutScreen: View {
 
     private var page: some View {
         VStack(alignment: .leading, spacing: ax.space(6)) {
-            HStack(spacing: ax.space(1) + 2) {
-                Spacer(minLength: 0)
-                Image(systemName: "lock.fill").font(ax.fontSmall).foregroundStyle(ax.iconSecondary)
-                Text(model.words.secureCheckout).font(ax.fontSmall).foregroundStyle(ax.textSecondary)
+            HStack(spacing: ax.space(2)) {
+                Text(model.words.title)
+                    .font(ax.heading(1))
+                    .foregroundStyle(ax.text)
+                    .accessibilityAddTraits(.isHeader)
+                Spacer(minLength: ax.space(2))
+                HStack(spacing: ax.space(1) + 2) {
+                    Image(systemName: "lock").font(ax.fontSmall).foregroundStyle(ax.iconSecondary)
+                    Text(model.words.secureCheckout).font(ax.fontSmall).foregroundStyle(ax.textSecondary)
+                }
+                .accessibilityElement(children: .combine)
             }
-            .accessibilityElement(children: .combine)
 
             if narrow {
                 CheckoutSummary(model: model, narrow: true)
@@ -148,14 +144,12 @@ private struct CheckoutConfirmation: View {
     }
 }
 
-/// Back and Continue (or Pay), the count of problems when a step is blocked and, on a narrow
-/// screen, the total, as Apple's payment sheet keeps the total with the action. It is the page's
-/// last row, pinned to the bottom edge while the form scrolls; on iOS and macOS 26 Continue takes
-/// the system's prominent Liquid Glass button style over the opaque bar.
+/// Back and Continue (or Pay) and, when a step is blocked, the count of problems above them: a
+/// plain row at the end of the page, as the web draws it. Back is a secondary button, Continue
+/// the primary one filling the rest of the row.
 private struct CheckoutActionBar: View {
     let model: CheckoutModel
     let actions: CheckoutSender
-    let narrow: Bool
     @Environment(\.ax) private var ax
     @Environment(\.dynamicTypeSize) private var typeSize
 
@@ -165,100 +159,35 @@ private struct CheckoutActionBar: View {
                 COSStatus(tone: .danger, message: blocked)
             }
             if typeSize.isAccessibilitySize {
-                // At accessibility sizes nothing sits beside anything: the total, then the way
-                // forward, then back, each as wide as the bar so a label wraps between words.
+                // At accessibility sizes nothing sits beside anything: the way forward, then
+                // back, each as wide as the page so a label wraps between words.
                 column
             } else {
                 ViewThatFits(in: .horizontal) {
                     HStack(spacing: ax.space(3)) {
-                        if narrow { total }
                         back(fills: false)
                         next
-                    }
-                    VStack(spacing: ax.space(2)) {
-                        HStack(spacing: ax.space(3)) {
-                            if narrow { total }
-                            next
-                        }
-                        back(fills: false)
                     }
                     column
                 }
             }
         }
-        .padding(ax.space(3))
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(RoundedRectangle(cornerRadius: ax.radiusContainer, style: .continuous).fill(ax.card))
-        .overlay(RoundedRectangle(cornerRadius: ax.radiusContainer, style: .continuous).strokeBorder(ax.border, lineWidth: 1))
-        .shadow(color: ax.shadow, radius: 8, y: 2)
-        .padding(.bottom, ax.space(1))
         .accessibilityElement(children: .contain)
     }
 
     private var column: some View {
         VStack(alignment: .leading, spacing: ax.space(2)) {
-            if narrow { total }
             next.frame(maxWidth: .infinity)
             back(fills: true)
         }
     }
 
-    private var total: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text(model.words.summary.total).font(ax.fontSmall).foregroundStyle(ax.textSecondary)
-            Text(model.summary.total).font(ax.fontStrong).foregroundStyle(ax.text).lineLimit(1)
-        }
-        .fixedSize()
-        .accessibilityElement(children: .combine)
-    }
-
     private func back(fills: Bool) -> some View {
-        CheckoutBarButton(label: model.actions.backLabel, prominent: false, fills: fills) { actions.press("back") }
+        COSButton(label: model.actions.backLabel, variant: .secondary, fills: fills) { actions.press("back") }
     }
 
     private var next: some View {
-        CheckoutBarButton(label: model.actions.nextLabel, prominent: true, fills: true) { actions.press("next") }
-    }
-}
-
-/// A bar button: the system's Liquid Glass styles on iOS and macOS 26 (prominent for the way
-/// forward), the theme's own buttons before that.
-private struct CheckoutBarButton: View {
-    let label: String
-    let prominent: Bool
-    let fills: Bool
-    let action: () -> Void
-    @Environment(\.ax) private var ax
-    @Environment(\.axStatic) private var isStatic
-    @Environment(\.dynamicTypeSize) private var typeSize
-
-    var body: some View {
-        if #available(iOS 26, macOS 26, *), !isStatic {
-            if prominent {
-                Button(action: action) { title }
-                    .buttonStyle(.glassProminent)
-                    .tint(ax.accent)
-                    .controlSize(.large)
-            } else {
-                Button(action: action) { title }
-                    .buttonStyle(.glass)
-                    .controlSize(.large)
-            }
-        } else {
-            COSButton(label: label, variant: prominent ? .primary : .secondary, fills: fills, action: action)
-        }
-    }
-
-    private var title: some View {
-        Text(label)
-            .font(ax.fontLabel)
-            // One line until the text is so large that one line cannot hold it; then it wraps
-            // between words and the button grows, never a cut label.
-            .lineLimit(typeSize.isAccessibilitySize ? nil : 1)
-            .multilineTextAlignment(.center)
-            // The label's own width inside the button, so the bar's ViewThatFits can tell
-            // when the row does not fit, instead of the label being cut short.
-            .fixedSize(horizontal: !typeSize.isAccessibilitySize, vertical: true)
-            .frame(maxWidth: fills ? .infinity : nil)
+        COSButton(label: model.actions.nextLabel, variant: .primary, fills: true) { actions.press("next") }
     }
 }

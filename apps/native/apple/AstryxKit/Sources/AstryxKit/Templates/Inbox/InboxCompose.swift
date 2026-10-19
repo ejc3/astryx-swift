@@ -69,7 +69,6 @@ struct InboxComposeForm: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button(words.send) {}
-                        .disabled(inert.contains("send"))
                 }
                 ToolbarItemGroup(placement: toolsPlacement) {
                     ForEach(words.tools, id: \.id) { tool in
@@ -77,7 +76,6 @@ struct InboxComposeForm: View {
                         } label: {
                             Label(tool.label, systemImage: Self.toolSymbol(tool.id))
                         }
-                        .disabled(inert.contains(tool.id))
                     }
                 }
             }
@@ -131,7 +129,6 @@ struct InboxComposeForm: View {
             HStack(spacing: ax.space(1)) {
                 ForEach(words.tools, id: \.id) { tool in
                     InboxIconButton(symbol: Self.toolSymbol(tool.id), label: tool.label)
-                        .disabled(inert.contains(tool.id))
                 }
                 Spacer(minLength: ax.space(2))
                 InboxIconButton(symbol: "trash", label: words.discard)

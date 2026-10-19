@@ -249,6 +249,13 @@
          "sortId": "people.sort:role"
         },
         {
+         "id": "status",
+         "label": "Status",
+         "align": "start",
+         "sort": "none",
+         "sortId": "people.sort:status"
+        },
+        {
          "id": "team",
          "label": "Team",
          "align": "start",
@@ -285,7 +292,10 @@
            }
           },
           {
-           "text": "Designer",
+           "text": "Designer"
+          },
+          {
+           "text": "Invited",
            "badge": {
             "text": "Invited",
             "tone": "info"
@@ -318,7 +328,10 @@
            }
           },
           {
-           "text": "Designer",
+           "text": "Designer"
+          },
+          {
+           "text": "Away",
            "badge": {
             "text": "Away",
             "tone": "warning"
@@ -351,7 +364,10 @@
            }
           },
           {
-           "text": "Manager",
+           "text": "Manager"
+          },
+          {
+           "text": "Active",
            "badge": {
             "text": "Active",
             "tone": "success"
@@ -384,7 +400,10 @@
            }
           },
           {
-           "text": "Engineer",
+           "text": "Engineer"
+          },
+          {
+           "text": "Active",
            "badge": {
             "text": "Active",
             "tone": "success"
@@ -417,7 +436,10 @@
            }
           },
           {
-           "text": "Writer",
+           "text": "Writer"
+          },
+          {
+           "text": "Active",
            "badge": {
             "text": "Active",
             "tone": "success"
@@ -440,6 +462,8 @@
       },
       {
        "kind": "pagination",
+       "previousLabel": "Previous page",
+       "nextLabel": "Next page",
        "label": "1-5 of 13",
        "nextId": "people.page:next"
       }

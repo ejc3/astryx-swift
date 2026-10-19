@@ -60,6 +60,9 @@
 /* Astryx Table pulls itself 20px out of its container on every side; this box keeps that room
    so scrolling sideways does not clip it from above and below. */
 .an-table { min-width: 0; overflow-x: auto; padding: var(--spacing-5); margin: calc(-1 * var(--spacing-5)); }
+/* Six columns and a checkbox share a phone-sized card: tighter cell padding keeps every header whole. */
+.an-table[data-dense] th, .an-table[data-dense] td { padding-inline: var(--spacing-1); }
+.an-table[data-dense] th button { padding-inline: var(--spacing-1); }
 .an-table-empty, .an-list-empty { padding: var(--spacing-5) var(--spacing-3); text-align: center; }
 
 .an-leading {
@@ -79,16 +82,14 @@
 
 .an-bars { margin: 0; display: flex; flex-direction: column; gap: var(--spacing-2); }
 .an-bars-plot { display: flex; align-items: stretch; gap: var(--spacing-1); height: 180px; }
-.an-bar { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: var(--spacing-1); }
-.an-bar-fill { display: block; width: 100%; border-radius: var(--radius-inner) var(--radius-inner) 0 0; min-height: 2px; }
-.an-bar-value, .an-bar-label { font-size: var(--font-size-3xs); color: var(--color-text-secondary); line-height: 1.2; height: 1.2em; white-space: nowrap; }
+.an-bar { flex: 1 1 0; min-width: 0; height: 100%; display: flex; flex-direction: column; align-items: center; gap: var(--spacing-1); }
+.an-bar-value, .an-bar-label { color: var(--color-text-secondary); line-height: 1.2; height: 1.2em; white-space: nowrap; flex: none; }
+.an-bar-value { font-size: var(--font-size-3xs); }
+.an-bar-label { font-size: var(--font-size-xs); }
 .an-bar[data-highlight] .an-bar-value { color: var(--color-text-primary); font-weight: var(--font-weight-semibold); }
-
-/* The bars chart needs the plot to be a fixed height box with fills measured against it. */
-.an-bar { position: relative; }
-.an-bar-fill { flex: none; }
-.an-bar { height: 100%; }
-.an-bar > .an-bar-fill { max-height: calc(100% - 2.6em); }
+/* The fill is measured against the track alone (not the value and label rows), so heights stay true to the data. */
+.an-bar-track { position: relative; flex: 1 1 0; min-height: 0; width: 100%; }
+.an-bar-fill { position: absolute; inset-inline: 0; bottom: 0; display: block; border-radius: var(--radius-inner) var(--radius-inner) 0 0; min-height: 2px; }
 
 /* ---- calendar ---- */
 .an-cal { display: flex; flex-direction: column; gap: var(--spacing-1); }
@@ -120,7 +121,9 @@
 
 /* ---- chat: needs a box with a height ---- */
 .an-chat {
-  height: clamp(420px, 68vh, 720px);
+  flex: 1 1 auto;
+  min-height: 420px;
+  max-height: max(420px, calc(100dvh - 160px));
   border: var(--border-width) solid var(--color-border);
   border-radius: var(--radius-container);
   overflow: hidden;
@@ -131,6 +134,7 @@
 .an-chat > * { flex: 1 1 auto; min-height: 0; }
 
 /* ---- board ---- */
+.an-board-wrap { min-width: 0; }
 .an-board {
   display: grid;
   grid-template-columns: repeat(3, minmax(240px, 1fr));
@@ -150,9 +154,8 @@
   scroll-snap-align: start;
   min-width: 0;
 }
-@media (max-width: 640px) {
-  .an-board { grid-template-columns: repeat(3, minmax(280px, 82%)); }
-}
+/* Below the width the core names (the board's own width), the columns stack. */
+.an-board[data-stacked] { grid-template-columns: minmax(0, 1fr); overflow-x: visible; scroll-snap-type: none; }
 
 /* ---- toast ---- */
 .an-toast {
