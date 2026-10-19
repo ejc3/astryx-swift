@@ -81,11 +81,9 @@ struct InboxScreen: View {
     /// rows, so a single list scrolls under the navigation bar and the home indicator, instead of
     /// a list scrolling inside a page that scrolls.
     private var listIsThePage: Bool {
-        #if os(iOS)
-        !isStatic && !sideBySide && !paneAlone && !model.rows.isEmpty
-        #else
+        // The page no longer scrolls (RootView lets the inbox size itself to the window), so the
+        // masthead stays put above the one scrolling list, as the web's pinned header does.
         false
-        #endif
     }
 
     var body: some View {
@@ -145,6 +143,14 @@ struct InboxScreen: View {
                 stacked
             } else {
                 ViewThatFits(in: .horizontal) {
+                    // Wide (the web's desktop header): the subtitle, then Refresh and Compose at the end.
+                    HStack(spacing: ax.space(3)) {
+                        subtitle.axOneLine()
+                        Spacer(minLength: ax.space(4))
+                        refresh(fills: false).axOneLine()
+                        compose(fills: false).axOneLine()
+                    }
+                    // A phone (the web's narrow header): Compose goes under the subtitle row.
                     VStack(alignment: .leading, spacing: ax.space(3)) {
                         HStack(spacing: ax.space(3)) { subtitle.axOneLine(); Spacer(minLength: ax.space(2)); refresh(fills: false).axOneLine() }
                         compose(fills: false).axOneLine()
@@ -227,7 +233,8 @@ struct InboxFill: ViewModifier {
         } else if isStatic {
             content.frame(minHeight: 560, alignment: .top)
         } else {
-            content.containerRelativeFrame(.vertical, alignment: .top) { height, _ in max(height - 70, 460) }
+            // The window's height under the masthead: the page itself does not scroll.
+            content.frame(maxHeight: .infinity, alignment: .top)
         }
     }
 }
