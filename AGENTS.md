@@ -16,6 +16,10 @@ Read `README.md` first.
   (`web/scripts/parity-steps/<id>.mjs`), then `npm run record -w web` and `npm run replay -w web`.
 - **Swift:** one filename per target (SwiftPM refuses duplicates); prefix a template's types
   and files with its name. Draw from the model; send its action ids exactly.
+- **Performance:** for frame rate, hitches or anything that changes how snapshots reach SwiftUI,
+  follow the `swift-perf-hill-climb` skill (`.agents/skills/swift-perf-hill-climb/SKILL.md`; Claude
+  Code finds it through `.claude/skills`): measure, one change, measure again, log it in its
+  `results.md`.
 - **Checks before committing:** `npm test`, `npx tsc --noEmit -p core/tsconfig.test.json`,
   `npx eslint` in `core/`, `npm run typecheck -w web`, and for template changes the parity run
   for that template. On the Mac: `swift build` and `swift test` in `apps/native/apple/AstryxKit`.

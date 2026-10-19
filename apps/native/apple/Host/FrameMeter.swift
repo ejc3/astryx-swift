@@ -47,9 +47,10 @@ final class FrameMeter: NSObject {
 
     /// One snapshot from the core reached the drawing: its size, and how long the host took to hand
     /// it to the drawings (decoding into the model and passing it to the web panes).
-    func noteSnapshot(bytes count: Int, seconds: CFTimeInterval) {
+    func noteSnapshot(bytes count: Int, seconds: CFTimeInterval, step: String? = nil) {
         guard link != nil else { return }
         snapshots += 1; bytes += count; handling += seconds; handlingWorst = max(handlingWorst, seconds)
+        report(String(format: "snapshot %d kB at %.3f, %.1f ms", count / 1024, CACurrentMediaTime(), seconds * 1000) + (step.map { "  [\($0)]" } ?? ""))
     }
 
     @objc private func tick(_ link: CADisplayLink) {
@@ -58,6 +59,7 @@ final class FrameMeter: NSObject {
             let gap = now - last
             if gap > interval * 1.5 { late += 1 }
             worst = max(worst, gap)
+            if gap > 0.05 { report(String(format: "gap %.0f ms ending at %.3f", gap * 1000, now)) }
         } else {
             windowStart = now
         }

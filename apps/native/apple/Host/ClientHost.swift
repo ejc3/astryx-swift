@@ -39,7 +39,8 @@ final class ClientHost: NSObject, AXClientServices {
         let began = CACurrentMediaTime()
         model.receive(store: store, snapshotJSON: json)
         web.changed(store: store, snapshotJSON: json)
-        FrameMeter.shared.noteSnapshot(bytes: json.utf8.count, seconds: CACurrentMediaTime() - began)
+        FrameMeter.shared.noteSnapshot(bytes: json.utf8.count, seconds: CACurrentMediaTime() - began,
+                                       step: model.app?.scenarios?.playing.map { "\($0.progress) \($0.caption)" })
         guard store == "app", let data = json.data(using: .utf8),
               let snapshot = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return }
         if let surface = snapshot["surface"] as? [String: Any], let template = surface["stockTemplate"] as? String { stock.show(template) }

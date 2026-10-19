@@ -10,6 +10,8 @@ public final class AppModel: ObservableObject {
     private let sendJSON: (String) -> Void
     private let decoder = JSONDecoder()
     private var ticker: Task<Void, Never>?
+    /// The last snapshot JSON received for each store.
+    private var last: [String: String] = [:]
 
     /// The "app" store: everything drawn for the current screen.
     @Published public private(set) var app: AppSnapshot?
@@ -55,6 +57,10 @@ public final class AppModel: ObservableObject {
     /// A store changed: `store` is "app" or "theme", `snapshotJSON` the JSON its snapshot.
     /// A snapshot that does not decode is ignored, so the last good screen stays on display.
     public func receive(store: String, snapshotJSON: String) {
+        // The core sends a store whenever its state changed; a snapshot that reads the same as the
+        // last one draws nothing new, so it is not published (publishing re-evaluates every view).
+        guard last[store] != snapshotJSON else { return }
+        last[store] = snapshotJSON
         let data = Data(snapshotJSON.utf8)
         switch store {
         case "app":
