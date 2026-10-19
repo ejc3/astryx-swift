@@ -52,6 +52,11 @@ final class ReactRuntime {
         // the process and do not say which runtime an error came from, so
         // the one way a replaced runtime cannot fail its replacement is to
         // be gone.
+        // The app always runs its bundled JavaScript, never a Metro server,
+        // so React Native's "Connect to Metro" banner (debug builds) has
+        // nothing to offer and would sit over the screens.
+        RCTDevLoadingViewSetEnabled(false)
+
         factory = nil
         delegate.bundle = bundle
         delegate.dependencyProvider = RCTAppDependencyProvider()
