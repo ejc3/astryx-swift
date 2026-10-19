@@ -195,20 +195,26 @@ private struct DashLineChart: View {
         .chartYScale(domain: yRange)
         .chartXSelection(value: $selected)
         .chartLegend(.hidden)
+        // The time labels are drawn here, not by Swift Charts: each is centred on its tick and
+        // shifted only as far as it must be to stay inside the chart, which is how Recharts places
+        // them on the web. (Swift Charts' anchors either clip the end labels or let neighbours meet.)
         .chartXAxis {
-            AxisMarks(values: shownTicks.map(\.at)) { value in
-                // The last label ends at the plot's right edge, as the web's does: centered on the
-                // edge it would be cut off, so it hangs from it.
-                let last = value.as(Double.self).map { $0 == shownTicks.last?.at } ?? false
-                AxisValueLabel(anchor: last ? .topTrailing : .top, collisionResolution: .disabled) {
-                    if let at = value.as(Double.self), let tick = ticks.first(where: { $0.at == at }) {
-                        Text(tick.label)
-                            .font(ax.fontSmall)
-                            .foregroundStyle(ax.textSecondary)
+            AxisMarks(values: shownTicks.map(\.at)) { _ in }
+        }
+        .chartOverlay(alignment: .topLeading) { proxy in
+            GeometryReader { geo in
+                if let plotFrame = proxy.plotFrame {
+                    let plot = geo[plotFrame]
+                    ForEach(shownTicks, id: \.at) { tick in
+                        if let x = proxy.position(forX: tick.at) {
+                            DashAxisLabel(text: tick.label, center: plot.minX + x, lower: 0, upper: geo.size.width)
+                                .offset(y: plot.maxY + 6)
+                        }
                     }
                 }
             }
         }
+        .padding(.bottom, ax.fontSize("font-size-sm", 12) + 10)
         .chartYAxis {
             AxisMarks(position: .leading, values: shownYTicks) { value in
                 AxisGridLine(stroke: StrokeStyle(lineWidth: 1)).foregroundStyle(ax.border)
@@ -250,5 +256,26 @@ private struct DashTooltip: View {
         .background(RoundedRectangle(cornerRadius: ax.radiusElement, style: .continuous).fill(ax.color("color-background-popover")))
         .overlay(RoundedRectangle(cornerRadius: ax.radiusElement, style: .continuous).strokeBorder(ax.border, lineWidth: 1))
         .shadow(color: ax.shadow, radius: 8, y: 2)
+    }
+}
+
+/// One time label under the chart: centred on its tick, clamped to the chart's edges.
+private struct DashAxisLabel: View {
+    let text: String
+    let center: CGFloat
+    let lower: CGFloat
+    let upper: CGFloat
+    @Environment(\.ax) private var ax
+    @State private var width: CGFloat = 0
+
+    var body: some View {
+        let x = min(max(center - width / 2, lower), upper - width)
+        Text(text)
+            .font(ax.fontSmall)
+            .foregroundStyle(ax.textSecondary)
+            .fixedSize()
+            .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
+            .offset(x: x)
+            .accessibilityHidden(true)
     }
 }
