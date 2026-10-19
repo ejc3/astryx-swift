@@ -1,0 +1,760 @@
+{
+ "protocol": 1,
+ "appName": "Astryx Swift",
+ "nav": [
+  {
+   "id": "t.showcase",
+   "label": "Theme showcase",
+   "icon": "sparkle",
+   "section": "Astryx templates",
+   "accessibilityLabel": "Theme showcase, Astryx templates"
+  },
+  {
+   "id": "t.dashboard",
+   "label": "Dashboard",
+   "icon": "chart",
+   "section": "Astryx templates",
+   "accessibilityLabel": "Dashboard, Astryx templates"
+  },
+  {
+   "id": "t.inbox",
+   "label": "Inbox",
+   "icon": "inbox",
+   "section": "Astryx templates",
+   "accessibilityLabel": "Inbox, Astryx templates"
+  },
+  {
+   "id": "t.kanban",
+   "label": "Kanban board",
+   "icon": "check",
+   "section": "Astryx templates",
+   "accessibilityLabel": "Kanban board, Astryx templates"
+  },
+  {
+   "id": "t.invoice",
+   "label": "Invoice",
+   "icon": "card",
+   "section": "Astryx templates",
+   "accessibilityLabel": "Invoice, Astryx templates"
+  },
+  {
+   "id": "t.calendar",
+   "label": "Calendar",
+   "icon": "calendar",
+   "section": "Astryx templates",
+   "accessibilityLabel": "Calendar, Astryx templates"
+  },
+  {
+   "id": "t.chat",
+   "label": "AI chat",
+   "icon": "chat",
+   "section": "Astryx templates",
+   "accessibilityLabel": "AI chat, Astryx templates"
+  },
+  {
+   "id": "t.checkout",
+   "label": "Checkout",
+   "icon": "cart",
+   "section": "Astryx templates",
+   "accessibilityLabel": "Checkout, Astryx templates"
+  },
+  {
+   "id": "t.order",
+   "label": "Order detail",
+   "icon": "truck",
+   "section": "Astryx templates",
+   "accessibilityLabel": "Order detail, Astryx templates"
+  },
+  {
+   "id": "t.settings",
+   "label": "Settings",
+   "icon": "gear",
+   "section": "Astryx templates",
+   "accessibilityLabel": "Settings, Astryx templates"
+  },
+  {
+   "id": "overview",
+   "label": "Components",
+   "icon": "grid",
+   "section": "More demos",
+   "accessibilityLabel": "Components, More demos"
+  },
+  {
+   "id": "dashboard",
+   "label": "Dashboard",
+   "icon": "chart",
+   "section": "More demos",
+   "accessibilityLabel": "Dashboard, More demos"
+  },
+  {
+   "id": "inbox",
+   "label": "Inbox",
+   "icon": "inbox",
+   "badge": "3",
+   "section": "More demos",
+   "accessibilityLabel": "Inbox, More demos"
+  },
+  {
+   "id": "tasks",
+   "label": "Tasks",
+   "icon": "check",
+   "badge": "7",
+   "section": "More demos",
+   "accessibilityLabel": "Tasks, More demos"
+  },
+  {
+   "id": "people",
+   "label": "People",
+   "icon": "people",
+   "section": "More demos",
+   "accessibilityLabel": "People, More demos"
+  },
+  {
+   "id": "calendar",
+   "label": "Calendar",
+   "icon": "calendar",
+   "section": "More demos",
+   "accessibilityLabel": "Calendar, More demos"
+  },
+  {
+   "id": "chat",
+   "label": "Messages",
+   "icon": "chat",
+   "section": "More demos",
+   "accessibilityLabel": "Messages, More demos"
+  },
+  {
+   "id": "checkout",
+   "label": "Checkout",
+   "icon": "cart",
+   "section": "More demos",
+   "accessibilityLabel": "Checkout, More demos"
+  },
+  {
+   "id": "profile",
+   "label": "Profile",
+   "icon": "person",
+   "section": "More demos",
+   "accessibilityLabel": "Profile, More demos"
+  },
+  {
+   "id": "settings",
+   "label": "Settings",
+   "icon": "gear",
+   "section": "More demos",
+   "accessibilityLabel": "Settings, More demos"
+  }
+ ],
+ "current": "t.invoice",
+ "screen": {
+  "id": "t.invoice",
+  "title": "Invoice",
+  "subtitle": "Astryx's table-page template, on the shared core",
+  "toolbar": [],
+  "body": {
+   "kind": "template",
+   "template": "invoice",
+   "view": {
+    "words": {
+     "downloadPdf": "Download PDF",
+     "searchPlaceholder": "Search…",
+     "searchLabel": "Search line items",
+     "clearSearch": "Clear search",
+     "basisLabel": "Filter by billing basis",
+     "sort": "Sort",
+     "sortNone": "None",
+     "filter": "Filter",
+     "filterActive": "active",
+     "filterColumn": "Filter",
+     "removeFilter": "Remove filter",
+     "clearFilter": "Clear filter",
+     "clearFilters": "Clear filters",
+     "clearAllFilters": "Clear all filters",
+     "done": "Done",
+     "dispute": "Dispute this line",
+     "rowHint": "Shows the line's details",
+     "sortHint": "Sorts the lines by",
+     "ascending": "ascending",
+     "descending": "descending",
+     "sortedBy": "Sorted by",
+     "sortCleared": "Sort cleared",
+     "containsPrompt": "contains…",
+     "quantityPrompt": "Quantity is…",
+     "detail": {
+      "category": "Category",
+      "billing": "Billing",
+      "calculation": "Calculation",
+      "amount": "Amount",
+      "share": "Share of invoice"
+     },
+     "tableLabel": "Invoice lines"
+    },
+    "columns": [
+     {
+      "key": "description",
+      "title": "Description",
+      "filter": "description"
+     },
+     {
+      "key": "category",
+      "title": "Category",
+      "filter": "category"
+     },
+     {
+      "key": "quantity",
+      "title": "Qty",
+      "filter": "quantity"
+     },
+     {
+      "key": "unitPrice",
+      "title": "Rate",
+      "filter": null
+     },
+     {
+      "key": "amount",
+      "title": "Amount",
+      "filter": null
+     }
+    ],
+    "inert": [
+     "downloadPdf",
+     "dispute"
+    ],
+    "title": "Invoice INV-2043",
+    "details": [
+     {
+      "label": "Billed to",
+      "value": "Brightwater Coffee Co."
+     },
+     {
+      "label": "Project",
+      "value": "Website redesign"
+     },
+     {
+      "label": "Issue date",
+      "value": "Mar 31, 2026"
+     },
+     {
+      "label": "Due date",
+      "value": "Apr 30, 2026"
+     },
+     {
+      "label": "Payment terms",
+      "value": "Net 30"
+     },
+     {
+      "label": "Purchase order",
+      "value": "PO-4471"
+     }
+    ],
+    "basisFilters": [
+     {
+      "value": "all",
+      "label": "All lines"
+     },
+     {
+      "value": "hourly",
+      "label": "Hourly"
+     }
+    ],
+    "basis": "all",
+    "query": "",
+    "filters": {},
+    "categories": [
+     {
+      "value": "design",
+      "label": "Design"
+     },
+     {
+      "value": "development",
+      "label": "Development"
+     },
+     {
+      "value": "content",
+      "label": "Content"
+     },
+     {
+      "value": "project",
+      "label": "Project management"
+     }
+    ],
+    "sort": [],
+    "rows": [
+     {
+      "id": "li-01",
+      "description": "Discovery workshop",
+      "category": "Design",
+      "quantity": "1",
+      "rate": "$2,400.00",
+      "amount": "$2,400.00",
+      "card": {
+       "category": "Design",
+       "billing": "Fixed fee",
+       "calculation": "1 × $2,400.00",
+       "amount": "$2,400.00",
+       "share": "2.4%"
+      }
+     },
+     {
+      "id": "li-02",
+      "description": "Stakeholder interviews",
+      "category": "Design",
+      "quantity": "12",
+      "rate": "$145.00",
+      "amount": "$1,740.00",
+      "card": {
+       "category": "Design",
+       "billing": "Hourly",
+       "calculation": "12 × $145.00",
+       "amount": "$1,740.00",
+       "share": "1.7%"
+      }
+     },
+     {
+      "id": "li-03",
+      "description": "User research synthesis",
+      "category": "Design",
+      "quantity": "18",
+      "rate": "$145.00",
+      "amount": "$2,610.00",
+      "card": {
+       "category": "Design",
+       "billing": "Hourly",
+       "calculation": "18 × $145.00",
+       "amount": "$2,610.00",
+       "share": "2.6%"
+      }
+     },
+     {
+      "id": "li-04",
+      "description": "Wireframes — key templates",
+      "category": "Design",
+      "quantity": "34",
+      "rate": "$145.00",
+      "amount": "$4,930.00",
+      "card": {
+       "category": "Design",
+       "billing": "Hourly",
+       "calculation": "34 × $145.00",
+       "amount": "$4,930.00",
+       "share": "4.9%"
+      }
+     },
+     {
+      "id": "li-05",
+      "description": "Visual design system",
+      "category": "Design",
+      "quantity": "1",
+      "rate": "$6,800.00",
+      "amount": "$6,800.00",
+      "card": {
+       "category": "Design",
+       "billing": "Fixed fee",
+       "calculation": "1 × $6,800.00",
+       "amount": "$6,800.00",
+       "share": "6.7%"
+      }
+     },
+     {
+      "id": "li-06",
+      "description": "Page designs — 14 templates",
+      "category": "Design",
+      "quantity": "62",
+      "rate": "$145.00",
+      "amount": "$8,990.00",
+      "card": {
+       "category": "Design",
+       "billing": "Hourly",
+       "calculation": "62 × $145.00",
+       "amount": "$8,990.00",
+       "share": "8.9%"
+      }
+     },
+     {
+      "id": "li-07",
+      "description": "Prototype & usability testing",
+      "category": "Design",
+      "quantity": "22",
+      "rate": "$145.00",
+      "amount": "$3,190.00",
+      "card": {
+       "category": "Design",
+       "billing": "Hourly",
+       "calculation": "22 × $145.00",
+       "amount": "$3,190.00",
+       "share": "3.1%"
+      }
+     },
+     {
+      "id": "li-08",
+      "description": "Frontend build — component library",
+      "category": "Development",
+      "quantity": "88",
+      "rate": "$165.00",
+      "amount": "$14,520.00",
+      "card": {
+       "category": "Development",
+       "billing": "Hourly",
+       "calculation": "88 × $165.00",
+       "amount": "$14,520.00",
+       "share": "14.3%"
+      }
+     },
+     {
+      "id": "li-09",
+      "description": "Frontend build — page templates",
+      "category": "Development",
+      "quantity": "104",
+      "rate": "$165.00",
+      "amount": "$17,160.00",
+      "card": {
+       "category": "Development",
+       "billing": "Hourly",
+       "calculation": "104 × $165.00",
+       "amount": "$17,160.00",
+       "share": "16.9%"
+      }
+     },
+     {
+      "id": "li-10",
+      "description": "CMS setup & content modelling",
+      "category": "Development",
+      "quantity": "40",
+      "rate": "$165.00",
+      "amount": "$6,600.00",
+      "card": {
+       "category": "Development",
+       "billing": "Hourly",
+       "calculation": "40 × $165.00",
+       "amount": "$6,600.00",
+       "share": "6.5%"
+      }
+     },
+     {
+      "id": "li-11",
+      "description": "Search & filtering integration",
+      "category": "Development",
+      "quantity": "26",
+      "rate": "$165.00",
+      "amount": "$4,290.00",
+      "card": {
+       "category": "Development",
+       "billing": "Hourly",
+       "calculation": "26 × $165.00",
+       "amount": "$4,290.00",
+       "share": "4.2%"
+      }
+     },
+     {
+      "id": "li-12",
+      "description": "Analytics & tag manager setup",
+      "category": "Development",
+      "quantity": "10",
+      "rate": "$165.00",
+      "amount": "$1,650.00",
+      "card": {
+       "category": "Development",
+       "billing": "Hourly",
+       "calculation": "10 × $165.00",
+       "amount": "$1,650.00",
+       "share": "1.6%"
+      }
+     },
+     {
+      "id": "li-13",
+      "description": "Accessibility audit & remediation",
+      "category": "Development",
+      "quantity": "1",
+      "rate": "$3,200.00",
+      "amount": "$3,200.00",
+      "card": {
+       "category": "Development",
+       "billing": "Fixed fee",
+       "calculation": "1 × $3,200.00",
+       "amount": "$3,200.00",
+       "share": "3.2%"
+      }
+     },
+     {
+      "id": "li-14",
+      "description": "Cross-browser QA",
+      "category": "Development",
+      "quantity": "24",
+      "rate": "$135.00",
+      "amount": "$3,240.00",
+      "card": {
+       "category": "Development",
+       "billing": "Hourly",
+       "calculation": "24 × $135.00",
+       "amount": "$3,240.00",
+       "share": "3.2%"
+      }
+     },
+     {
+      "id": "li-15",
+      "description": "Copywriting — 14 pages",
+      "category": "Content",
+      "quantity": "36",
+      "rate": "$125.00",
+      "amount": "$4,500.00",
+      "card": {
+       "category": "Content",
+       "billing": "Hourly",
+       "calculation": "36 × $125.00",
+       "amount": "$4,500.00",
+       "share": "4.4%"
+      }
+     },
+     {
+      "id": "li-16",
+      "description": "Content migration",
+      "category": "Content",
+      "quantity": "28",
+      "rate": "$95.00",
+      "amount": "$2,660.00",
+      "card": {
+       "category": "Content",
+       "billing": "Hourly",
+       "calculation": "28 × $95.00",
+       "amount": "$2,660.00",
+       "share": "2.6%"
+      }
+     },
+     {
+      "id": "li-17",
+      "description": "Stock photography licences",
+      "category": "Content",
+      "quantity": "24",
+      "rate": "$18.00",
+      "amount": "$432.00",
+      "card": {
+       "category": "Content",
+       "billing": "Fixed fee",
+       "calculation": "24 × $18.00",
+       "amount": "$432.00",
+       "share": "0.4%"
+      }
+     },
+     {
+      "id": "li-18",
+      "description": "Project management — 12 weeks",
+      "category": "Project management",
+      "quantity": "12",
+      "rate": "$850.00",
+      "amount": "$10,200.00",
+      "card": {
+       "category": "Project management",
+       "billing": "Fixed fee",
+       "calculation": "12 × $850.00",
+       "amount": "$10,200.00",
+       "share": "10.0%"
+      }
+     },
+     {
+      "id": "li-19",
+      "description": "Training & handover session",
+      "category": "Project management",
+      "quantity": "2",
+      "rate": "$1,200.00",
+      "amount": "$2,400.00",
+      "card": {
+       "category": "Project management",
+       "billing": "Fixed fee",
+       "calculation": "2 × $1,200.00",
+       "amount": "$2,400.00",
+       "share": "2.4%"
+      }
+     }
+    ],
+    "empty": null,
+    "totals": [
+     {
+      "label": "Subtotal",
+      "value": "$101,512.00",
+      "emphasis": null
+     },
+     {
+      "label": "Tax (8.75%)",
+      "value": "$8,882.30",
+      "emphasis": "muted"
+     },
+     {
+      "label": "Total due",
+      "value": "$110,394.30",
+      "emphasis": "strong"
+     }
+    ],
+    "banner": null
+   }
+  }
+ },
+ "toast": null,
+ "dialog": null,
+ "theme": {
+  "id": "astryx",
+  "label": "Theme",
+  "setId": "settings.theme",
+  "options": [
+   {
+    "value": "astryx",
+    "label": "Astryx"
+   },
+   {
+    "value": "ocean",
+    "label": "Ocean"
+   },
+   {
+    "value": "ember",
+    "label": "Ember"
+   },
+   {
+    "value": "grape",
+    "label": "Grape"
+   }
+  ]
+ },
+ "scenarios": {
+  "label": "Scenarios",
+  "list": [
+   {
+    "id": "showcase",
+    "title": "Store: pay, ask the chat, manage inventory",
+    "template": "Theme showcase",
+    "steps": "14 steps"
+   },
+   {
+    "id": "dashboard",
+    "title": "Dashboard: chart, views and tables",
+    "template": "Dashboard",
+    "steps": "10 steps"
+   },
+   {
+    "id": "inbox",
+    "title": "Inbox: triage and reply",
+    "template": "Inbox",
+    "steps": "27 steps"
+   },
+   {
+    "id": "kanban",
+    "title": "Board: sprints and moving cards",
+    "template": "Kanban board",
+    "steps": "10 steps"
+   },
+   {
+    "id": "invoice",
+    "title": "Invoice: search, sort and filter lines",
+    "template": "Invoice",
+    "steps": "17 steps"
+   },
+   {
+    "id": "calendar",
+    "title": "Calendar: pick days and page months",
+    "template": "Calendar",
+    "steps": "9 steps"
+   },
+   {
+    "id": "chat",
+    "title": "Chat: ask, edit and open the document",
+    "template": "AI chat",
+    "steps": "13 steps"
+   },
+   {
+    "id": "checkout",
+    "title": "Checkout: from cart to paying",
+    "template": "Checkout",
+    "steps": "16 steps"
+   },
+   {
+    "id": "order",
+    "title": "Order: tabs, menus and panels",
+    "template": "Order detail",
+    "steps": "14 steps"
+   },
+   {
+    "id": "settings",
+    "title": "Settings: edit a profile and search",
+    "template": "Settings",
+    "steps": "12 steps"
+   }
+  ],
+  "drivers": [
+   {
+    "value": "native",
+    "label": "Drive from native",
+    "description": "Each step taps the SwiftUI side; the web drawings follow"
+   },
+   {
+    "value": "web",
+    "label": "Drive from web",
+    "description": "Each step clicks the web page on Hermes; the native side follows"
+   }
+  ],
+  "controls": {
+   "pauseId": "scenario.pause",
+   "resumeId": "scenario.resume",
+   "stopId": "scenario.stop",
+   "pauseLabel": "Pause",
+   "resumeLabel": "Resume",
+   "stopLabel": "Stop"
+  },
+  "playing": null
+ },
+ "surface": {
+  "id": "app.surface",
+  "label": "Show",
+  "value": "native",
+  "options": [
+   {
+    "value": "native",
+    "label": "Native",
+    "description": "SwiftUI, on the shared core in Hermes"
+   },
+   {
+    "value": "web",
+    "label": "Web on Hermes",
+    "description": "The refactored web page, on the same shared core"
+   },
+   {
+    "value": "webOwn",
+    "label": "Web, own core",
+    "description": "The refactored web page, on a core of its own in the page: no Hermes"
+   },
+   {
+    "value": "stock",
+    "label": "Stock Astryx",
+    "description": "Astryx as it is today: its own template and its own state"
+   },
+   {
+    "value": "compare",
+    "label": "Native and web",
+    "description": "Native and web on Hermes, side by side"
+   },
+   {
+    "value": "all",
+    "label": "All four",
+    "description": "All four drawings at once"
+   }
+  ],
+  "groups": [
+   {
+    "label": "Drawing",
+    "values": [
+     "native",
+     "web",
+     "webOwn",
+     "stock"
+    ]
+   },
+   {
+    "label": "Side by side",
+    "values": [
+     "compare",
+     "all"
+    ]
+   }
+  ],
+  "unavailable": "Needs a wider window",
+  "stockTemplate": "table-page",
+  "stockLabel": "Astryx as it is today: its own template and its own state"
+ }
+}

@@ -1,0 +1,184 @@
+/* Only what Astryx has no component for. Everything reads Astryx's tokens. */
+
+/* Not in bare mode (?bare=1): there a template must sit on exactly what the stock page has,
+   which is Astryx's reset and CSS and nothing of ours (scripts/parity.mjs). */
+:root:not([data-bare]) { color-scheme: light dark; }
+
+:root:not([data-bare]) body {
+  margin: 0;
+  background: var(--color-background-body);
+  color: var(--color-text-primary);
+  font-family: var(--font-family-body);
+}
+
+/* ---- page ---- */
+.an-page {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-6);
+  width: 100%;
+  min-height: calc(100dvh - 48px);
+  max-width: 1200px;
+  margin-inline: auto;
+  padding: var(--spacing-6);
+}
+.an-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--spacing-3);
+}
+@media (max-width: 640px) {
+  .an-page { padding: var(--spacing-4); gap: var(--spacing-5); }
+}
+
+/* ---- text ---- */
+.an-text { display: block; white-space: pre-line; overflow-wrap: anywhere; }
+.an-text:empty, .an-text > :empty { display: none; }
+.an-dot { display: inline-flex; align-items: center; gap: var(--spacing-1-5); }
+.an-delta { display: inline-flex; align-items: center; gap: var(--spacing-0-5); }
+
+/* ---- avatars: Astryx's Avatar, painted with the hue the core chose ---- */
+.an-avatar .astryx-avatar-fallback {
+  background: hsl(var(--an-hue) 52% 40%);
+  color: #fff;
+}
+
+/* ---- split ---- */
+.an-split { min-width: 0; }
+.an-split[data-wide] {
+  display: grid;
+  grid-template-columns: minmax(280px, 380px) minmax(0, 1fr);
+  gap: var(--spacing-5);
+  align-items: start;
+}
+.an-split-primary, .an-split-detail { min-width: 0; display: flex; flex-direction: column; gap: var(--spacing-3); }
+
+/* ---- table: scrolls sideways when the screen is narrower than the columns ---- */
+/* Astryx Table pulls itself 20px out of its container on every side; this box keeps that room
+   so scrolling sideways does not clip it from above and below. */
+.an-table { min-width: 0; overflow-x: auto; padding: var(--spacing-5); margin: calc(-1 * var(--spacing-5)); }
+.an-table-empty, .an-list-empty { padding: var(--spacing-5) var(--spacing-3); text-align: center; }
+
+.an-leading {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--size-element-md);
+  height: var(--size-element-md);
+  border-radius: var(--radius-full);
+  flex: none;
+}
+
+/* ---- metric and bars ---- */
+.an-spark { width: 100%; height: 32px; margin-top: var(--spacing-2); display: block; }
+.an-spark-line { fill: none; stroke: var(--color-accent); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.an-spark-area { fill: var(--color-accent); opacity: 0.12; }
+
+.an-bars { margin: 0; display: flex; flex-direction: column; gap: var(--spacing-2); }
+.an-bars-plot { display: flex; align-items: stretch; gap: var(--spacing-1); height: 180px; }
+.an-bar { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: var(--spacing-1); }
+.an-bar-fill { display: block; width: 100%; border-radius: var(--radius-inner) var(--radius-inner) 0 0; min-height: 2px; }
+.an-bar-value, .an-bar-label { font-size: var(--font-size-3xs); color: var(--color-text-secondary); line-height: 1.2; height: 1.2em; white-space: nowrap; }
+.an-bar[data-highlight] .an-bar-value { color: var(--color-text-primary); font-weight: var(--font-weight-semibold); }
+
+/* The bars chart needs the plot to be a fixed height box with fills measured against it. */
+.an-bar { position: relative; }
+.an-bar-fill { flex: none; }
+.an-bar { height: 100%; }
+.an-bar > .an-bar-fill { max-height: calc(100% - 2.6em); }
+
+/* ---- calendar ---- */
+.an-cal { display: flex; flex-direction: column; gap: var(--spacing-1); }
+.an-cal-row { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: var(--spacing-1); }
+.an-cal-head span { text-align: center; font-size: var(--font-size-xs); color: var(--color-text-secondary); padding-block: var(--spacing-1); }
+.an-day {
+  all: unset;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 48px;
+  border-radius: var(--radius-element);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+}
+.an-day:hover { background: var(--color-background-muted); }
+.an-day:focus-visible { outline: var(--focus-outline-width) var(--focus-outline-style) var(--focus-outline-color); outline-offset: 1px; }
+.an-day[data-out] { color: var(--color-text-disabled); }
+.an-day[data-today] .an-day-num { font-weight: var(--font-weight-bold); color: var(--color-text-accent); }
+.an-day[data-selected] { background: var(--color-accent); color: var(--color-on-accent); }
+.an-day[data-selected] .an-day-num { color: var(--color-on-accent); }
+.an-day-dots { display: flex; gap: 3px; height: 6px; }
+.an-day-dots i { width: 5px; height: 5px; border-radius: 50%; display: block; }
+.an-day[data-selected] .an-day-dots i { background: var(--color-on-accent) !important; }
+
+/* ---- chat: needs a box with a height ---- */
+.an-chat {
+  height: clamp(420px, 68vh, 720px);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-container);
+  overflow: hidden;
+  background: var(--color-background-surface);
+  display: flex;
+  flex-direction: column;
+}
+.an-chat > * { flex: 1 1 auto; min-height: 0; }
+
+/* ---- board ---- */
+.an-board {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(240px, 1fr));
+  gap: var(--spacing-4);
+  align-items: start;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  padding-bottom: var(--spacing-2);
+}
+.an-column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+  padding: var(--spacing-3);
+  border-radius: var(--radius-container);
+  background: var(--color-background-muted);
+  scroll-snap-align: start;
+  min-width: 0;
+}
+@media (max-width: 640px) {
+  .an-board { grid-template-columns: repeat(3, minmax(280px, 82%)); }
+}
+
+/* ---- toast ---- */
+.an-toast {
+  position: fixed;
+  inset-inline: var(--spacing-4);
+  bottom: calc(var(--spacing-4) + env(safe-area-inset-bottom, 0px));
+  z-index: 2000;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+.an-toast > * { pointer-events: auto; }
+
+/* ---- theme swatches in the nav ---- */
+.an-swatch-group { display: flex; flex-direction: column; gap: var(--spacing-2); padding: var(--spacing-3); }
+.an-swatches { display: flex; gap: var(--spacing-2); padding: 2px; }
+.an-swatch {
+  all: unset;
+  box-sizing: border-box;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  cursor: pointer;
+  background: light-dark(var(--an-swatch-light), var(--an-swatch-dark));
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+}
+.an-swatch[data-on] { outline-color: var(--color-text-primary); }
+.an-swatch:focus-visible { outline-color: var(--focus-outline-color); }

@@ -1,0 +1,603 @@
+{
+ "protocol": 1,
+ "appName": "Astryx Swift",
+ "nav": [
+  {
+   "id": "t.showcase",
+   "label": "Theme showcase",
+   "icon": "sparkle",
+   "section": "Astryx templates",
+   "accessibilityLabel": "Theme showcase, Astryx templates"
+  },
+  {
+   "id": "t.dashboard",
+   "label": "Dashboard",
+   "icon": "chart",
+   "section": "Astryx templates",
+   "accessibilityLabel": "Dashboard, Astryx templates"
+  },
+  {
+   "id": "t.inbox",
+   "label": "Inbox",
+   "icon": "inbox",
+   "section": "Astryx templates",
+   "accessibilityLabel": "Inbox, Astryx templates"
+  },
+  {
+   "id": "t.kanban",
+   "label": "Kanban board",
+   "icon": "check",
+   "section": "Astryx templates",
+   "accessibilityLabel": "Kanban board, Astryx templates"
+  },
+  {
+   "id": "t.invoice",
+   "label": "Invoice",
+   "icon": "card",
+   "section": "Astryx templates",
+   "accessibilityLabel": "Invoice, Astryx templates"
+  },
+  {
+   "id": "t.calendar",
+   "label": "Calendar",
+   "icon": "calendar",
+   "section": "Astryx templates",
+   "accessibilityLabel": "Calendar, Astryx templates"
+  },
+  {
+   "id": "t.chat",
+   "label": "AI chat",
+   "icon": "chat",
+   "section": "Astryx templates",
+   "accessibilityLabel": "AI chat, Astryx templates"
+  },
+  {
+   "id": "t.checkout",
+   "label": "Checkout",
+   "icon": "cart",
+   "section": "Astryx templates",
+   "accessibilityLabel": "Checkout, Astryx templates"
+  },
+  {
+   "id": "t.order",
+   "label": "Order detail",
+   "icon": "truck",
+   "section": "Astryx templates",
+   "accessibilityLabel": "Order detail, Astryx templates"
+  },
+  {
+   "id": "t.settings",
+   "label": "Settings",
+   "icon": "gear",
+   "section": "Astryx templates",
+   "accessibilityLabel": "Settings, Astryx templates"
+  },
+  {
+   "id": "overview",
+   "label": "Components",
+   "icon": "grid",
+   "section": "More demos",
+   "accessibilityLabel": "Components, More demos"
+  },
+  {
+   "id": "dashboard",
+   "label": "Dashboard",
+   "icon": "chart",
+   "section": "More demos",
+   "accessibilityLabel": "Dashboard, More demos"
+  },
+  {
+   "id": "inbox",
+   "label": "Inbox",
+   "icon": "inbox",
+   "badge": "3",
+   "section": "More demos",
+   "accessibilityLabel": "Inbox, More demos"
+  },
+  {
+   "id": "tasks",
+   "label": "Tasks",
+   "icon": "check",
+   "badge": "7",
+   "section": "More demos",
+   "accessibilityLabel": "Tasks, More demos"
+  },
+  {
+   "id": "people",
+   "label": "People",
+   "icon": "people",
+   "section": "More demos",
+   "accessibilityLabel": "People, More demos"
+  },
+  {
+   "id": "calendar",
+   "label": "Calendar",
+   "icon": "calendar",
+   "section": "More demos",
+   "accessibilityLabel": "Calendar, More demos"
+  },
+  {
+   "id": "chat",
+   "label": "Messages",
+   "icon": "chat",
+   "section": "More demos",
+   "accessibilityLabel": "Messages, More demos"
+  },
+  {
+   "id": "checkout",
+   "label": "Checkout",
+   "icon": "cart",
+   "section": "More demos",
+   "accessibilityLabel": "Checkout, More demos"
+  },
+  {
+   "id": "profile",
+   "label": "Profile",
+   "icon": "person",
+   "section": "More demos",
+   "accessibilityLabel": "Profile, More demos"
+  },
+  {
+   "id": "settings",
+   "label": "Settings",
+   "icon": "gear",
+   "section": "More demos",
+   "accessibilityLabel": "Settings, More demos"
+  }
+ ],
+ "current": "inbox",
+ "screen": {
+  "id": "inbox",
+  "title": "Inbox",
+  "subtitle": "3 unread messages",
+  "toolbar": [
+   {
+    "kind": "button",
+    "id": "inbox.readAll",
+    "label": "Mark all read",
+    "variant": "secondary",
+    "icon": "check"
+   }
+  ],
+  "body": {
+   "kind": "split",
+   "primary": {
+    "kind": "stack",
+    "axis": "vertical",
+    "gap": "sm",
+    "children": [
+     {
+      "kind": "textInput",
+      "id": "inbox.query",
+      "label": "Search mail",
+      "value": "",
+      "placeholder": "Search by person or subject",
+      "icon": "search"
+     },
+     {
+      "kind": "tabs",
+      "id": "inbox.tab",
+      "value": "all",
+      "tabs": [
+       {
+        "value": "all",
+        "label": "All",
+        "count": "7"
+       },
+       {
+        "value": "unread",
+        "label": "Unread",
+        "count": "3"
+       },
+       {
+        "value": "starred",
+        "label": "Starred",
+        "count": "2"
+       }
+      ]
+     },
+     {
+      "kind": "list",
+      "empty": "No messages.",
+      "items": [
+       {
+        "id": "m1",
+        "title": "Priya Raman",
+        "subtitle": "Q4 roadmap review moved to Thursday",
+        "meta": "12m",
+        "leading": {
+         "avatar": {
+          "initials": "PR",
+          "hue": 114
+         }
+        },
+        "trailing": {
+         "text": "Planning",
+         "tone": "accent"
+        },
+        "emphasized": true,
+        "selected": true,
+        "selectId": "inbox.select:m1"
+       },
+       {
+        "id": "m2",
+        "title": "Theo Lindqvist",
+        "subtitle": "New icon set is ready for review",
+        "meta": "48m",
+        "leading": {
+         "avatar": {
+          "initials": "TL",
+          "hue": 280
+         }
+        },
+        "trailing": {
+         "text": "Design",
+         "tone": "info"
+        },
+        "emphasized": true,
+        "selected": false,
+        "selectId": "inbox.select:m2"
+       },
+       {
+        "id": "m3",
+        "title": "Kenji Watanabe",
+        "subtitle": "Invoice #4021 paid",
+        "meta": "3h",
+        "leading": {
+         "avatar": {
+          "initials": "KW",
+          "hue": 162
+         }
+        },
+        "trailing": {
+         "text": "Billing",
+         "tone": "success"
+        },
+        "emphasized": false,
+        "selected": false,
+        "selectId": "inbox.select:m3"
+       },
+       {
+        "id": "m4",
+        "title": "Jonah Becker",
+        "subtitle": "Crash on launch in 3.2 beta",
+        "meta": "4h",
+        "leading": {
+         "avatar": {
+          "initials": "JB",
+          "hue": 336
+         }
+        },
+        "trailing": {
+         "text": "Urgent",
+         "tone": "danger"
+        },
+        "emphasized": true,
+        "selected": false,
+        "selectId": "inbox.select:m4"
+       },
+       {
+        "id": "m5",
+        "title": "Sofia Marín",
+        "subtitle": "Draft: launch blog post",
+        "meta": "Yesterday",
+        "leading": {
+         "avatar": {
+          "initials": "SM",
+          "hue": 145
+         }
+        },
+        "emphasized": false,
+        "selected": false,
+        "selectId": "inbox.select:m5"
+       },
+       {
+        "id": "m6",
+        "title": "Grace Chen",
+        "subtitle": "Offsite: pick your sessions",
+        "meta": "Oct 11",
+        "leading": {
+         "avatar": {
+          "initials": "GC",
+          "hue": 206
+         }
+        },
+        "trailing": {
+         "text": "Team",
+         "tone": "warning"
+        },
+        "emphasized": false,
+        "selected": false,
+        "selectId": "inbox.select:m6"
+       },
+       {
+        "id": "m7",
+        "title": "Lukas Novak",
+        "subtitle": "Dashboard numbers look off",
+        "meta": "Oct 10",
+        "leading": {
+         "avatar": {
+          "initials": "LN",
+          "hue": 275
+         }
+        },
+        "emphasized": false,
+        "selected": false,
+        "selectId": "inbox.select:m7"
+       }
+      ]
+     }
+    ]
+   },
+   "detail": {
+    "kind": "card",
+    "children": [
+     {
+      "kind": "stack",
+      "axis": "horizontal",
+      "gap": "sm",
+      "align": "spread",
+      "children": [
+       {
+        "kind": "heading",
+        "text": "Q4 roadmap review moved to Thursday",
+        "level": 2
+       },
+       {
+        "kind": "badge",
+        "text": "Planning",
+        "tone": "accent"
+       }
+      ]
+     },
+     {
+      "kind": "stack",
+      "axis": "horizontal",
+      "gap": "sm",
+      "align": "center",
+      "children": [
+       {
+        "kind": "avatar",
+        "name": "Priya Raman",
+        "initials": "PR",
+        "hue": 114,
+        "size": "md"
+       },
+       {
+        "kind": "stack",
+        "axis": "vertical",
+        "gap": "xs",
+        "children": [
+         {
+          "kind": "text",
+          "text": "Priya Raman",
+          "style": "emphasis"
+         },
+         {
+          "kind": "text",
+          "text": "priya@northwind.example · 12m",
+          "style": "caption"
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "kind": "divider"
+     },
+     {
+      "kind": "text",
+      "text": "Quick heads up: the review is now Thursday at 2 PM so that Kenji can join.",
+      "style": "body"
+     },
+     {
+      "kind": "text",
+      "text": "Please bring one slide on what shipped this quarter and one on what slipped. Keep it short, we have eight teams to get through.",
+      "style": "body"
+     },
+     {
+      "kind": "stack",
+      "axis": "horizontal",
+      "gap": "sm",
+      "align": "center",
+      "children": [
+       {
+        "kind": "button",
+        "id": "inbox.star:m1",
+        "label": "Starred",
+        "variant": "primary",
+        "icon": "star-fill"
+       },
+       {
+        "kind": "button",
+        "id": "inbox.archive:m1",
+        "label": "Archive",
+        "variant": "secondary",
+        "icon": "archive"
+       },
+       {
+        "kind": "button",
+        "id": "inbox.unread:m1",
+        "label": "Mark unread",
+        "variant": "ghost",
+        "icon": "mail"
+       }
+      ]
+     }
+    ]
+   },
+   "showDetailWhenNarrow": true,
+   "backId": "inbox.back",
+   "backLabel": "Inbox"
+  }
+ },
+ "toast": null,
+ "dialog": null,
+ "theme": {
+  "id": "astryx",
+  "label": "Theme",
+  "setId": "settings.theme",
+  "options": [
+   {
+    "value": "astryx",
+    "label": "Astryx"
+   },
+   {
+    "value": "ocean",
+    "label": "Ocean"
+   },
+   {
+    "value": "ember",
+    "label": "Ember"
+   },
+   {
+    "value": "grape",
+    "label": "Grape"
+   }
+  ]
+ },
+ "scenarios": {
+  "label": "Scenarios",
+  "list": [
+   {
+    "id": "showcase",
+    "title": "Store: pay, ask the chat, manage inventory",
+    "template": "Theme showcase",
+    "steps": "14 steps"
+   },
+   {
+    "id": "dashboard",
+    "title": "Dashboard: chart, views and tables",
+    "template": "Dashboard",
+    "steps": "10 steps"
+   },
+   {
+    "id": "inbox",
+    "title": "Inbox: triage and reply",
+    "template": "Inbox",
+    "steps": "27 steps"
+   },
+   {
+    "id": "kanban",
+    "title": "Board: sprints and moving cards",
+    "template": "Kanban board",
+    "steps": "10 steps"
+   },
+   {
+    "id": "invoice",
+    "title": "Invoice: search, sort and filter lines",
+    "template": "Invoice",
+    "steps": "17 steps"
+   },
+   {
+    "id": "calendar",
+    "title": "Calendar: pick days and page months",
+    "template": "Calendar",
+    "steps": "9 steps"
+   },
+   {
+    "id": "chat",
+    "title": "Chat: ask, edit and open the document",
+    "template": "AI chat",
+    "steps": "13 steps"
+   },
+   {
+    "id": "checkout",
+    "title": "Checkout: from cart to paying",
+    "template": "Checkout",
+    "steps": "16 steps"
+   },
+   {
+    "id": "order",
+    "title": "Order: tabs, menus and panels",
+    "template": "Order detail",
+    "steps": "14 steps"
+   },
+   {
+    "id": "settings",
+    "title": "Settings: edit a profile and search",
+    "template": "Settings",
+    "steps": "12 steps"
+   }
+  ],
+  "drivers": [
+   {
+    "value": "native",
+    "label": "Drive from native",
+    "description": "Each step taps the SwiftUI side; the web drawings follow"
+   },
+   {
+    "value": "web",
+    "label": "Drive from web",
+    "description": "Each step clicks the web page on Hermes; the native side follows"
+   }
+  ],
+  "controls": {
+   "pauseId": "scenario.pause",
+   "resumeId": "scenario.resume",
+   "stopId": "scenario.stop",
+   "pauseLabel": "Pause",
+   "resumeLabel": "Resume",
+   "stopLabel": "Stop"
+  },
+  "playing": null
+ },
+ "surface": {
+  "id": "app.surface",
+  "label": "Show",
+  "value": "native",
+  "options": [
+   {
+    "value": "native",
+    "label": "Native",
+    "description": "SwiftUI, on the shared core in Hermes"
+   },
+   {
+    "value": "web",
+    "label": "Web on Hermes",
+    "description": "The refactored web page, on the same shared core"
+   },
+   {
+    "value": "webOwn",
+    "label": "Web, own core",
+    "description": "The refactored web page, on a core of its own in the page: no Hermes"
+   },
+   {
+    "value": "stock",
+    "label": "Stock Astryx",
+    "description": "Astryx as it is today: its own template and its own state"
+   },
+   {
+    "value": "compare",
+    "label": "Native and web",
+    "description": "Native and web on Hermes, side by side"
+   },
+   {
+    "value": "all",
+    "label": "All four",
+    "description": "All four drawings at once"
+   }
+  ],
+  "groups": [
+   {
+    "label": "Drawing",
+    "values": [
+     "native",
+     "web",
+     "webOwn",
+     "stock"
+    ]
+   },
+   {
+    "label": "Side by side",
+    "values": [
+     "compare",
+     "all"
+    ]
+   }
+  ],
+  "unavailable": "Needs a wider window",
+  "stockTemplate": "inbox",
+  "stockLabel": "Astryx as it is today: its own template and its own state"
+ }
+}

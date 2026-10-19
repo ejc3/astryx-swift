@@ -1,0 +1,571 @@
+{
+ "protocol": 1,
+ "appName": "Astryx Swift",
+ "nav": [
+  {
+   "id": "t.showcase",
+   "label": "Theme showcase",
+   "icon": "sparkle",
+   "section": "Astryx templates",
+   "accessibilityLabel": "Theme showcase, Astryx templates"
+  },
+  {
+   "id": "t.dashboard",
+   "label": "Dashboard",
+   "icon": "chart",
+   "section": "Astryx templates",
+   "accessibilityLabel": "Dashboard, Astryx templates"
+  },
+  {
+   "id": "t.inbox",
+   "label": "Inbox",
+   "icon": "inbox",
+   "section": "Astryx templates",
+   "accessibilityLabel": "Inbox, Astryx templates"
+  },
+  {
+   "id": "t.kanban",
+   "label": "Kanban board",
+   "icon": "check",
+   "section": "Astryx templates",
+   "accessibilityLabel": "Kanban board, Astryx templates"
+  },
+  {
+   "id": "t.invoice",
+   "label": "Invoice",
+   "icon": "card",
+   "section": "Astryx templates",
+   "accessibilityLabel": "Invoice, Astryx templates"
+  },
+  {
+   "id": "t.calendar",
+   "label": "Calendar",
+   "icon": "calendar",
+   "section": "Astryx templates",
+   "accessibilityLabel": "Calendar, Astryx templates"
+  },
+  {
+   "id": "t.chat",
+   "label": "AI chat",
+   "icon": "chat",
+   "section": "Astryx templates",
+   "accessibilityLabel": "AI chat, Astryx templates"
+  },
+  {
+   "id": "t.checkout",
+   "label": "Checkout",
+   "icon": "cart",
+   "section": "Astryx templates",
+   "accessibilityLabel": "Checkout, Astryx templates"
+  },
+  {
+   "id": "t.order",
+   "label": "Order detail",
+   "icon": "truck",
+   "section": "Astryx templates",
+   "accessibilityLabel": "Order detail, Astryx templates"
+  },
+  {
+   "id": "t.settings",
+   "label": "Settings",
+   "icon": "gear",
+   "section": "Astryx templates",
+   "accessibilityLabel": "Settings, Astryx templates"
+  },
+  {
+   "id": "overview",
+   "label": "Components",
+   "icon": "grid",
+   "section": "More demos",
+   "accessibilityLabel": "Components, More demos"
+  },
+  {
+   "id": "dashboard",
+   "label": "Dashboard",
+   "icon": "chart",
+   "section": "More demos",
+   "accessibilityLabel": "Dashboard, More demos"
+  },
+  {
+   "id": "inbox",
+   "label": "Inbox",
+   "icon": "inbox",
+   "badge": "3",
+   "section": "More demos",
+   "accessibilityLabel": "Inbox, More demos"
+  },
+  {
+   "id": "tasks",
+   "label": "Tasks",
+   "icon": "check",
+   "badge": "7",
+   "section": "More demos",
+   "accessibilityLabel": "Tasks, More demos"
+  },
+  {
+   "id": "people",
+   "label": "People",
+   "icon": "people",
+   "section": "More demos",
+   "accessibilityLabel": "People, More demos"
+  },
+  {
+   "id": "calendar",
+   "label": "Calendar",
+   "icon": "calendar",
+   "section": "More demos",
+   "accessibilityLabel": "Calendar, More demos"
+  },
+  {
+   "id": "chat",
+   "label": "Messages",
+   "icon": "chat",
+   "section": "More demos",
+   "accessibilityLabel": "Messages, More demos"
+  },
+  {
+   "id": "checkout",
+   "label": "Checkout",
+   "icon": "cart",
+   "section": "More demos",
+   "accessibilityLabel": "Checkout, More demos"
+  },
+  {
+   "id": "profile",
+   "label": "Profile",
+   "icon": "person",
+   "section": "More demos",
+   "accessibilityLabel": "Profile, More demos"
+  },
+  {
+   "id": "settings",
+   "label": "Settings",
+   "icon": "gear",
+   "section": "More demos",
+   "accessibilityLabel": "Settings, More demos"
+  }
+ ],
+ "current": "t.checkout",
+ "screen": {
+  "id": "t.checkout",
+  "title": "Checkout",
+  "subtitle": "Astryx's checkout-wizard template, on the shared core",
+  "toolbar": [],
+  "body": {
+   "kind": "template",
+   "template": "checkout",
+   "view": {
+    "step": 0,
+    "isLastStep": false,
+    "isComplete": false,
+    "focusTicket": 0,
+    "steps": [
+     {
+      "label": "Cart",
+      "icon": "cart",
+      "hasError": false,
+      "spoken": "Cart, step 1 of 4",
+      "state": "Current step"
+     },
+     {
+      "label": "Shipping",
+      "icon": "pin",
+      "hasError": false,
+      "spoken": "Shipping, step 2 of 4",
+      "state": ""
+     },
+     {
+      "label": "Delivery",
+      "icon": "truck",
+      "hasError": false,
+      "spoken": "Delivery, step 3 of 4",
+      "state": ""
+     },
+     {
+      "label": "Payment",
+      "icon": "card",
+      "hasError": false,
+      "spoken": "Payment, step 4 of 4",
+      "state": ""
+     }
+    ],
+    "errors": {},
+    "fieldOrder": [],
+    "items": [
+     {
+      "id": "mug",
+      "name": "Speckled Stoneware Mug",
+      "variant": "Hand-thrown · 12 oz",
+      "src": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20400%20300%22%20preserveAspectRatio%3D%22xMidYMid%20slice%22%3E%3Crect%20width%3D%22400%22%20height%3D%22300%22%20fill%3D%22%23f5f6f8%22%2F%3E%3Cg%20transform%3D%22translate%28200%20150%29%22%20fill%3D%22none%22%20stroke%3D%22%23c2cad6%22%20stroke-width%3D%225%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Crect%20x%3D%22-44%22%20y%3D%22-44%22%20width%3D%2288%22%20height%3D%2288%22%20rx%3D%2216%22%2F%3E%3Ccircle%20cx%3D%2218%22%20cy%3D%22-18%22%20r%3D%222.5%22%20fill%3D%22%23c2cad6%22%20stroke%3D%22none%22%2F%3E%3Cpath%20d%3D%22M-34%2030%20L-8%200%20L10%2018%20L20%208%20L34%2024%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E",
+      "qty": 2,
+      "isLimited": false,
+      "priceEach": "$78.00",
+      "lineTotal": "$156.00",
+      "removeLabel": "Remove Speckled Stoneware Mug",
+      "quantityLabel": "Quantity of Speckled Stoneware Mug"
+     },
+     {
+      "id": "plate",
+      "name": "Stoneware Dinner Plate",
+      "variant": "Reactive glaze · 10 in",
+      "src": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20400%20300%22%20preserveAspectRatio%3D%22xMidYMid%20slice%22%3E%3Crect%20width%3D%22400%22%20height%3D%22300%22%20fill%3D%22%23f5f6f8%22%2F%3E%3Cg%20transform%3D%22translate%28200%20150%29%22%20fill%3D%22none%22%20stroke%3D%22%23c2cad6%22%20stroke-width%3D%225%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Crect%20x%3D%22-44%22%20y%3D%22-44%22%20width%3D%2288%22%20height%3D%2288%22%20rx%3D%2216%22%2F%3E%3Ccircle%20cx%3D%2218%22%20cy%3D%22-18%22%20r%3D%222.5%22%20fill%3D%22%23c2cad6%22%20stroke%3D%22none%22%2F%3E%3Cpath%20d%3D%22M-34%2030%20L-8%200%20L10%2018%20L20%208%20L34%2024%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E",
+      "qty": 1,
+      "isLimited": false,
+      "priceEach": "$72.00",
+      "lineTotal": "$72.00",
+      "removeLabel": "Remove Stoneware Dinner Plate",
+      "quantityLabel": "Quantity of Stoneware Dinner Plate"
+     },
+     {
+      "id": "bowl",
+      "name": "Cereal Bowl",
+      "variant": "Speckled clay · 6 in",
+      "src": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20400%20300%22%20preserveAspectRatio%3D%22xMidYMid%20slice%22%3E%3Crect%20width%3D%22400%22%20height%3D%22300%22%20fill%3D%22%23f5f6f8%22%2F%3E%3Cg%20transform%3D%22translate%28200%20150%29%22%20fill%3D%22none%22%20stroke%3D%22%23c2cad6%22%20stroke-width%3D%225%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Crect%20x%3D%22-44%22%20y%3D%22-44%22%20width%3D%2288%22%20height%3D%2288%22%20rx%3D%2216%22%2F%3E%3Ccircle%20cx%3D%2218%22%20cy%3D%22-18%22%20r%3D%222.5%22%20fill%3D%22%23c2cad6%22%20stroke%3D%22none%22%2F%3E%3Cpath%20d%3D%22M-34%2030%20L-8%200%20L10%2018%20L20%208%20L34%2024%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E",
+      "qty": 1,
+      "isLimited": true,
+      "priceEach": "$80.00",
+      "lineTotal": "$80.00",
+      "removeLabel": "Remove Cereal Bowl",
+      "quantityLabel": "Quantity of Cereal Bowl"
+     }
+    ],
+    "summary": {
+     "itemCount": "4 items",
+     "trigger": "Order summary · $332.64",
+     "subtotal": "$308.00",
+     "promoLabel": null,
+     "discount": "−$0.00",
+     "deliveryLabel": "Standard",
+     "shipping": "Free",
+     "tax": "$24.64",
+     "total": "$332.64",
+     "freeShippingTitle": null
+    },
+    "actions": {
+     "blocked": null,
+     "backLabel": "Continue shopping",
+     "nextLabel": "Continue"
+    },
+    "promo": {
+     "value": "",
+     "status": null
+    },
+    "shipping": {
+     "email": "",
+     "firstName": "",
+     "lastName": "",
+     "country": "us",
+     "address": "",
+     "apartment": "",
+     "city": "",
+     "state": "",
+     "postalCode": "",
+     "countries": [
+      {
+       "value": "us",
+       "label": "United States"
+      },
+      {
+       "value": "ca",
+       "label": "Canada"
+      },
+      {
+       "value": "uk",
+       "label": "United Kingdom"
+      }
+     ],
+     "states": [
+      "California",
+      "Illinois",
+      "Massachusetts",
+      "New York",
+      "Oregon",
+      "Texas",
+      "Washington"
+     ],
+     "hasState": true,
+     "postalLabel": "ZIP code",
+     "postalPlaceholder": "10001"
+    },
+    "delivery": {
+     "value": "standard",
+     "options": [
+      {
+       "value": "standard",
+       "label": "Standard",
+       "window": "3–7 business days",
+       "price": "Free"
+      },
+      {
+       "value": "expedited",
+       "label": "Expedited",
+       "window": "1–2 business days",
+       "price": "$9.95"
+      },
+      {
+       "value": "overnight",
+       "label": "Overnight",
+       "window": "Next business day by 5pm",
+       "price": "$24.95"
+      }
+     ],
+     "isGift": false,
+     "note": "",
+     "noteLabel": "Delivery instructions",
+     "notePlaceholder": "Leave with the neighbour at number 14.",
+     "noteDescription": "Passed to the carrier where they support it."
+    },
+    "payment": {
+     "cardNumber": "",
+     "cardName": "",
+     "expiry": "",
+     "cvc": "",
+     "billingMatches": true
+    },
+    "confirmation": "This local example completed an order for $332.64. No payment was sent.",
+    "words": {
+     "optional": "Optional",
+     "errorPrefix": "Error:",
+     "expanded": "Expanded",
+     "collapsed": "Collapsed",
+     "expandHint": "Expands this section",
+     "collapseHint": "Collapses this section",
+     "previous": "Previous",
+     "next": "Next",
+     "done": "Done",
+     "secureCheckout": "Secure checkout",
+     "progress": "Checkout progress",
+     "cart": {
+      "heading": "Review your cart",
+      "limited": "Limited",
+      "remove": "Remove",
+      "promoLabel": "Promo code",
+      "promoPlaceholder": "WELCOME10",
+      "apply": "Apply",
+      "quantity": "Quantity"
+     },
+     "shipping": {
+      "heading": "Where should it go?",
+      "detail": "Delivery options and tax are calculated from this address.",
+      "email": "Email",
+      "emailPlaceholder": "you@example.com",
+      "emailHint": "Order confirmation and tracking go here.",
+      "firstName": "First name",
+      "lastName": "Last name",
+      "country": "Country",
+      "address": "Street address",
+      "addressPlaceholder": "123 Main Street",
+      "apartment": "Apartment, suite, etc.",
+      "city": "City",
+      "state": "State",
+      "statePlaceholder": "Select state"
+     },
+     "delivery": {
+      "heading": "How fast do you need it?",
+      "detail": "Estimates run from the day the order ships, usually 1–3 business days after you place it.",
+      "method": "Delivery method",
+      "gift": "This is a gift"
+     },
+     "payment": {
+      "heading": "Payment",
+      "detail": "This template validates payment details and completes locally. No card is charged.",
+      "cardNumber": "Card number",
+      "cardNumberPlaceholder": "4242 4242 4242 4242",
+      "cardName": "Name on card",
+      "expiry": "Expiry",
+      "expiryPlaceholder": "MM/YY",
+      "cvc": "CVC",
+      "cvcPlaceholder": "123",
+      "cvcInfoLabel": "About CVC",
+      "cvcInfo": "Three digits on the back of the card, or four on the front for American Express.",
+      "billingMatches": "Billing address matches the shipping address",
+      "billingTitle": "Connect a billing-address step",
+      "billingDetail": "This local example does not collect a separate billing address or send payment. Add that flow with your payment provider."
+     },
+     "confirmed": {
+      "title": "Order confirmed",
+      "heading": "Thanks for your order",
+      "detail": "The order is recorded in the app's state, so the template ends in a real, reviewable outcome."
+     },
+     "summary": {
+      "title": "Order summary",
+      "subtotal": "Subtotal",
+      "deliverySuffix": "delivery",
+      "tax": "Estimated tax",
+      "total": "Total",
+      "qty": "Qty"
+     }
+    }
+   }
+  }
+ },
+ "toast": null,
+ "dialog": null,
+ "theme": {
+  "id": "astryx",
+  "label": "Theme",
+  "setId": "settings.theme",
+  "options": [
+   {
+    "value": "astryx",
+    "label": "Astryx"
+   },
+   {
+    "value": "ocean",
+    "label": "Ocean"
+   },
+   {
+    "value": "ember",
+    "label": "Ember"
+   },
+   {
+    "value": "grape",
+    "label": "Grape"
+   }
+  ]
+ },
+ "scenarios": {
+  "label": "Scenarios",
+  "list": [
+   {
+    "id": "showcase",
+    "title": "Store: pay, ask the chat, manage inventory",
+    "template": "Theme showcase",
+    "steps": "14 steps"
+   },
+   {
+    "id": "dashboard",
+    "title": "Dashboard: chart, views and tables",
+    "template": "Dashboard",
+    "steps": "10 steps"
+   },
+   {
+    "id": "inbox",
+    "title": "Inbox: triage and reply",
+    "template": "Inbox",
+    "steps": "27 steps"
+   },
+   {
+    "id": "kanban",
+    "title": "Board: sprints and moving cards",
+    "template": "Kanban board",
+    "steps": "10 steps"
+   },
+   {
+    "id": "invoice",
+    "title": "Invoice: search, sort and filter lines",
+    "template": "Invoice",
+    "steps": "17 steps"
+   },
+   {
+    "id": "calendar",
+    "title": "Calendar: pick days and page months",
+    "template": "Calendar",
+    "steps": "9 steps"
+   },
+   {
+    "id": "chat",
+    "title": "Chat: ask, edit and open the document",
+    "template": "AI chat",
+    "steps": "13 steps"
+   },
+   {
+    "id": "checkout",
+    "title": "Checkout: from cart to paying",
+    "template": "Checkout",
+    "steps": "16 steps"
+   },
+   {
+    "id": "order",
+    "title": "Order: tabs, menus and panels",
+    "template": "Order detail",
+    "steps": "14 steps"
+   },
+   {
+    "id": "settings",
+    "title": "Settings: edit a profile and search",
+    "template": "Settings",
+    "steps": "12 steps"
+   }
+  ],
+  "drivers": [
+   {
+    "value": "native",
+    "label": "Drive from native",
+    "description": "Each step taps the SwiftUI side; the web drawings follow"
+   },
+   {
+    "value": "web",
+    "label": "Drive from web",
+    "description": "Each step clicks the web page on Hermes; the native side follows"
+   }
+  ],
+  "controls": {
+   "pauseId": "scenario.pause",
+   "resumeId": "scenario.resume",
+   "stopId": "scenario.stop",
+   "pauseLabel": "Pause",
+   "resumeLabel": "Resume",
+   "stopLabel": "Stop"
+  },
+  "playing": null
+ },
+ "surface": {
+  "id": "app.surface",
+  "label": "Show",
+  "value": "native",
+  "options": [
+   {
+    "value": "native",
+    "label": "Native",
+    "description": "SwiftUI, on the shared core in Hermes"
+   },
+   {
+    "value": "web",
+    "label": "Web on Hermes",
+    "description": "The refactored web page, on the same shared core"
+   },
+   {
+    "value": "webOwn",
+    "label": "Web, own core",
+    "description": "The refactored web page, on a core of its own in the page: no Hermes"
+   },
+   {
+    "value": "stock",
+    "label": "Stock Astryx",
+    "description": "Astryx as it is today: its own template and its own state"
+   },
+   {
+    "value": "compare",
+    "label": "Native and web",
+    "description": "Native and web on Hermes, side by side"
+   },
+   {
+    "value": "all",
+    "label": "All four",
+    "description": "All four drawings at once"
+   }
+  ],
+  "groups": [
+   {
+    "label": "Drawing",
+    "values": [
+     "native",
+     "web",
+     "webOwn",
+     "stock"
+    ]
+   },
+   {
+    "label": "Side by side",
+    "values": [
+     "compare",
+     "all"
+    ]
+   }
+  ],
+  "unavailable": "Needs a wider window",
+  "stockTemplate": "checkout-wizard",
+  "stockLabel": "Astryx as it is today: its own template and its own state"
+ }
+}

@@ -1,0 +1,1866 @@
+{
+ "protocol": 1,
+ "appName": "Astryx Swift",
+ "nav": [
+  {
+   "id": "t.showcase",
+   "label": "Theme showcase",
+   "icon": "sparkle",
+   "section": "Astryx templates",
+   "accessibilityLabel": "Theme showcase, Astryx templates"
+  },
+  {
+   "id": "t.dashboard",
+   "label": "Dashboard",
+   "icon": "chart",
+   "section": "Astryx templates",
+   "accessibilityLabel": "Dashboard, Astryx templates"
+  },
+  {
+   "id": "t.inbox",
+   "label": "Inbox",
+   "icon": "inbox",
+   "section": "Astryx templates",
+   "accessibilityLabel": "Inbox, Astryx templates"
+  },
+  {
+   "id": "t.kanban",
+   "label": "Kanban board",
+   "icon": "check",
+   "section": "Astryx templates",
+   "accessibilityLabel": "Kanban board, Astryx templates"
+  },
+  {
+   "id": "t.invoice",
+   "label": "Invoice",
+   "icon": "card",
+   "section": "Astryx templates",
+   "accessibilityLabel": "Invoice, Astryx templates"
+  },
+  {
+   "id": "t.calendar",
+   "label": "Calendar",
+   "icon": "calendar",
+   "section": "Astryx templates",
+   "accessibilityLabel": "Calendar, Astryx templates"
+  },
+  {
+   "id": "t.chat",
+   "label": "AI chat",
+   "icon": "chat",
+   "section": "Astryx templates",
+   "accessibilityLabel": "AI chat, Astryx templates"
+  },
+  {
+   "id": "t.checkout",
+   "label": "Checkout",
+   "icon": "cart",
+   "section": "Astryx templates",
+   "accessibilityLabel": "Checkout, Astryx templates"
+  },
+  {
+   "id": "t.order",
+   "label": "Order detail",
+   "icon": "truck",
+   "section": "Astryx templates",
+   "accessibilityLabel": "Order detail, Astryx templates"
+  },
+  {
+   "id": "t.settings",
+   "label": "Settings",
+   "icon": "gear",
+   "section": "Astryx templates",
+   "accessibilityLabel": "Settings, Astryx templates"
+  },
+  {
+   "id": "overview",
+   "label": "Components",
+   "icon": "grid",
+   "section": "More demos",
+   "accessibilityLabel": "Components, More demos"
+  },
+  {
+   "id": "dashboard",
+   "label": "Dashboard",
+   "icon": "chart",
+   "section": "More demos",
+   "accessibilityLabel": "Dashboard, More demos"
+  },
+  {
+   "id": "inbox",
+   "label": "Inbox",
+   "icon": "inbox",
+   "badge": "3",
+   "section": "More demos",
+   "accessibilityLabel": "Inbox, More demos"
+  },
+  {
+   "id": "tasks",
+   "label": "Tasks",
+   "icon": "check",
+   "badge": "7",
+   "section": "More demos",
+   "accessibilityLabel": "Tasks, More demos"
+  },
+  {
+   "id": "people",
+   "label": "People",
+   "icon": "people",
+   "section": "More demos",
+   "accessibilityLabel": "People, More demos"
+  },
+  {
+   "id": "calendar",
+   "label": "Calendar",
+   "icon": "calendar",
+   "section": "More demos",
+   "accessibilityLabel": "Calendar, More demos"
+  },
+  {
+   "id": "chat",
+   "label": "Messages",
+   "icon": "chat",
+   "section": "More demos",
+   "accessibilityLabel": "Messages, More demos"
+  },
+  {
+   "id": "checkout",
+   "label": "Checkout",
+   "icon": "cart",
+   "section": "More demos",
+   "accessibilityLabel": "Checkout, More demos"
+  },
+  {
+   "id": "profile",
+   "label": "Profile",
+   "icon": "person",
+   "section": "More demos",
+   "accessibilityLabel": "Profile, More demos"
+  },
+  {
+   "id": "settings",
+   "label": "Settings",
+   "icon": "gear",
+   "section": "More demos",
+   "accessibilityLabel": "Settings, More demos"
+  }
+ ],
+ "current": "t.inbox",
+ "screen": {
+  "id": "t.inbox",
+  "title": "Inbox",
+  "subtitle": "Astryx's table-inbox template, on the shared core",
+  "toolbar": [],
+  "body": {
+   "kind": "template",
+   "template": "inbox",
+   "view": {
+    "text": {
+     "title": "Inbox",
+     "refresh": "Refresh",
+     "compose": "Compose",
+     "unselectAll": "Unselect All",
+     "bullet": "•",
+     "unreadStatus": "Unread",
+     "unreadSuffix": " unread",
+     "hasAttachments": "Has attachments",
+     "selected": "selected",
+     "notSelected": "not selected",
+     "empty": {
+      "title": "Nothing here",
+      "description": "No conversations in this category.",
+      "action": "Go to Inbox"
+     },
+     "columns": {
+      "conversation": "Conversation",
+      "from": "From",
+      "subject": "Subject",
+      "tags": "Tags",
+      "received": "Received"
+     },
+     "pane": {
+      "label": "Conversation",
+      "resizeLabel": "Resize conversation pane",
+      "resizeUnit": "points",
+      "back": "Inbox",
+      "close": "Close conversation",
+      "closeTooltip": "Close",
+      "reply": "Reply",
+      "replyAll": "Reply all",
+      "previous": "Previous",
+      "next": "Next",
+      "expanded": "expanded",
+      "collapsed": "collapsed",
+      "expandHint": "Expands the message",
+      "collapseHint": "Collapses the message"
+     },
+     "composer": {
+      "sheetLabel": "New message",
+      "toolbarLabel": "Message",
+      "heading": "New message",
+      "close": "Close composer",
+      "closeTooltip": "Close",
+      "recipient": "Recipient",
+      "cc": "Cc",
+      "bcc": "Bcc",
+      "subject": "Subject",
+      "body": "Message",
+      "bodyPlaceholder": "Write your message…",
+      "actionsLabel": "Message actions",
+      "send": "Send",
+      "discard": "Discard draft",
+      "cancel": "Cancel",
+      "discardTitle": "Discard this draft?",
+      "discardAction": "Discard Draft",
+      "saveDraft": "Save Draft",
+      "keepEditing": "Keep Editing",
+      "remove": "Remove",
+      "tools": [
+       {
+        "id": "attach",
+        "label": "Attach files"
+       },
+       {
+        "id": "link",
+        "label": "Insert link"
+       },
+       {
+        "id": "image",
+        "label": "Insert image"
+       },
+       {
+        "id": "emoji",
+        "label": "Insert emoji"
+       }
+      ]
+     }
+    },
+    "subtitle": [
+     "3",
+     " unread of ",
+     "9",
+     " ",
+     "conversations"
+    ],
+    "tab": "inbox",
+    "tabs": [
+     {
+      "value": "inbox",
+      "label": "Inbox",
+      "badge": 3
+     },
+     {
+      "value": "escalations",
+      "label": "Escalations",
+      "badge": 1
+     },
+     {
+      "value": "waiting",
+      "label": "Waiting",
+      "badge": null
+     },
+     {
+      "value": "resolved",
+      "label": "Resolved",
+      "badge": 1
+     }
+    ],
+    "rows": [
+     {
+      "id": "c-01",
+      "sender": "Priya Raman",
+      "subject": "Checkout returns 502 for EU customers",
+      "preview": "Started around 09:40 UTC. Roughly one in five card payments fails at the confirm step…",
+      "receivedAt": "9:52 AM",
+      "isUnread": true,
+      "hasAttachments": true,
+      "isOpen": true,
+      "status": "Unread",
+      "selectionLabel": "conversation from Priya Raman",
+      "priority": {
+       "label": "Urgent",
+       "color": "red"
+      },
+      "tags": [
+       "Billing",
+       "Escalated"
+      ],
+      "actions": [
+       {
+        "id": "archive",
+        "label": "Archive",
+        "ariaLabel": "Archive — Checkout returns 502 for EU customers"
+       },
+       {
+        "id": "move",
+        "label": "Move to folder",
+        "ariaLabel": "Move to folder — Checkout returns 502 for EU customers"
+       },
+       {
+        "id": "delete",
+        "label": "Delete",
+        "ariaLabel": "Delete — Checkout returns 502 for EU customers"
+       },
+       {
+        "id": "reply",
+        "label": "Reply",
+        "ariaLabel": "Reply — Checkout returns 502 for EU customers"
+       }
+      ],
+      "actionsWide": [
+       {
+        "id": "archive",
+        "label": "Archive",
+        "ariaLabel": "Archive — Checkout returns 502 for EU customers"
+       },
+       {
+        "id": "move",
+        "label": "Move to folder",
+        "ariaLabel": "Move to folder — Checkout returns 502 for EU customers"
+       },
+       {
+        "id": "delete",
+        "label": "Delete",
+        "ariaLabel": "Delete — Checkout returns 502 for EU customers"
+       },
+       {
+        "id": "reply",
+        "label": "Reply",
+        "ariaLabel": "Reply — Checkout returns 502 for EU customers"
+       }
+      ],
+      "actionsStacked": [
+       {
+        "id": "archive",
+        "label": "Archive",
+        "ariaLabel": "Archive — Checkout returns 502 for EU customers"
+       },
+       {
+        "id": "delete",
+        "label": "Delete",
+        "ariaLabel": "Delete — Checkout returns 502 for EU customers"
+       }
+      ]
+     },
+     {
+      "id": "c-02",
+      "sender": "Marcus Feld",
+      "subject": "SSO metadata rotation — need new certificate",
+      "preview": "Our IdP certificate expires Friday. Can you confirm the fingerprint before we cut over?",
+      "receivedAt": "9:31 AM",
+      "isUnread": true,
+      "hasAttachments": false,
+      "isOpen": false,
+      "status": "Unread",
+      "selectionLabel": "conversation from Marcus Feld",
+      "priority": {
+       "label": "High",
+       "color": "orange"
+      },
+      "tags": [
+       "Identity"
+      ],
+      "actions": [
+       {
+        "id": "archive",
+        "label": "Archive",
+        "ariaLabel": "Archive — SSO metadata rotation — need new certificate"
+       },
+       {
+        "id": "move",
+        "label": "Move to folder",
+        "ariaLabel": "Move to folder — SSO metadata rotation — need new certificate"
+       },
+       {
+        "id": "delete",
+        "label": "Delete",
+        "ariaLabel": "Delete — SSO metadata rotation — need new certificate"
+       },
+       {
+        "id": "reply",
+        "label": "Reply",
+        "ariaLabel": "Reply — SSO metadata rotation — need new certificate"
+       }
+      ],
+      "actionsWide": [
+       {
+        "id": "archive",
+        "label": "Archive",
+        "ariaLabel": "Archive — SSO metadata rotation — need new certificate"
+       },
+       {
+        "id": "move",
+        "label": "Move to folder",
+        "ariaLabel": "Move to folder — SSO metadata rotation — need new certificate"
+       },
+       {
+        "id": "delete",
+        "label": "Delete",
+        "ariaLabel": "Delete — SSO metadata rotation — need new certificate"
+       },
+       {
+        "id": "reply",
+        "label": "Reply",
+        "ariaLabel": "Reply — SSO metadata rotation — need new certificate"
+       }
+      ],
+      "actionsStacked": [
+       {
+        "id": "archive",
+        "label": "Archive",
+        "ariaLabel": "Archive — SSO metadata rotation — need new certificate"
+       },
+       {
+        "id": "delete",
+        "label": "Delete",
+        "ariaLabel": "Delete — SSO metadata rotation — need new certificate"
+       }
+      ]
+     },
+     {
+      "id": "c-03",
+      "sender": "Dana Osei",
+      "subject": "Re: Bulk export finished but the file is empty",
+      "preview": "Thanks — re-running with the date filter cleared did produce rows this time.",
+      "receivedAt": "8:58 AM",
+      "isUnread": true,
+      "hasAttachments": false,
+      "isOpen": false,
+      "status": "Unread",
+      "selectionLabel": "conversation from Dana Osei",
+      "priority": null,
+      "tags": [
+       "Exports"
+      ],
+      "actions": [
+       {
+        "id": "archive",
+        "label": "Archive",
+        "ariaLabel": "Archive — Re: Bulk export finished but the file is empty"
+       },
+       {
+        "id": "move",
+        "label": "Move to folder",
+        "ariaLabel": "Move to folder — Re: Bulk export finished but the file is empty"
+       },
+       {
+        "id": "delete",
+        "label": "Delete",
+        "ariaLabel": "Delete — Re: Bulk export finished but the file is empty"
+       },
+       {
+        "id": "reply",
+        "label": "Reply",
+        "ariaLabel": "Reply — Re: Bulk export finished but the file is empty"
+       }
+      ],
+      "actionsWide": [
+       {
+        "id": "archive",
+        "label": "Archive",
+        "ariaLabel": "Archive — Re: Bulk export finished but the file is empty"
+       },
+       {
+        "id": "move",
+        "label": "Move to folder",
+        "ariaLabel": "Move to folder — Re: Bulk export finished but the file is empty"
+       },
+       {
+        "id": "delete",
+        "label": "Delete",
+        "ariaLabel": "Delete — Re: Bulk export finished but the file is empty"
+       },
+       {
+        "id": "reply",
+        "label": "Reply",
+        "ariaLabel": "Reply — Re: Bulk export finished but the file is empty"
+       }
+      ],
+      "actionsStacked": [
+       {
+        "id": "archive",
+        "label": "Archive",
+        "ariaLabel": "Archive — Re: Bulk export finished but the file is empty"
+       },
+       {
+        "id": "delete",
+        "label": "Delete",
+        "ariaLabel": "Delete — Re: Bulk export finished but the file is empty"
+       }
+      ]
+     },
+     {
+      "id": "c-04",
+      "sender": "Tomás Ibarra",
+      "subject": "Webhook retries stopped after the 3rd attempt",
+      "preview": "We expected five retries with backoff. Logs show three and then nothing for order 88214.",
+      "receivedAt": "8:14 AM",
+      "isUnread": false,
+      "hasAttachments": false,
+      "isOpen": false,
+      "status": null,
+      "selectionLabel": "conversation from Tomás Ibarra",
+      "priority": {
+       "label": "High",
+       "color": "orange"
+      },
+      "tags": [
+       "Webhooks",
+       "Bug"
+      ],
+      "actions": [
+       {
+        "id": "archive",
+        "label": "Archive",
+        "ariaLabel": "Archive — Webhook retries stopped after the 3rd attempt"
+       },
+       {
+        "id": "move",
+        "label": "Move to folder",
+        "ariaLabel": "Move to folder — Webhook retries stopped after the 3rd attempt"
+       },
+       {
+        "id": "delete",
+        "label": "Delete",
+        "ariaLabel": "Delete — Webhook retries stopped after the 3rd attempt"
+       },
+       {
+        "id": "reply",
+        "label": "Reply",
+        "ariaLabel": "Reply — Webhook retries stopped after the 3rd attempt"
+       }
+      ],
+      "actionsWide": [
+       {
+        "id": "archive",
+        "label": "Archive",
+        "ariaLabel": "Archive — Webhook retries stopped after the 3rd attempt"
+       },
+       {
+        "id": "move",
+        "label": "Move to folder",
+        "ariaLabel": "Move to folder — Webhook retries stopped after the 3rd attempt"
+       },
+       {
+        "id": "delete",
+        "label": "Delete",
+        "ariaLabel": "Delete — Webhook retries stopped after the 3rd attempt"
+       },
+       {
+        "id": "reply",
+        "label": "Reply",
+        "ariaLabel": "Reply — Webhook retries stopped after the 3rd attempt"
+       }
+      ],
+      "actionsStacked": [
+       {
+        "id": "archive",
+        "label": "Archive",
+        "ariaLabel": "Archive — Webhook retries stopped after the 3rd attempt"
+       },
+       {
+        "id": "delete",
+        "label": "Delete",
+        "ariaLabel": "Delete — Webhook retries stopped after the 3rd attempt"
+       }
+      ]
+     },
+     {
+      "id": "c-05",
+      "sender": "Hannah Lindqvist",
+      "subject": "Homepage refresh — three directions for your review",
+      "preview": "Attached the three we shortlisted. We need a decision by Thursday to hold the schedule.",
+      "receivedAt": "Yesterday",
+      "isUnread": false,
+      "hasAttachments": true,
+      "isOpen": false,
+      "status": null,
+      "selectionLabel": "conversation from Hannah Lindqvist",
+      "priority": {
+       "label": "High",
+       "color": "orange"
+      },
+      "tags": [
+       "Design",
+       "Review"
+      ],
+      "actions": [
+       {
+        "id": "archive",
+        "label": "Archive",
+        "ariaLabel": "Archive — Homepage refresh — three directions for your review"
+       },
+       {
+        "id": "move",
+        "label": "Move to folder",
+        "ariaLabel": "Move to folder — Homepage refresh — three directions for your review"
+       },
+       {
+        "id": "delete",
+        "label": "Delete",
+        "ariaLabel": "Delete — Homepage refresh — three directions for your review"
+       },
+       {
+        "id": "reply",
+        "label": "Reply",
+        "ariaLabel": "Reply — Homepage refresh — three directions for your review"
+       }
+      ],
+      "actionsWide": [
+       {
+        "id": "archive",
+        "label": "Archive",
+        "ariaLabel": "Archive — Homepage refresh — three directions for your review"
+       },
+       {
+        "id": "move",
+        "label": "Move to folder",
+        "ariaLabel": "Move to folder — Homepage refresh — three directions for your review"
+       },
+       {
+        "id": "delete",
+        "label": "Delete",
+        "ariaLabel": "Delete — Homepage refresh — three directions for your review"
+       },
+       {
+        "id": "reply",
+        "label": "Reply",
+        "ariaLabel": "Reply — Homepage refresh — three directions for your review"
+       }
+      ],
+      "actionsStacked": [
+       {
+        "id": "archive",
+        "label": "Archive",
+        "ariaLabel": "Archive — Homepage refresh — three directions for your review"
+       },
+       {
+        "id": "delete",
+        "label": "Delete",
+        "ariaLabel": "Delete — Homepage refresh — three directions for your review"
+       }
+      ]
+     },
+     {
+      "id": "c-06",
+      "sender": "Owen Baptiste",
+      "subject": "Seat count says 145 but we only provisioned 120",
+      "preview": "Finance flagged the discrepancy on the March invoice. Can we reconcile before the 30th?",
+      "receivedAt": "Yesterday",
+      "isUnread": false,
+      "hasAttachments": false,
+      "isOpen": false,
+      "status": null,
+      "selectionLabel": "conversation from Owen Baptiste",
+      "priority": {
+       "label": "High",
+       "color": "orange"
+      },
+      "tags": [
+       "Billing"
+      ],
+      "actions": [
+       {
+        "id": "archive",
+        "label": "Archive",
+        "ariaLabel": "Archive — Seat count says 145 but we only provisioned 120"
+       },
+       {
+        "id": "move",
+        "label": "Move to folder",
+        "ariaLabel": "Move to folder — Seat count says 145 but we only provisioned 120"
+       },
+       {
+        "id": "delete",
+        "label": "Delete",
+        "ariaLabel": "Delete — Seat count says 145 but we only provisioned 120"
+       },
+       {
+        "id": "reply",
+        "label": "Reply",
+        "ariaLabel": "Reply — Seat count says 145 but we only provisioned 120"
+       }
+      ],
+      "actionsWide": [
+       {
+        "id": "archive",
+        "label": "Archive",
+        "ariaLabel": "Archive — Seat count says 145 but we only provisioned 120"
+       },
+       {
+        "id": "move",
+        "label": "Move to folder",
+        "ariaLabel": "Move to folder — Seat count says 145 but we only provisioned 120"
+       },
+       {
+        "id": "delete",
+        "label": "Delete",
+        "ariaLabel": "Delete — Seat count says 145 but we only provisioned 120"
+       },
+       {
+        "id": "reply",
+        "label": "Reply",
+        "ariaLabel": "Reply — Seat count says 145 but we only provisioned 120"
+       }
+      ],
+      "actionsStacked": [
+       {
+        "id": "archive",
+        "label": "Archive",
+        "ariaLabel": "Archive — Seat count says 145 but we only provisioned 120"
+       },
+       {
+        "id": "delete",
+        "label": "Delete",
+        "ariaLabel": "Delete — Seat count says 145 but we only provisioned 120"
+       }
+      ]
+     },
+     {
+      "id": "c-07",
+      "sender": "Aiko Tanaka",
+      "subject": "Docs: the rate-limit page contradicts the API response header",
+      "preview": "Page says 600/min, header reports 300/min on our plan. One of them is wrong.",
+      "receivedAt": "Yesterday",
+      "isUnread": false,
+      "hasAttachments": false,
+      "isOpen": false,
+      "status": null,
+      "selectionLabel": "conversation from Aiko Tanaka",
+      "priority": null,
+      "tags": [
+       "Docs"
+      ],
+      "actions": [
+       {
+        "id": "archive",
+        "label": "Archive",
+        "ariaLabel": "Archive — Docs: the rate-limit page contradicts the API response header"
+       },
+       {
+        "id": "move",
+        "label": "Move to folder",
+        "ariaLabel": "Move to folder — Docs: the rate-limit page contradicts the API response header"
+       },
+       {
+        "id": "delete",
+        "label": "Delete",
+        "ariaLabel": "Delete — Docs: the rate-limit page contradicts the API response header"
+       },
+       {
+        "id": "reply",
+        "label": "Reply",
+        "ariaLabel": "Reply — Docs: the rate-limit page contradicts the API response header"
+       }
+      ],
+      "actionsWide": [
+       {
+        "id": "archive",
+        "label": "Archive",
+        "ariaLabel": "Archive — Docs: the rate-limit page contradicts the API response header"
+       },
+       {
+        "id": "move",
+        "label": "Move to folder",
+        "ariaLabel": "Move to folder — Docs: the rate-limit page contradicts the API response header"
+       },
+       {
+        "id": "delete",
+        "label": "Delete",
+        "ariaLabel": "Delete — Docs: the rate-limit page contradicts the API response header"
+       },
+       {
+        "id": "reply",
+        "label": "Reply",
+        "ariaLabel": "Reply — Docs: the rate-limit page contradicts the API response header"
+       }
+      ],
+      "actionsStacked": [
+       {
+        "id": "archive",
+        "label": "Archive",
+        "ariaLabel": "Archive — Docs: the rate-limit page contradicts the API response header"
+       },
+       {
+        "id": "delete",
+        "label": "Delete",
+        "ariaLabel": "Delete — Docs: the rate-limit page contradicts the API response header"
+       }
+      ]
+     },
+     {
+      "id": "c-08",
+      "sender": "Reuben Cole",
+      "subject": "Re: Scheduled maintenance window confirmation",
+      "preview": "Confirmed for Sunday 02:00–04:00 UTC. Nothing further needed.",
+      "receivedAt": "Mon",
+      "isUnread": false,
+      "hasAttachments": false,
+      "isOpen": false,
+      "status": null,
+      "selectionLabel": "conversation from Reuben Cole",
+      "priority": null,
+      "tags": [
+       "Ops"
+      ],
+      "actions": [
+       {
+        "id": "archive",
+        "label": "Archive",
+        "ariaLabel": "Archive — Re: Scheduled maintenance window confirmation"
+       },
+       {
+        "id": "move",
+        "label": "Move to folder",
+        "ariaLabel": "Move to folder — Re: Scheduled maintenance window confirmation"
+       },
+       {
+        "id": "delete",
+        "label": "Delete",
+        "ariaLabel": "Delete — Re: Scheduled maintenance window confirmation"
+       },
+       {
+        "id": "reply",
+        "label": "Reply",
+        "ariaLabel": "Reply — Re: Scheduled maintenance window confirmation"
+       }
+      ],
+      "actionsWide": [
+       {
+        "id": "archive",
+        "label": "Archive",
+        "ariaLabel": "Archive — Re: Scheduled maintenance window confirmation"
+       },
+       {
+        "id": "move",
+        "label": "Move to folder",
+        "ariaLabel": "Move to folder — Re: Scheduled maintenance window confirmation"
+       },
+       {
+        "id": "delete",
+        "label": "Delete",
+        "ariaLabel": "Delete — Re: Scheduled maintenance window confirmation"
+       },
+       {
+        "id": "reply",
+        "label": "Reply",
+        "ariaLabel": "Reply — Re: Scheduled maintenance window confirmation"
+       }
+      ],
+      "actionsStacked": [
+       {
+        "id": "archive",
+        "label": "Archive",
+        "ariaLabel": "Archive — Re: Scheduled maintenance window confirmation"
+       },
+       {
+        "id": "delete",
+        "label": "Delete",
+        "ariaLabel": "Delete — Re: Scheduled maintenance window confirmation"
+       }
+      ]
+     },
+     {
+      "id": "c-09",
+      "sender": "Sofia Marchetti",
+      "subject": "Feature request: per-workspace retention policy",
+      "preview": "Our legal team needs 30-day retention on one workspace and 400 on another.",
+      "receivedAt": "Mon",
+      "isUnread": false,
+      "hasAttachments": false,
+      "isOpen": false,
+      "status": null,
+      "selectionLabel": "conversation from Sofia Marchetti",
+      "priority": null,
+      "tags": [
+       "Feature request"
+      ],
+      "actions": [
+       {
+        "id": "archive",
+        "label": "Archive",
+        "ariaLabel": "Archive — Feature request: per-workspace retention policy"
+       },
+       {
+        "id": "move",
+        "label": "Move to folder",
+        "ariaLabel": "Move to folder — Feature request: per-workspace retention policy"
+       },
+       {
+        "id": "delete",
+        "label": "Delete",
+        "ariaLabel": "Delete — Feature request: per-workspace retention policy"
+       },
+       {
+        "id": "reply",
+        "label": "Reply",
+        "ariaLabel": "Reply — Feature request: per-workspace retention policy"
+       }
+      ],
+      "actionsWide": [
+       {
+        "id": "archive",
+        "label": "Archive",
+        "ariaLabel": "Archive — Feature request: per-workspace retention policy"
+       },
+       {
+        "id": "move",
+        "label": "Move to folder",
+        "ariaLabel": "Move to folder — Feature request: per-workspace retention policy"
+       },
+       {
+        "id": "delete",
+        "label": "Delete",
+        "ariaLabel": "Delete — Feature request: per-workspace retention policy"
+       },
+       {
+        "id": "reply",
+        "label": "Reply",
+        "ariaLabel": "Reply — Feature request: per-workspace retention policy"
+       }
+      ],
+      "actionsStacked": [
+       {
+        "id": "archive",
+        "label": "Archive",
+        "ariaLabel": "Archive — Feature request: per-workspace retention policy"
+       },
+       {
+        "id": "delete",
+        "label": "Delete",
+        "ariaLabel": "Delete — Feature request: per-workspace retention policy"
+       }
+      ]
+     }
+    ],
+    "selectedKeys": [],
+    "hasSelection": false,
+    "selectionLabel": [
+     "0",
+     " ",
+     "conversations",
+     " ",
+     "selected"
+    ],
+    "bulkActions": [
+     {
+      "id": "archive",
+      "label": "Archive"
+     },
+     {
+      "id": "move",
+      "label": "Move to folder"
+     },
+     {
+      "id": "delete",
+      "label": "Delete"
+     }
+    ],
+    "openId": "c-01",
+    "mode": {
+     "isSingleSurface": false,
+     "isPaneFullWidth": false,
+     "isStacked": false,
+     "isTight": false,
+     "isTouch": false,
+     "measured": {
+      "surface": 0,
+      "list": 0
+     },
+     "rules": {
+      "singleSurfaceBelow": 900,
+      "stackRowsBelow": 560,
+      "tightenColumnsBelow": 900,
+      "receivedWidth": {
+       "wide": {
+        "pointer": 142,
+        "touch": 242
+       },
+       "stacked": {
+        "pointer": 120,
+        "touch": 182
+       }
+      }
+     }
+    },
+    "choice": {
+     "openIdExplicit": null,
+     "isClosed": false,
+     "firstVisibleId": "c-01"
+    },
+    "hasSelectedRows": false,
+    "panes": [
+     {
+      "id": "c-01",
+      "subject": "Checkout returns 502 for EU customers",
+      "priority": {
+       "label": "Urgent",
+       "color": "red"
+      },
+      "tags": [
+       "Billing",
+       "Escalated"
+      ],
+      "openMessages": [
+       "c-01"
+      ],
+      "actions": [
+       {
+        "id": "archive",
+        "label": "Archive",
+        "ariaLabel": "Archive — Checkout returns 502 for EU customers"
+       },
+       {
+        "id": "move",
+        "label": "Move to folder",
+        "ariaLabel": "Move to folder — Checkout returns 502 for EU customers"
+       },
+       {
+        "id": "delete",
+        "label": "Delete",
+        "ariaLabel": "Delete — Checkout returns 502 for EU customers"
+       }
+      ],
+      "messages": [
+       {
+        "id": "c-01-r1",
+        "sender": "Priya Raman",
+        "senderEmail": "priya.raman@northwind.example",
+        "receivedFull": "Today at 9:44 AM",
+        "body": [
+         "Flagging early — our payments dashboard has just lit up. No numbers yet, but the failures all look like they are on the confirm step rather than the authorisation."
+        ],
+        "attachments": [],
+        "attachmentsLabel": [],
+        "lightboxIndex": null
+       },
+       {
+        "id": "c-01-r2",
+        "sender": "Lucas Meyer",
+        "senderEmail": "lucas.meyer@support.example",
+        "receivedFull": "Today at 9:47 AM",
+        "body": [
+         "Acknowledged, paging the payments on-call. Nothing on our status page, so if this is regional it is sitting under our alerting threshold.",
+         "Is it specific to one card network, or all of them?"
+        ],
+        "attachments": [],
+        "attachmentsLabel": [],
+        "lightboxIndex": null
+       },
+       {
+        "id": "c-01",
+        "sender": "Priya Raman",
+        "senderEmail": "priya.raman@northwind.example",
+        "receivedFull": "Today at 9:52 AM",
+        "body": [
+         "Started around 09:40 UTC. Roughly one in five card payments fails at the confirm step, and only for customers billing to an EU address — US and APAC look untouched.",
+         "The response is a bare 502 with no body, so our retry logic treats it as transient and re-submits. Two customers have now been charged twice.",
+         "I have paused the retry worker as a stopgap, so the double charges should stop, but the underlying failures have not."
+        ],
+        "attachments": [
+         {
+          "id": "c-01-a1",
+          "name": "northwind-checkout-eu.png",
+          "src": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20400%20300%22%20preserveAspectRatio%3D%22xMidYMid%20slice%22%3E%3Crect%20width%3D%22400%22%20height%3D%22300%22%20fill%3D%22%23f5f6f8%22%2F%3E%3Cg%20transform%3D%22translate%28200%20150%29%22%20fill%3D%22none%22%20stroke%3D%22%23c2cad6%22%20stroke-width%3D%225%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Crect%20x%3D%22-44%22%20y%3D%22-44%22%20width%3D%2288%22%20height%3D%2288%22%20rx%3D%2216%22%2F%3E%3Ccircle%20cx%3D%2218%22%20cy%3D%22-18%22%20r%3D%222.5%22%20fill%3D%22%23c2cad6%22%20stroke%3D%22none%22%2F%3E%3Cpath%20d%3D%22M-34%2030%20L-8%200%20L10%2018%20L20%208%20L34%2024%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E",
+          "previewAlt": "Preview of northwind-checkout-eu.png",
+          "lightboxAlt": "Attachment: northwind-checkout-eu.png"
+         }
+        ],
+        "attachmentsLabel": [
+         "1",
+         " attachment",
+         ""
+        ],
+        "lightboxIndex": null
+       }
+      ]
+     },
+     {
+      "id": "c-02",
+      "subject": "SSO metadata rotation — need new certificate",
+      "priority": {
+       "label": "High",
+       "color": "orange"
+      },
+      "tags": [
+       "Identity"
+      ],
+      "openMessages": [
+       "c-02"
+      ],
+      "actions": [
+       {
+        "id": "archive",
+        "label": "Archive",
+        "ariaLabel": "Archive — SSO metadata rotation — need new certificate"
+       },
+       {
+        "id": "move",
+        "label": "Move to folder",
+        "ariaLabel": "Move to folder — SSO metadata rotation — need new certificate"
+       },
+       {
+        "id": "delete",
+        "label": "Delete",
+        "ariaLabel": "Delete — SSO metadata rotation — need new certificate"
+       }
+      ],
+      "messages": [
+       {
+        "id": "c-02",
+        "sender": "Marcus Feld",
+        "senderEmail": "m.feld@harbourpoint.example",
+        "receivedFull": "Today at 9:31 AM",
+        "body": [
+         "Our IdP certificate expires Friday at 23:59 UTC. We have the replacement staged and can publish new metadata whenever you are ready.",
+         "Before we cut over, can you confirm the SHA-256 fingerprint you have on file matches the one we published? Last rotation we mismatched and locked out 400 people for an hour."
+        ],
+        "attachments": [],
+        "attachmentsLabel": [],
+        "lightboxIndex": null
+       }
+      ]
+     },
+     {
+      "id": "c-03",
+      "subject": "Re: Bulk export finished but the file is empty",
+      "priority": null,
+      "tags": [
+       "Exports"
+      ],
+      "openMessages": [
+       "c-03"
+      ],
+      "actions": [
+       {
+        "id": "archive",
+        "label": "Archive",
+        "ariaLabel": "Archive — Re: Bulk export finished but the file is empty"
+       },
+       {
+        "id": "move",
+        "label": "Move to folder",
+        "ariaLabel": "Move to folder — Re: Bulk export finished but the file is empty"
+       },
+       {
+        "id": "delete",
+        "label": "Delete",
+        "ariaLabel": "Delete — Re: Bulk export finished but the file is empty"
+       }
+      ],
+      "messages": [
+       {
+        "id": "c-03-r1",
+        "sender": "Dana Osei",
+        "senderEmail": "dana@osei-consulting.example",
+        "receivedFull": "Yesterday at 5:12 PM",
+        "body": [
+         "Ran the full-account export this afternoon. It finished in about forty seconds and handed me a zero-byte CSV — no header row, nothing."
+        ],
+        "attachments": [],
+        "attachmentsLabel": [],
+        "lightboxIndex": null
+       },
+       {
+        "id": "c-03-r2",
+        "sender": "Marta Nowak",
+        "senderEmail": "marta.nowak@support.example",
+        "receivedFull": "Today at 8:31 AM",
+        "body": [
+         "A zero-byte file usually means the query matched no rows rather than that the export itself failed. Could you retry with the date filter cleared and tell me whether the file comes back with content?"
+        ],
+        "attachments": [],
+        "attachmentsLabel": [],
+        "lightboxIndex": null
+       },
+       {
+        "id": "c-03",
+        "sender": "Dana Osei",
+        "senderEmail": "dana@osei-consulting.example",
+        "receivedFull": "Today at 8:58 AM",
+        "body": [
+         "Thanks — re-running with the date filter cleared did produce rows this time, so it looks like the filter was the culprit rather than the export itself.",
+         "Worth noting the empty file still came back with a 200 and a success banner, which is what sent me down the wrong path. A warning when an export matches zero records would have saved a morning."
+        ],
+        "attachments": [],
+        "attachmentsLabel": [],
+        "lightboxIndex": null
+       }
+      ]
+     },
+     {
+      "id": "c-04",
+      "subject": "Webhook retries stopped after the 3rd attempt",
+      "priority": {
+       "label": "High",
+       "color": "orange"
+      },
+      "tags": [
+       "Webhooks",
+       "Bug"
+      ],
+      "openMessages": [
+       "c-04"
+      ],
+      "actions": [
+       {
+        "id": "archive",
+        "label": "Archive",
+        "ariaLabel": "Archive — Webhook retries stopped after the 3rd attempt"
+       },
+       {
+        "id": "move",
+        "label": "Move to folder",
+        "ariaLabel": "Move to folder — Webhook retries stopped after the 3rd attempt"
+       },
+       {
+        "id": "delete",
+        "label": "Delete",
+        "ariaLabel": "Delete — Webhook retries stopped after the 3rd attempt"
+       }
+      ],
+      "messages": [
+       {
+        "id": "c-04",
+        "sender": "Tomás Ibarra",
+        "senderEmail": "tomas.ibarra@meridian.example",
+        "receivedFull": "Today at 8:14 AM",
+        "body": [
+         "We expected five retries with exponential backoff. Logs show three attempts and then nothing for order 88214.",
+         "The endpoint was returning 503 throughout, so this should have kept retrying to the documented limit. The gap in our delivery log after 08:02 is the part I cannot explain."
+        ],
+        "attachments": [],
+        "attachmentsLabel": [],
+        "lightboxIndex": null
+       }
+      ]
+     },
+     {
+      "id": "c-05",
+      "subject": "Homepage refresh — three directions for your review",
+      "priority": {
+       "label": "High",
+       "color": "orange"
+      },
+      "tags": [
+       "Design",
+       "Review"
+      ],
+      "openMessages": [
+       "c-05"
+      ],
+      "actions": [
+       {
+        "id": "archive",
+        "label": "Archive",
+        "ariaLabel": "Archive — Homepage refresh — three directions for your review"
+       },
+       {
+        "id": "move",
+        "label": "Move to folder",
+        "ariaLabel": "Move to folder — Homepage refresh — three directions for your review"
+       },
+       {
+        "id": "delete",
+        "label": "Delete",
+        "ariaLabel": "Delete — Homepage refresh — three directions for your review"
+       }
+      ],
+      "messages": [
+       {
+        "id": "c-05-r1",
+        "sender": "Hannah Lindqvist",
+        "senderEmail": "h.lindqvist@varda.example",
+        "receivedFull": "Monday at 3:05 PM",
+        "body": [
+         "Kicking off the homepage refresh. We have eleven explorations open; I will cut them to three before Thursday so you get something decidable rather than a mood board."
+        ],
+        "attachments": [],
+        "attachmentsLabel": [],
+        "lightboxIndex": null
+       },
+       {
+        "id": "c-05-r2",
+        "sender": "Elliot Nakamura",
+        "senderEmail": "elliot.nakamura@support.example",
+        "receivedFull": "Tuesday at 10:18 AM",
+        "body": [
+         "Three is the right number. One request: hold the hero structure identical across all of them, so the thing we are judging is treatment and not layout. Last round nobody could tell which of the two they were reacting to."
+        ],
+        "attachments": [],
+        "attachmentsLabel": [],
+        "lightboxIndex": null
+       },
+       {
+        "id": "c-05-r2b",
+        "sender": "Ines Duarte",
+        "senderEmail": "i.duarte@varda.example",
+        "receivedFull": "Tuesday at 4:52 PM",
+        "body": [
+         "Copy is written against the current hero, so holding the structure suits us — I will only need to reflow if the headline slot changes length."
+        ],
+        "attachments": [],
+        "attachmentsLabel": [],
+        "lightboxIndex": null
+       },
+       {
+        "id": "c-05-r3",
+        "sender": "Hannah Lindqvist",
+        "senderEmail": "h.lindqvist@varda.example",
+        "receivedFull": "Yesterday at 11:40 AM",
+        "body": [
+         "Structure is fixed across all three. Sending the moody direction on its own first — it is the one most likely to split the room, and it reads differently without the other two beside it."
+        ],
+        "attachments": [
+         {
+          "id": "c-05-r3-a1",
+          "name": "moody-direction-hero.png",
+          "src": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20400%20300%22%20preserveAspectRatio%3D%22xMidYMid%20slice%22%3E%3Crect%20width%3D%22400%22%20height%3D%22300%22%20fill%3D%22%23f5f6f8%22%2F%3E%3Cg%20transform%3D%22translate%28200%20150%29%22%20fill%3D%22none%22%20stroke%3D%22%23c2cad6%22%20stroke-width%3D%225%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Crect%20x%3D%22-44%22%20y%3D%22-44%22%20width%3D%2288%22%20height%3D%2288%22%20rx%3D%2216%22%2F%3E%3Ccircle%20cx%3D%2218%22%20cy%3D%22-18%22%20r%3D%222.5%22%20fill%3D%22%23c2cad6%22%20stroke%3D%22none%22%2F%3E%3Cpath%20d%3D%22M-34%2030%20L-8%200%20L10%2018%20L20%208%20L34%2024%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E",
+          "previewAlt": "Preview of moody-direction-hero.png",
+          "lightboxAlt": "Attachment: moody-direction-hero.png"
+         }
+        ],
+        "attachmentsLabel": [
+         "1",
+         " attachment",
+         ""
+        ],
+        "lightboxIndex": null
+       },
+       {
+        "id": "c-05",
+        "sender": "Hannah Lindqvist",
+        "senderEmail": "h.lindqvist@varda.example",
+        "receivedFull": "Yesterday at 4:22 PM",
+        "body": [
+         "Attached the three directions we shortlisted out of the eleven we explored. They differ in mood rather than structure, so the layout work carries over whichever one you pick.",
+         "Colourful is the boldest and the furthest from the current site. Light is the safest and reads closest to the product itself. Moody photographs best but needs art direction we do not have in-house yet.",
+         "We need a decision by Thursday to hold the build schedule."
+        ],
+        "attachments": [
+         {
+          "id": "a-1",
+          "name": "direction-1-colourful.png",
+          "src": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20400%20300%22%20preserveAspectRatio%3D%22xMidYMid%20slice%22%3E%3Crect%20width%3D%22400%22%20height%3D%22300%22%20fill%3D%22%23f5f6f8%22%2F%3E%3Cg%20transform%3D%22translate%28200%20150%29%22%20fill%3D%22none%22%20stroke%3D%22%23c2cad6%22%20stroke-width%3D%225%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Crect%20x%3D%22-44%22%20y%3D%22-44%22%20width%3D%2288%22%20height%3D%2288%22%20rx%3D%2216%22%2F%3E%3Ccircle%20cx%3D%2218%22%20cy%3D%22-18%22%20r%3D%222.5%22%20fill%3D%22%23c2cad6%22%20stroke%3D%22none%22%2F%3E%3Cpath%20d%3D%22M-34%2030%20L-8%200%20L10%2018%20L20%208%20L34%2024%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E",
+          "previewAlt": "Preview of direction-1-colourful.png",
+          "lightboxAlt": "Attachment: direction-1-colourful.png"
+         },
+         {
+          "id": "a-2",
+          "name": "direction-2-light.png",
+          "src": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20400%20300%22%20preserveAspectRatio%3D%22xMidYMid%20slice%22%3E%3Crect%20width%3D%22400%22%20height%3D%22300%22%20fill%3D%22%23f5f6f8%22%2F%3E%3Cg%20transform%3D%22translate%28200%20150%29%22%20fill%3D%22none%22%20stroke%3D%22%23c2cad6%22%20stroke-width%3D%225%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Crect%20x%3D%22-44%22%20y%3D%22-44%22%20width%3D%2288%22%20height%3D%2288%22%20rx%3D%2216%22%2F%3E%3Ccircle%20cx%3D%2218%22%20cy%3D%22-18%22%20r%3D%222.5%22%20fill%3D%22%23c2cad6%22%20stroke%3D%22none%22%2F%3E%3Cpath%20d%3D%22M-34%2030%20L-8%200%20L10%2018%20L20%208%20L34%2024%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E",
+          "previewAlt": "Preview of direction-2-light.png",
+          "lightboxAlt": "Attachment: direction-2-light.png"
+         },
+         {
+          "id": "a-3",
+          "name": "direction-3-moody.png",
+          "src": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20400%20300%22%20preserveAspectRatio%3D%22xMidYMid%20slice%22%3E%3Crect%20width%3D%22400%22%20height%3D%22300%22%20fill%3D%22%23f5f6f8%22%2F%3E%3Cg%20transform%3D%22translate%28200%20150%29%22%20fill%3D%22none%22%20stroke%3D%22%23c2cad6%22%20stroke-width%3D%225%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Crect%20x%3D%22-44%22%20y%3D%22-44%22%20width%3D%2288%22%20height%3D%2288%22%20rx%3D%2216%22%2F%3E%3Ccircle%20cx%3D%2218%22%20cy%3D%22-18%22%20r%3D%222.5%22%20fill%3D%22%23c2cad6%22%20stroke%3D%22none%22%2F%3E%3Cpath%20d%3D%22M-34%2030%20L-8%200%20L10%2018%20L20%208%20L34%2024%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E",
+          "previewAlt": "Preview of direction-3-moody.png",
+          "lightboxAlt": "Attachment: direction-3-moody.png"
+         }
+        ],
+        "attachmentsLabel": [
+         "3",
+         " attachment",
+         "s"
+        ],
+        "lightboxIndex": null
+       }
+      ]
+     },
+     {
+      "id": "c-06",
+      "subject": "Seat count says 145 but we only provisioned 120",
+      "priority": {
+       "label": "High",
+       "color": "orange"
+      },
+      "tags": [
+       "Billing"
+      ],
+      "openMessages": [
+       "c-06"
+      ],
+      "actions": [
+       {
+        "id": "archive",
+        "label": "Archive",
+        "ariaLabel": "Archive — Seat count says 145 but we only provisioned 120"
+       },
+       {
+        "id": "move",
+        "label": "Move to folder",
+        "ariaLabel": "Move to folder — Seat count says 145 but we only provisioned 120"
+       },
+       {
+        "id": "delete",
+        "label": "Delete",
+        "ariaLabel": "Delete — Seat count says 145 but we only provisioned 120"
+       }
+      ],
+      "messages": [
+       {
+        "id": "c-06",
+        "sender": "Owen Baptiste",
+        "senderEmail": "obaptiste@fieldstone.example",
+        "receivedFull": "Yesterday at 11:07 AM",
+        "body": [
+         "Finance flagged the discrepancy on the March invoice. Our directory shows 120 provisioned seats; the invoice bills 145.",
+         "My guess is deactivated accounts are still counted until the end of the billing period, but I cannot find that stated anywhere. Can we reconcile before the 30th?"
+        ],
+        "attachments": [],
+        "attachmentsLabel": [],
+        "lightboxIndex": null
+       }
+      ]
+     },
+     {
+      "id": "c-07",
+      "subject": "Docs: the rate-limit page contradicts the API response header",
+      "priority": null,
+      "tags": [
+       "Docs"
+      ],
+      "openMessages": [
+       "c-07"
+      ],
+      "actions": [
+       {
+        "id": "archive",
+        "label": "Archive",
+        "ariaLabel": "Archive — Docs: the rate-limit page contradicts the API response header"
+       },
+       {
+        "id": "move",
+        "label": "Move to folder",
+        "ariaLabel": "Move to folder — Docs: the rate-limit page contradicts the API response header"
+       },
+       {
+        "id": "delete",
+        "label": "Delete",
+        "ariaLabel": "Delete — Docs: the rate-limit page contradicts the API response header"
+       }
+      ],
+      "messages": [
+       {
+        "id": "c-07",
+        "sender": "Aiko Tanaka",
+        "senderEmail": "aiko.tanaka@shorebird.example",
+        "receivedFull": "Yesterday at 9:15 AM",
+        "body": [
+         "The rate-limit page says 600 requests per minute on Scale. The X-RateLimit-Limit header on our responses reports 300.",
+         "One of them is wrong, and we have sized a batch job against the larger number."
+        ],
+        "attachments": [],
+        "attachmentsLabel": [],
+        "lightboxIndex": null
+       }
+      ]
+     },
+     {
+      "id": "c-08",
+      "subject": "Re: Scheduled maintenance window confirmation",
+      "priority": null,
+      "tags": [
+       "Ops"
+      ],
+      "openMessages": [
+       "c-08"
+      ],
+      "actions": [
+       {
+        "id": "archive",
+        "label": "Archive",
+        "ariaLabel": "Archive — Re: Scheduled maintenance window confirmation"
+       },
+       {
+        "id": "move",
+        "label": "Move to folder",
+        "ariaLabel": "Move to folder — Re: Scheduled maintenance window confirmation"
+       },
+       {
+        "id": "delete",
+        "label": "Delete",
+        "ariaLabel": "Delete — Re: Scheduled maintenance window confirmation"
+       }
+      ],
+      "messages": [
+       {
+        "id": "c-08",
+        "sender": "Reuben Cole",
+        "senderEmail": "r.cole@atlasgrid.example",
+        "receivedFull": "Monday at 2:40 PM",
+        "body": [
+         "Confirmed for Sunday 02:00–04:00 UTC. We have notified our on-call and paused the nightly sync for that window.",
+         "Nothing further needed from your side."
+        ],
+        "attachments": [],
+        "attachmentsLabel": [],
+        "lightboxIndex": null
+       }
+      ]
+     },
+     {
+      "id": "c-09",
+      "subject": "Feature request: per-workspace retention policy",
+      "priority": null,
+      "tags": [
+       "Feature request"
+      ],
+      "openMessages": [
+       "c-09"
+      ],
+      "actions": [
+       {
+        "id": "archive",
+        "label": "Archive",
+        "ariaLabel": "Archive — Feature request: per-workspace retention policy"
+       },
+       {
+        "id": "move",
+        "label": "Move to folder",
+        "ariaLabel": "Move to folder — Feature request: per-workspace retention policy"
+       },
+       {
+        "id": "delete",
+        "label": "Delete",
+        "ariaLabel": "Delete — Feature request: per-workspace retention policy"
+       }
+      ],
+      "messages": [
+       {
+        "id": "c-09",
+        "sender": "Sofia Marchetti",
+        "senderEmail": "sofia@marchetti-legal.example",
+        "receivedFull": "Monday at 10:02 AM",
+        "body": [
+         "Our legal team needs 30-day retention on the client-intake workspace and 400 days on the matter-archive workspace.",
+         "Today retention is an account-level setting, so we are stuck applying the longer policy everywhere, which is the opposite of what our counsel wants."
+        ],
+        "attachments": [],
+        "attachmentsLabel": [],
+        "lightboxIndex": null
+       }
+      ]
+     }
+    ],
+    "inert": [
+     "refresh",
+     "archive",
+     "move",
+     "delete",
+     "send",
+     "attach",
+     "link",
+     "image",
+     "emoji"
+    ],
+    "receivedWidth": 142,
+    "pane": {
+     "id": "c-01",
+     "subject": "Checkout returns 502 for EU customers",
+     "priority": {
+      "label": "Urgent",
+      "color": "red"
+     },
+     "tags": [
+      "Billing",
+      "Escalated"
+     ],
+     "openMessages": [
+      "c-01"
+     ],
+     "actions": [
+      {
+       "id": "archive",
+       "label": "Archive",
+       "ariaLabel": "Archive — Checkout returns 502 for EU customers"
+      },
+      {
+       "id": "move",
+       "label": "Move to folder",
+       "ariaLabel": "Move to folder — Checkout returns 502 for EU customers"
+      },
+      {
+       "id": "delete",
+       "label": "Delete",
+       "ariaLabel": "Delete — Checkout returns 502 for EU customers"
+      }
+     ],
+     "messages": [
+      {
+       "id": "c-01-r1",
+       "sender": "Priya Raman",
+       "senderEmail": "priya.raman@northwind.example",
+       "receivedFull": "Today at 9:44 AM",
+       "body": [
+        "Flagging early — our payments dashboard has just lit up. No numbers yet, but the failures all look like they are on the confirm step rather than the authorisation."
+       ],
+       "attachments": [],
+       "attachmentsLabel": [],
+       "lightboxIndex": null
+      },
+      {
+       "id": "c-01-r2",
+       "sender": "Lucas Meyer",
+       "senderEmail": "lucas.meyer@support.example",
+       "receivedFull": "Today at 9:47 AM",
+       "body": [
+        "Acknowledged, paging the payments on-call. Nothing on our status page, so if this is regional it is sitting under our alerting threshold.",
+        "Is it specific to one card network, or all of them?"
+       ],
+       "attachments": [],
+       "attachmentsLabel": [],
+       "lightboxIndex": null
+      },
+      {
+       "id": "c-01",
+       "sender": "Priya Raman",
+       "senderEmail": "priya.raman@northwind.example",
+       "receivedFull": "Today at 9:52 AM",
+       "body": [
+        "Started around 09:40 UTC. Roughly one in five card payments fails at the confirm step, and only for customers billing to an EU address — US and APAC look untouched.",
+        "The response is a bare 502 with no body, so our retry logic treats it as transient and re-submits. Two customers have now been charged twice.",
+        "I have paused the retry worker as a stopgap, so the double charges should stop, but the underlying failures have not."
+       ],
+       "attachments": [
+        {
+         "id": "c-01-a1",
+         "name": "northwind-checkout-eu.png",
+         "src": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20400%20300%22%20preserveAspectRatio%3D%22xMidYMid%20slice%22%3E%3Crect%20width%3D%22400%22%20height%3D%22300%22%20fill%3D%22%23f5f6f8%22%2F%3E%3Cg%20transform%3D%22translate%28200%20150%29%22%20fill%3D%22none%22%20stroke%3D%22%23c2cad6%22%20stroke-width%3D%225%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Crect%20x%3D%22-44%22%20y%3D%22-44%22%20width%3D%2288%22%20height%3D%2288%22%20rx%3D%2216%22%2F%3E%3Ccircle%20cx%3D%2218%22%20cy%3D%22-18%22%20r%3D%222.5%22%20fill%3D%22%23c2cad6%22%20stroke%3D%22none%22%2F%3E%3Cpath%20d%3D%22M-34%2030%20L-8%200%20L10%2018%20L20%208%20L34%2024%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E",
+         "previewAlt": "Preview of northwind-checkout-eu.png",
+         "lightboxAlt": "Attachment: northwind-checkout-eu.png"
+        }
+       ],
+       "attachmentsLabel": [
+        "1",
+        " attachment",
+        ""
+       ],
+       "lightboxIndex": null
+      }
+     ]
+    },
+    "compose": {
+     "isOpen": false,
+     "recipients": [],
+     "cc": [],
+     "bcc": [],
+     "hasCc": false,
+     "hasBcc": false,
+     "subject": "",
+     "body": "",
+     "directory": [
+      {
+       "id": "priya.raman@northwind.example",
+       "label": "Priya Raman"
+      },
+      {
+       "id": "m.feld@harbourpoint.example",
+       "label": "Marcus Feld"
+      },
+      {
+       "id": "dana@osei-consulting.example",
+       "label": "Dana Osei"
+      },
+      {
+       "id": "tomas.ibarra@meridian.example",
+       "label": "Tomás Ibarra"
+      },
+      {
+       "id": "h.lindqvist@varda.example",
+       "label": "Hannah Lindqvist"
+      },
+      {
+       "id": "obaptiste@fieldstone.example",
+       "label": "Owen Baptiste"
+      },
+      {
+       "id": "aiko.tanaka@shorebird.example",
+       "label": "Aiko Tanaka"
+      },
+      {
+       "id": "r.cole@atlasgrid.example",
+       "label": "Reuben Cole"
+      },
+      {
+       "id": "sofia@marchetti-legal.example",
+       "label": "Sofia Marchetti"
+      }
+     ],
+     "isDirty": false
+    }
+   }
+  }
+ },
+ "toast": null,
+ "dialog": null,
+ "theme": {
+  "id": "astryx",
+  "label": "Theme",
+  "setId": "settings.theme",
+  "options": [
+   {
+    "value": "astryx",
+    "label": "Astryx"
+   },
+   {
+    "value": "ocean",
+    "label": "Ocean"
+   },
+   {
+    "value": "ember",
+    "label": "Ember"
+   },
+   {
+    "value": "grape",
+    "label": "Grape"
+   }
+  ]
+ },
+ "scenarios": {
+  "label": "Scenarios",
+  "list": [
+   {
+    "id": "showcase",
+    "title": "Store: pay, ask the chat, manage inventory",
+    "template": "Theme showcase",
+    "steps": "14 steps"
+   },
+   {
+    "id": "dashboard",
+    "title": "Dashboard: chart, views and tables",
+    "template": "Dashboard",
+    "steps": "10 steps"
+   },
+   {
+    "id": "inbox",
+    "title": "Inbox: triage and reply",
+    "template": "Inbox",
+    "steps": "27 steps"
+   },
+   {
+    "id": "kanban",
+    "title": "Board: sprints and moving cards",
+    "template": "Kanban board",
+    "steps": "10 steps"
+   },
+   {
+    "id": "invoice",
+    "title": "Invoice: search, sort and filter lines",
+    "template": "Invoice",
+    "steps": "17 steps"
+   },
+   {
+    "id": "calendar",
+    "title": "Calendar: pick days and page months",
+    "template": "Calendar",
+    "steps": "9 steps"
+   },
+   {
+    "id": "chat",
+    "title": "Chat: ask, edit and open the document",
+    "template": "AI chat",
+    "steps": "13 steps"
+   },
+   {
+    "id": "checkout",
+    "title": "Checkout: from cart to paying",
+    "template": "Checkout",
+    "steps": "16 steps"
+   },
+   {
+    "id": "order",
+    "title": "Order: tabs, menus and panels",
+    "template": "Order detail",
+    "steps": "14 steps"
+   },
+   {
+    "id": "settings",
+    "title": "Settings: edit a profile and search",
+    "template": "Settings",
+    "steps": "12 steps"
+   }
+  ],
+  "drivers": [
+   {
+    "value": "native",
+    "label": "Drive from native",
+    "description": "Each step taps the SwiftUI side; the web drawings follow"
+   },
+   {
+    "value": "web",
+    "label": "Drive from web",
+    "description": "Each step clicks the web page on Hermes; the native side follows"
+   }
+  ],
+  "controls": {
+   "pauseId": "scenario.pause",
+   "resumeId": "scenario.resume",
+   "stopId": "scenario.stop",
+   "pauseLabel": "Pause",
+   "resumeLabel": "Resume",
+   "stopLabel": "Stop"
+  },
+  "playing": null
+ },
+ "surface": {
+  "id": "app.surface",
+  "label": "Show",
+  "value": "native",
+  "options": [
+   {
+    "value": "native",
+    "label": "Native",
+    "description": "SwiftUI, on the shared core in Hermes"
+   },
+   {
+    "value": "web",
+    "label": "Web on Hermes",
+    "description": "The refactored web page, on the same shared core"
+   },
+   {
+    "value": "webOwn",
+    "label": "Web, own core",
+    "description": "The refactored web page, on a core of its own in the page: no Hermes"
+   },
+   {
+    "value": "stock",
+    "label": "Stock Astryx",
+    "description": "Astryx as it is today: its own template and its own state"
+   },
+   {
+    "value": "compare",
+    "label": "Native and web",
+    "description": "Native and web on Hermes, side by side"
+   },
+   {
+    "value": "all",
+    "label": "All four",
+    "description": "All four drawings at once"
+   }
+  ],
+  "groups": [
+   {
+    "label": "Drawing",
+    "values": [
+     "native",
+     "web",
+     "webOwn",
+     "stock"
+    ]
+   },
+   {
+    "label": "Side by side",
+    "values": [
+     "compare",
+     "all"
+    ]
+   }
+  ],
+  "unavailable": "Needs a wider window",
+  "stockTemplate": "table-inbox",
+  "stockLabel": "Astryx as it is today: its own template and its own state"
+ }
+}

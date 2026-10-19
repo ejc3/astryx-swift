@@ -1,0 +1,620 @@
+{
+ "protocol": 1,
+ "appName": "Astryx Swift",
+ "nav": [
+  {
+   "id": "t.showcase",
+   "label": "Theme showcase",
+   "icon": "sparkle",
+   "section": "Astryx templates",
+   "accessibilityLabel": "Theme showcase, Astryx templates"
+  },
+  {
+   "id": "t.dashboard",
+   "label": "Dashboard",
+   "icon": "chart",
+   "section": "Astryx templates",
+   "accessibilityLabel": "Dashboard, Astryx templates"
+  },
+  {
+   "id": "t.inbox",
+   "label": "Inbox",
+   "icon": "inbox",
+   "section": "Astryx templates",
+   "accessibilityLabel": "Inbox, Astryx templates"
+  },
+  {
+   "id": "t.kanban",
+   "label": "Kanban board",
+   "icon": "check",
+   "section": "Astryx templates",
+   "accessibilityLabel": "Kanban board, Astryx templates"
+  },
+  {
+   "id": "t.invoice",
+   "label": "Invoice",
+   "icon": "card",
+   "section": "Astryx templates",
+   "accessibilityLabel": "Invoice, Astryx templates"
+  },
+  {
+   "id": "t.calendar",
+   "label": "Calendar",
+   "icon": "calendar",
+   "section": "Astryx templates",
+   "accessibilityLabel": "Calendar, Astryx templates"
+  },
+  {
+   "id": "t.chat",
+   "label": "AI chat",
+   "icon": "chat",
+   "section": "Astryx templates",
+   "accessibilityLabel": "AI chat, Astryx templates"
+  },
+  {
+   "id": "t.checkout",
+   "label": "Checkout",
+   "icon": "cart",
+   "section": "Astryx templates",
+   "accessibilityLabel": "Checkout, Astryx templates"
+  },
+  {
+   "id": "t.order",
+   "label": "Order detail",
+   "icon": "truck",
+   "section": "Astryx templates",
+   "accessibilityLabel": "Order detail, Astryx templates"
+  },
+  {
+   "id": "t.settings",
+   "label": "Settings",
+   "icon": "gear",
+   "section": "Astryx templates",
+   "accessibilityLabel": "Settings, Astryx templates"
+  },
+  {
+   "id": "overview",
+   "label": "Components",
+   "icon": "grid",
+   "section": "More demos",
+   "accessibilityLabel": "Components, More demos"
+  },
+  {
+   "id": "dashboard",
+   "label": "Dashboard",
+   "icon": "chart",
+   "section": "More demos",
+   "accessibilityLabel": "Dashboard, More demos"
+  },
+  {
+   "id": "inbox",
+   "label": "Inbox",
+   "icon": "inbox",
+   "badge": "3",
+   "section": "More demos",
+   "accessibilityLabel": "Inbox, More demos"
+  },
+  {
+   "id": "tasks",
+   "label": "Tasks",
+   "icon": "check",
+   "badge": "7",
+   "section": "More demos",
+   "accessibilityLabel": "Tasks, More demos"
+  },
+  {
+   "id": "people",
+   "label": "People",
+   "icon": "people",
+   "section": "More demos",
+   "accessibilityLabel": "People, More demos"
+  },
+  {
+   "id": "calendar",
+   "label": "Calendar",
+   "icon": "calendar",
+   "section": "More demos",
+   "accessibilityLabel": "Calendar, More demos"
+  },
+  {
+   "id": "chat",
+   "label": "Messages",
+   "icon": "chat",
+   "section": "More demos",
+   "accessibilityLabel": "Messages, More demos"
+  },
+  {
+   "id": "checkout",
+   "label": "Checkout",
+   "icon": "cart",
+   "section": "More demos",
+   "accessibilityLabel": "Checkout, More demos"
+  },
+  {
+   "id": "profile",
+   "label": "Profile",
+   "icon": "person",
+   "section": "More demos",
+   "accessibilityLabel": "Profile, More demos"
+  },
+  {
+   "id": "settings",
+   "label": "Settings",
+   "icon": "gear",
+   "section": "More demos",
+   "accessibilityLabel": "Settings, More demos"
+  }
+ ],
+ "current": "people",
+ "screen": {
+  "id": "people",
+  "title": "People",
+  "subtitle": "13 people in 6 teams",
+  "toolbar": [
+   {
+    "kind": "button",
+    "id": "people.invite",
+    "label": "Invite",
+    "variant": "primary",
+    "icon": "plus"
+   }
+  ],
+  "body": {
+   "kind": "stack",
+   "axis": "vertical",
+   "gap": "md",
+   "children": [
+    {
+     "kind": "stack",
+     "axis": "horizontal",
+     "gap": "sm",
+     "align": "end",
+     "wrap": true,
+     "children": [
+      {
+       "kind": "textInput",
+       "id": "people.query",
+       "label": "Search",
+       "value": "",
+       "placeholder": "Name, email or team",
+       "icon": "search"
+      },
+      {
+       "kind": "select",
+       "id": "people.role",
+       "label": "Role",
+       "value": "all",
+       "options": [
+        {
+         "value": "all",
+         "label": "All roles"
+        },
+        {
+         "value": "Admin",
+         "label": "Admin"
+        },
+        {
+         "value": "Designer",
+         "label": "Designer"
+        },
+        {
+         "value": "Engineer",
+         "label": "Engineer"
+        },
+        {
+         "value": "Manager",
+         "label": "Manager"
+        },
+        {
+         "value": "Writer",
+         "label": "Writer"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "kind": "banner",
+     "tone": "accent",
+     "title": "2 people selected",
+     "text": "Send them a reminder to finish setting up their profile.",
+     "action": {
+      "kind": "button",
+      "id": "people.remind",
+      "label": "Send reminders",
+      "variant": "primary",
+      "icon": "send"
+     },
+     "dismissId": "people.clear"
+    },
+    {
+     "kind": "card",
+     "children": [
+      {
+       "kind": "table",
+       "empty": "No one has that role yet.",
+       "columns": [
+        {
+         "id": "name",
+         "label": "Name",
+         "align": "start",
+         "sort": "asc",
+         "sortId": "people.sort:name"
+        },
+        {
+         "id": "role",
+         "label": "Role",
+         "align": "start",
+         "sort": "none",
+         "sortId": "people.sort:role"
+        },
+        {
+         "id": "team",
+         "label": "Team",
+         "align": "start",
+         "sort": "none",
+         "sortId": "people.sort:team"
+        },
+        {
+         "id": "joined",
+         "label": "Joined",
+         "align": "end",
+         "sort": "none",
+         "sortId": "people.sort:joined"
+        },
+        {
+         "id": "projects",
+         "label": "Projects",
+         "align": "end",
+         "sort": "none",
+         "sortId": "people.sort:projects"
+        }
+       ],
+       "rows": [
+        {
+         "id": "p7",
+         "selected": false,
+         "selectId": "people.check:p7",
+         "cells": [
+          {
+           "text": "Amara Diallo",
+           "secondary": "amara@northwind.example",
+           "avatar": {
+            "initials": "AD",
+            "hue": 151
+           }
+          },
+          {
+           "text": "Designer",
+           "badge": {
+            "text": "Invited",
+            "tone": "info"
+           }
+          },
+          {
+           "text": "Mobile"
+          },
+          {
+           "text": "2 days",
+           "align": "end"
+          },
+          {
+           "text": "0",
+           "align": "end"
+          }
+         ]
+        },
+        {
+         "id": "p12",
+         "selected": false,
+         "selectId": "people.check:p12",
+         "cells": [
+          {
+           "text": "Felix Wagner",
+           "secondary": "felix@northwind.example",
+           "avatar": {
+            "initials": "FW",
+            "hue": 218
+           }
+          },
+          {
+           "text": "Designer",
+           "badge": {
+            "text": "Away",
+            "tone": "warning"
+           }
+          },
+          {
+           "text": "Platform"
+          },
+          {
+           "text": "11 months",
+           "align": "end"
+          },
+          {
+           "text": "3",
+           "align": "end"
+          }
+         ]
+        },
+        {
+         "id": "p9",
+         "selected": false,
+         "selectId": "people.check:p9",
+         "cells": [
+          {
+           "text": "Grace Chen",
+           "secondary": "grace@northwind.example",
+           "avatar": {
+            "initials": "GC",
+            "hue": 206
+           }
+          },
+          {
+           "text": "Manager",
+           "badge": {
+            "text": "Active",
+            "tone": "success"
+           }
+          },
+          {
+           "text": "Brand"
+          },
+          {
+           "text": "2 years",
+           "align": "end"
+          },
+          {
+           "text": "8",
+           "align": "end"
+          }
+         ]
+        },
+        {
+         "id": "p13",
+         "selected": false,
+         "selectId": "people.check:p13",
+         "cells": [
+          {
+           "text": "Hana Kim",
+           "secondary": "hana@northwind.example",
+           "avatar": {
+            "initials": "HK",
+            "hue": 307
+           }
+          },
+          {
+           "text": "Engineer",
+           "badge": {
+            "text": "Active",
+            "tone": "success"
+           }
+          },
+          {
+           "text": "Mobile"
+          },
+          {
+           "text": "2 months",
+           "align": "end"
+          },
+          {
+           "text": "2",
+           "align": "end"
+          }
+         ]
+        },
+        {
+         "id": "p11",
+         "selected": false,
+         "selectId": "people.check:p11",
+         "cells": [
+          {
+           "text": "Ines Duarte",
+           "secondary": "ines@northwind.example",
+           "avatar": {
+            "initials": "ID",
+            "hue": 144
+           }
+          },
+          {
+           "text": "Writer",
+           "badge": {
+            "text": "Active",
+            "tone": "success"
+           }
+          },
+          {
+           "text": "Content"
+          },
+          {
+           "text": "20 months",
+           "align": "end"
+          },
+          {
+           "text": "6",
+           "align": "end"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "kind": "pagination",
+       "label": "1-5 of 13",
+       "nextId": "people.page:next"
+      }
+     ]
+    }
+   ]
+  }
+ },
+ "toast": null,
+ "dialog": null,
+ "theme": {
+  "id": "astryx",
+  "label": "Theme",
+  "setId": "settings.theme",
+  "options": [
+   {
+    "value": "astryx",
+    "label": "Astryx"
+   },
+   {
+    "value": "ocean",
+    "label": "Ocean"
+   },
+   {
+    "value": "ember",
+    "label": "Ember"
+   },
+   {
+    "value": "grape",
+    "label": "Grape"
+   }
+  ]
+ },
+ "scenarios": {
+  "label": "Scenarios",
+  "list": [
+   {
+    "id": "showcase",
+    "title": "Store: pay, ask the chat, manage inventory",
+    "template": "Theme showcase",
+    "steps": "14 steps"
+   },
+   {
+    "id": "dashboard",
+    "title": "Dashboard: chart, views and tables",
+    "template": "Dashboard",
+    "steps": "10 steps"
+   },
+   {
+    "id": "inbox",
+    "title": "Inbox: triage and reply",
+    "template": "Inbox",
+    "steps": "27 steps"
+   },
+   {
+    "id": "kanban",
+    "title": "Board: sprints and moving cards",
+    "template": "Kanban board",
+    "steps": "10 steps"
+   },
+   {
+    "id": "invoice",
+    "title": "Invoice: search, sort and filter lines",
+    "template": "Invoice",
+    "steps": "17 steps"
+   },
+   {
+    "id": "calendar",
+    "title": "Calendar: pick days and page months",
+    "template": "Calendar",
+    "steps": "9 steps"
+   },
+   {
+    "id": "chat",
+    "title": "Chat: ask, edit and open the document",
+    "template": "AI chat",
+    "steps": "13 steps"
+   },
+   {
+    "id": "checkout",
+    "title": "Checkout: from cart to paying",
+    "template": "Checkout",
+    "steps": "16 steps"
+   },
+   {
+    "id": "order",
+    "title": "Order: tabs, menus and panels",
+    "template": "Order detail",
+    "steps": "14 steps"
+   },
+   {
+    "id": "settings",
+    "title": "Settings: edit a profile and search",
+    "template": "Settings",
+    "steps": "12 steps"
+   }
+  ],
+  "drivers": [
+   {
+    "value": "native",
+    "label": "Drive from native",
+    "description": "Each step taps the SwiftUI side; the web drawings follow"
+   },
+   {
+    "value": "web",
+    "label": "Drive from web",
+    "description": "Each step clicks the web page on Hermes; the native side follows"
+   }
+  ],
+  "controls": {
+   "pauseId": "scenario.pause",
+   "resumeId": "scenario.resume",
+   "stopId": "scenario.stop",
+   "pauseLabel": "Pause",
+   "resumeLabel": "Resume",
+   "stopLabel": "Stop"
+  },
+  "playing": null
+ },
+ "surface": {
+  "id": "app.surface",
+  "label": "Show",
+  "value": "native",
+  "options": [
+   {
+    "value": "native",
+    "label": "Native",
+    "description": "SwiftUI, on the shared core in Hermes"
+   },
+   {
+    "value": "web",
+    "label": "Web on Hermes",
+    "description": "The refactored web page, on the same shared core"
+   },
+   {
+    "value": "webOwn",
+    "label": "Web, own core",
+    "description": "The refactored web page, on a core of its own in the page: no Hermes"
+   },
+   {
+    "value": "stock",
+    "label": "Stock Astryx",
+    "description": "Astryx as it is today: its own template and its own state"
+   },
+   {
+    "value": "compare",
+    "label": "Native and web",
+    "description": "Native and web on Hermes, side by side"
+   },
+   {
+    "value": "all",
+    "label": "All four",
+    "description": "All four drawings at once"
+   }
+  ],
+  "groups": [
+   {
+    "label": "Drawing",
+    "values": [
+     "native",
+     "web",
+     "webOwn",
+     "stock"
+    ]
+   },
+   {
+    "label": "Side by side",
+    "values": [
+     "compare",
+     "all"
+    ]
+   }
+  ],
+  "unavailable": "Needs a wider window",
+  "stockTemplate": "table",
+  "stockLabel": "Astryx as it is today: its own template and its own state"
+ }
+}

@@ -1,0 +1,520 @@
+{
+ "protocol": 1,
+ "appName": "Astryx Swift",
+ "nav": [
+  {
+   "id": "t.showcase",
+   "label": "Theme showcase",
+   "icon": "sparkle",
+   "section": "Astryx templates",
+   "accessibilityLabel": "Theme showcase, Astryx templates"
+  },
+  {
+   "id": "t.dashboard",
+   "label": "Dashboard",
+   "icon": "chart",
+   "section": "Astryx templates",
+   "accessibilityLabel": "Dashboard, Astryx templates"
+  },
+  {
+   "id": "t.inbox",
+   "label": "Inbox",
+   "icon": "inbox",
+   "section": "Astryx templates",
+   "accessibilityLabel": "Inbox, Astryx templates"
+  },
+  {
+   "id": "t.kanban",
+   "label": "Kanban board",
+   "icon": "check",
+   "section": "Astryx templates",
+   "accessibilityLabel": "Kanban board, Astryx templates"
+  },
+  {
+   "id": "t.invoice",
+   "label": "Invoice",
+   "icon": "card",
+   "section": "Astryx templates",
+   "accessibilityLabel": "Invoice, Astryx templates"
+  },
+  {
+   "id": "t.calendar",
+   "label": "Calendar",
+   "icon": "calendar",
+   "section": "Astryx templates",
+   "accessibilityLabel": "Calendar, Astryx templates"
+  },
+  {
+   "id": "t.chat",
+   "label": "AI chat",
+   "icon": "chat",
+   "section": "Astryx templates",
+   "accessibilityLabel": "AI chat, Astryx templates"
+  },
+  {
+   "id": "t.checkout",
+   "label": "Checkout",
+   "icon": "cart",
+   "section": "Astryx templates",
+   "accessibilityLabel": "Checkout, Astryx templates"
+  },
+  {
+   "id": "t.order",
+   "label": "Order detail",
+   "icon": "truck",
+   "section": "Astryx templates",
+   "accessibilityLabel": "Order detail, Astryx templates"
+  },
+  {
+   "id": "t.settings",
+   "label": "Settings",
+   "icon": "gear",
+   "section": "Astryx templates",
+   "accessibilityLabel": "Settings, Astryx templates"
+  },
+  {
+   "id": "overview",
+   "label": "Components",
+   "icon": "grid",
+   "section": "More demos",
+   "accessibilityLabel": "Components, More demos"
+  },
+  {
+   "id": "dashboard",
+   "label": "Dashboard",
+   "icon": "chart",
+   "section": "More demos",
+   "accessibilityLabel": "Dashboard, More demos"
+  },
+  {
+   "id": "inbox",
+   "label": "Inbox",
+   "icon": "inbox",
+   "badge": "3",
+   "section": "More demos",
+   "accessibilityLabel": "Inbox, More demos"
+  },
+  {
+   "id": "tasks",
+   "label": "Tasks",
+   "icon": "check",
+   "badge": "7",
+   "section": "More demos",
+   "accessibilityLabel": "Tasks, More demos"
+  },
+  {
+   "id": "people",
+   "label": "People",
+   "icon": "people",
+   "section": "More demos",
+   "accessibilityLabel": "People, More demos"
+  },
+  {
+   "id": "calendar",
+   "label": "Calendar",
+   "icon": "calendar",
+   "section": "More demos",
+   "accessibilityLabel": "Calendar, More demos"
+  },
+  {
+   "id": "chat",
+   "label": "Messages",
+   "icon": "chat",
+   "section": "More demos",
+   "accessibilityLabel": "Messages, More demos"
+  },
+  {
+   "id": "checkout",
+   "label": "Checkout",
+   "icon": "cart",
+   "section": "More demos",
+   "accessibilityLabel": "Checkout, More demos"
+  },
+  {
+   "id": "profile",
+   "label": "Profile",
+   "icon": "person",
+   "section": "More demos",
+   "accessibilityLabel": "Profile, More demos"
+  },
+  {
+   "id": "settings",
+   "label": "Settings",
+   "icon": "gear",
+   "section": "More demos",
+   "accessibilityLabel": "Settings, More demos"
+  }
+ ],
+ "current": "settings",
+ "screen": {
+  "id": "settings",
+  "title": "Settings",
+  "subtitle": "Your account and how the app looks",
+  "toolbar": [
+   {
+    "kind": "button",
+    "id": "settings.save",
+    "label": "Save",
+    "variant": "primary",
+    "icon": "check"
+   }
+  ],
+  "body": {
+   "kind": "stack",
+   "axis": "vertical",
+   "gap": "lg",
+   "children": [
+    {
+     "kind": "card",
+     "title": "Profile",
+     "children": [
+      {
+       "kind": "grid",
+       "minColumnWidth": 220,
+       "gap": "md",
+       "children": [
+        {
+         "kind": "textInput",
+         "id": "settings.name",
+         "label": "Name",
+         "value": "Maya Okafor",
+         "placeholder": "Your name"
+        },
+        {
+         "kind": "textInput",
+         "id": "settings.email",
+         "label": "Email",
+         "value": "maya@northwind.example",
+         "placeholder": "name@company.com",
+         "icon": "mail"
+        }
+       ]
+      },
+      {
+       "kind": "textInput",
+       "id": "settings.bio",
+       "label": "Bio",
+       "value": "Design engineer. I make the components and the tools that check them.",
+       "placeholder": "A sentence about you",
+       "multiline": true,
+       "hint": "91 characters left"
+      }
+     ]
+    },
+    {
+     "kind": "card",
+     "title": "Notifications",
+     "children": [
+      {
+       "kind": "switch",
+       "id": "settings.emailNotes",
+       "label": "Email",
+       "description": "Mentions, replies and invitations.",
+       "on": true
+      },
+      {
+       "kind": "switch",
+       "id": "settings.pushNotes",
+       "label": "Push notifications",
+       "description": "Off on every device.",
+       "on": false
+      },
+      {
+       "kind": "select",
+       "id": "settings.digest",
+       "label": "Summary email",
+       "value": "weekly",
+       "options": [
+        {
+         "value": "daily",
+         "label": "Every day"
+        },
+        {
+         "value": "weekly",
+         "label": "Every week"
+        },
+        {
+         "value": "never",
+         "label": "Never"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "kind": "card",
+     "title": "Appearance",
+     "children": [
+      {
+       "kind": "radio",
+       "id": "settings.theme",
+       "label": "Theme",
+       "value": "astryx",
+       "options": [
+        {
+         "value": "astryx",
+         "label": "Astryx",
+         "description": "Astryx's own default."
+        },
+        {
+         "value": "ocean",
+         "label": "Ocean",
+         "description": "Astryx, with a ocean accent and its own corners."
+        },
+        {
+         "value": "ember",
+         "label": "Ember",
+         "description": "Astryx, with a ember accent and its own corners."
+        },
+        {
+         "value": "grape",
+         "label": "Grape",
+         "description": "Astryx, with a grape accent and its own corners."
+        }
+       ]
+      },
+      {
+       "kind": "segmented",
+       "id": "settings.density",
+       "label": "Density",
+       "value": "comfortable",
+       "options": [
+        {
+         "value": "compact",
+         "label": "Compact"
+        },
+        {
+         "value": "comfortable",
+         "label": "Comfortable"
+        },
+        {
+         "value": "spacious",
+         "label": "Spacious"
+        }
+       ]
+      },
+      {
+       "kind": "switch",
+       "id": "settings.reduceMotion",
+       "label": "Reduce motion",
+       "description": "Fewer animations everywhere.",
+       "on": false
+      }
+     ]
+    },
+    {
+     "kind": "card",
+     "title": "Danger zone",
+     "children": [
+      {
+       "kind": "stack",
+       "axis": "horizontal",
+       "gap": "sm",
+       "align": "spread",
+       "children": [
+        {
+         "kind": "stack",
+         "axis": "vertical",
+         "gap": "xs",
+         "children": [
+          {
+           "kind": "text",
+           "text": "Delete account",
+           "style": "emphasis"
+          },
+          {
+           "kind": "text",
+           "text": "Removes your profile and everything you made.",
+           "style": "caption"
+          }
+         ]
+        },
+        {
+         "kind": "button",
+         "id": "settings.delete",
+         "label": "Delete account",
+         "variant": "destructive",
+         "icon": "trash"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "kind": "text",
+     "text": "Signed in as maya@northwind.example · Demo account",
+     "style": "caption"
+    }
+   ]
+  }
+ },
+ "toast": null,
+ "dialog": null,
+ "theme": {
+  "id": "astryx",
+  "label": "Theme",
+  "setId": "settings.theme",
+  "options": [
+   {
+    "value": "astryx",
+    "label": "Astryx"
+   },
+   {
+    "value": "ocean",
+    "label": "Ocean"
+   },
+   {
+    "value": "ember",
+    "label": "Ember"
+   },
+   {
+    "value": "grape",
+    "label": "Grape"
+   }
+  ]
+ },
+ "scenarios": {
+  "label": "Scenarios",
+  "list": [
+   {
+    "id": "showcase",
+    "title": "Store: pay, ask the chat, manage inventory",
+    "template": "Theme showcase",
+    "steps": "14 steps"
+   },
+   {
+    "id": "dashboard",
+    "title": "Dashboard: chart, views and tables",
+    "template": "Dashboard",
+    "steps": "10 steps"
+   },
+   {
+    "id": "inbox",
+    "title": "Inbox: triage and reply",
+    "template": "Inbox",
+    "steps": "27 steps"
+   },
+   {
+    "id": "kanban",
+    "title": "Board: sprints and moving cards",
+    "template": "Kanban board",
+    "steps": "10 steps"
+   },
+   {
+    "id": "invoice",
+    "title": "Invoice: search, sort and filter lines",
+    "template": "Invoice",
+    "steps": "17 steps"
+   },
+   {
+    "id": "calendar",
+    "title": "Calendar: pick days and page months",
+    "template": "Calendar",
+    "steps": "9 steps"
+   },
+   {
+    "id": "chat",
+    "title": "Chat: ask, edit and open the document",
+    "template": "AI chat",
+    "steps": "13 steps"
+   },
+   {
+    "id": "checkout",
+    "title": "Checkout: from cart to paying",
+    "template": "Checkout",
+    "steps": "16 steps"
+   },
+   {
+    "id": "order",
+    "title": "Order: tabs, menus and panels",
+    "template": "Order detail",
+    "steps": "14 steps"
+   },
+   {
+    "id": "settings",
+    "title": "Settings: edit a profile and search",
+    "template": "Settings",
+    "steps": "12 steps"
+   }
+  ],
+  "drivers": [
+   {
+    "value": "native",
+    "label": "Drive from native",
+    "description": "Each step taps the SwiftUI side; the web drawings follow"
+   },
+   {
+    "value": "web",
+    "label": "Drive from web",
+    "description": "Each step clicks the web page on Hermes; the native side follows"
+   }
+  ],
+  "controls": {
+   "pauseId": "scenario.pause",
+   "resumeId": "scenario.resume",
+   "stopId": "scenario.stop",
+   "pauseLabel": "Pause",
+   "resumeLabel": "Resume",
+   "stopLabel": "Stop"
+  },
+  "playing": null
+ },
+ "surface": {
+  "id": "app.surface",
+  "label": "Show",
+  "value": "native",
+  "options": [
+   {
+    "value": "native",
+    "label": "Native",
+    "description": "SwiftUI, on the shared core in Hermes"
+   },
+   {
+    "value": "web",
+    "label": "Web on Hermes",
+    "description": "The refactored web page, on the same shared core"
+   },
+   {
+    "value": "webOwn",
+    "label": "Web, own core",
+    "description": "The refactored web page, on a core of its own in the page: no Hermes"
+   },
+   {
+    "value": "stock",
+    "label": "Stock Astryx",
+    "description": "Astryx as it is today: its own template and its own state"
+   },
+   {
+    "value": "compare",
+    "label": "Native and web",
+    "description": "Native and web on Hermes, side by side"
+   },
+   {
+    "value": "all",
+    "label": "All four",
+    "description": "All four drawings at once"
+   }
+  ],
+  "groups": [
+   {
+    "label": "Drawing",
+    "values": [
+     "native",
+     "web",
+     "webOwn",
+     "stock"
+    ]
+   },
+   {
+    "label": "Side by side",
+    "values": [
+     "compare",
+     "all"
+    ]
+   }
+  ],
+  "unavailable": "Needs a wider window",
+  "stockTemplate": "settings",
+  "stockLabel": "Astryx as it is today: its own template and its own state"
+ }
+}

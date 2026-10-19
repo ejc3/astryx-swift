@@ -1,0 +1,33 @@
+{
+  "name": "astryx-native-apple",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Headless React Native (Hermes) host for the Astryx Native core, under SwiftUI apps for the Mac and the iPhone",
+  "scripts": {
+    "bundle": "node scripts/bundle.mjs",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "react": "19.2.8",
+    "react-native": "0.83.10",
+    "react-native-macos": "0.83.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.25.2",
+    "@react-native-community/cli": "20.2.0",
+    "@react-native-community/cli-platform-ios": "20.2.0",
+    "@react-native/babel-preset": "0.83.10",
+    "@react-native/metro-config": "0.83.10",
+    "@react-native/typescript-config": "0.83.10",
+    "@types/react": "^19.1.1",
+    "typescript": "5.9.3"
+  },
+  "codegenConfig": {
+    "name": "AXClientSpec",
+    "type": "modules",
+    "jsSrcsDir": "js/specs"
+  },
+  "engines": {
+    "node": ">=20.19.4"
+  }
+}

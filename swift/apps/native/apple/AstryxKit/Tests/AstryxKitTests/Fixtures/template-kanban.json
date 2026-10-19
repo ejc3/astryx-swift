@@ -1,0 +1,593 @@
+{
+ "protocol": 1,
+ "appName": "Astryx Swift",
+ "nav": [
+  {
+   "id": "t.showcase",
+   "label": "Theme showcase",
+   "icon": "sparkle",
+   "section": "Astryx templates",
+   "accessibilityLabel": "Theme showcase, Astryx templates"
+  },
+  {
+   "id": "t.dashboard",
+   "label": "Dashboard",
+   "icon": "chart",
+   "section": "Astryx templates",
+   "accessibilityLabel": "Dashboard, Astryx templates"
+  },
+  {
+   "id": "t.inbox",
+   "label": "Inbox",
+   "icon": "inbox",
+   "section": "Astryx templates",
+   "accessibilityLabel": "Inbox, Astryx templates"
+  },
+  {
+   "id": "t.kanban",
+   "label": "Kanban board",
+   "icon": "check",
+   "section": "Astryx templates",
+   "accessibilityLabel": "Kanban board, Astryx templates"
+  },
+  {
+   "id": "t.invoice",
+   "label": "Invoice",
+   "icon": "card",
+   "section": "Astryx templates",
+   "accessibilityLabel": "Invoice, Astryx templates"
+  },
+  {
+   "id": "t.calendar",
+   "label": "Calendar",
+   "icon": "calendar",
+   "section": "Astryx templates",
+   "accessibilityLabel": "Calendar, Astryx templates"
+  },
+  {
+   "id": "t.chat",
+   "label": "AI chat",
+   "icon": "chat",
+   "section": "Astryx templates",
+   "accessibilityLabel": "AI chat, Astryx templates"
+  },
+  {
+   "id": "t.checkout",
+   "label": "Checkout",
+   "icon": "cart",
+   "section": "Astryx templates",
+   "accessibilityLabel": "Checkout, Astryx templates"
+  },
+  {
+   "id": "t.order",
+   "label": "Order detail",
+   "icon": "truck",
+   "section": "Astryx templates",
+   "accessibilityLabel": "Order detail, Astryx templates"
+  },
+  {
+   "id": "t.settings",
+   "label": "Settings",
+   "icon": "gear",
+   "section": "Astryx templates",
+   "accessibilityLabel": "Settings, Astryx templates"
+  },
+  {
+   "id": "overview",
+   "label": "Components",
+   "icon": "grid",
+   "section": "More demos",
+   "accessibilityLabel": "Components, More demos"
+  },
+  {
+   "id": "dashboard",
+   "label": "Dashboard",
+   "icon": "chart",
+   "section": "More demos",
+   "accessibilityLabel": "Dashboard, More demos"
+  },
+  {
+   "id": "inbox",
+   "label": "Inbox",
+   "icon": "inbox",
+   "badge": "3",
+   "section": "More demos",
+   "accessibilityLabel": "Inbox, More demos"
+  },
+  {
+   "id": "tasks",
+   "label": "Tasks",
+   "icon": "check",
+   "badge": "7",
+   "section": "More demos",
+   "accessibilityLabel": "Tasks, More demos"
+  },
+  {
+   "id": "people",
+   "label": "People",
+   "icon": "people",
+   "section": "More demos",
+   "accessibilityLabel": "People, More demos"
+  },
+  {
+   "id": "calendar",
+   "label": "Calendar",
+   "icon": "calendar",
+   "section": "More demos",
+   "accessibilityLabel": "Calendar, More demos"
+  },
+  {
+   "id": "chat",
+   "label": "Messages",
+   "icon": "chat",
+   "section": "More demos",
+   "accessibilityLabel": "Messages, More demos"
+  },
+  {
+   "id": "checkout",
+   "label": "Checkout",
+   "icon": "cart",
+   "section": "More demos",
+   "accessibilityLabel": "Checkout, More demos"
+  },
+  {
+   "id": "profile",
+   "label": "Profile",
+   "icon": "person",
+   "section": "More demos",
+   "accessibilityLabel": "Profile, More demos"
+  },
+  {
+   "id": "settings",
+   "label": "Settings",
+   "icon": "gear",
+   "section": "More demos",
+   "accessibilityLabel": "Settings, More demos"
+  }
+ ],
+ "current": "t.kanban",
+ "screen": {
+  "id": "t.kanban",
+  "title": "Kanban board",
+  "subtitle": "Astryx's kanban-board template, on the shared core",
+  "toolbar": [],
+  "body": {
+   "kind": "template",
+   "template": "kanban",
+   "view": {
+    "words": {
+     "boardActions": "Board actions",
+     "sort": "Sort",
+     "filter": "Filter",
+     "search": "Search",
+     "addTask": "Add task",
+     "sprint": "Sprint",
+     "workItemActions": "Work item actions",
+     "open": "Open",
+     "assignToMe": "Assign to me",
+     "status": "status",
+     "done": "Done",
+     "movedTo": "Moved to"
+    },
+    "inert": [
+     "sort",
+     "filter",
+     "search",
+     "addTask",
+     "open",
+     "assignToMe"
+    ],
+    "title": "Sprint Board",
+    "total": 7,
+    "sprint": "003",
+    "sprintOptions": [
+     {
+      "value": "003",
+      "label": "Sprint 003"
+     },
+     {
+      "value": "002",
+      "label": "Sprint 002"
+     },
+     {
+      "value": "001",
+      "label": "Sprint 001"
+     }
+    ],
+    "columns": [
+     {
+      "id": "todo",
+      "title": "To-do",
+      "variant": "neutral",
+      "tooltip": "Items assigned to this sprint, waiting to be picked up.",
+      "emptyTitle": "To-do is empty",
+      "emptyDescription": "Items pulled into this sprint appear here.",
+      "emptyIcon": "inbox",
+      "count": 2,
+      "cards": [
+       {
+        "id": "t1",
+        "ref": "Task 4821",
+        "priorityLabel": "Low",
+        "priorityVariant": "teal",
+        "title": "Draft project kickoff brief",
+        "description": "Write a short brief outlining goals, scope, and success criteria for the upcoming project.",
+        "edited": "2h ago",
+        "due": "Jul 8",
+        "meta": "Edited 2h ago · Due Jul 8",
+        "moveTargets": [
+         {
+          "label": "Move to In progress",
+          "id": "tpl.kanban.move:t1:in-progress"
+         },
+         {
+          "label": "Move to In review",
+          "id": "tpl.kanban.move:t1:in-review"
+         },
+         {
+          "label": "Move to Done",
+          "id": "tpl.kanban.move:t1:done"
+         }
+        ]
+       },
+       {
+        "id": "t2",
+        "ref": "Task 4842",
+        "priorityLabel": "Low",
+        "priorityVariant": "teal",
+        "title": "Collect feedback from stakeholders",
+        "description": "Gather input from key stakeholders and summarize the main themes for the next review.",
+        "edited": "1d ago",
+        "due": "Jul 11",
+        "meta": "Edited 1d ago · Due Jul 11",
+        "moveTargets": [
+         {
+          "label": "Move to In progress",
+          "id": "tpl.kanban.move:t2:in-progress"
+         },
+         {
+          "label": "Move to In review",
+          "id": "tpl.kanban.move:t2:in-review"
+         },
+         {
+          "label": "Move to Done",
+          "id": "tpl.kanban.move:t2:done"
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "id": "in-progress",
+      "title": "In progress",
+      "variant": "accent",
+      "tooltip": "Items currently in progress.",
+      "emptyTitle": "Nothing in progress",
+      "emptyDescription": "Items being worked on appear here.",
+      "emptyIcon": "arrow-path",
+      "count": 2,
+      "cards": [
+       {
+        "id": "p1",
+        "ref": "Task 4825",
+        "priorityLabel": "High",
+        "priorityVariant": "error",
+        "title": "Design the landing page layout",
+        "description": "Create a first-pass layout for the landing page and share it for early feedback.",
+        "edited": "18m ago",
+        "due": "Jul 3",
+        "meta": "Edited 18m ago · Due Jul 3",
+        "moveTargets": [
+         {
+          "label": "Move to To-do",
+          "id": "tpl.kanban.move:p1:todo"
+         },
+         {
+          "label": "Move to In review",
+          "id": "tpl.kanban.move:p1:in-review"
+         },
+         {
+          "label": "Move to Done",
+          "id": "tpl.kanban.move:p1:done"
+         }
+        ]
+       },
+       {
+        "id": "p2",
+        "ref": "Task 4833",
+        "priorityLabel": "Medium",
+        "priorityVariant": "warning",
+        "title": "Set up the project workspace",
+        "description": "Configure the shared workspace and invite the team so everyone has access.",
+        "edited": "5m ago",
+        "due": "Jul 4",
+        "meta": "Edited 5m ago · Due Jul 4",
+        "moveTargets": [
+         {
+          "label": "Move to To-do",
+          "id": "tpl.kanban.move:p2:todo"
+         },
+         {
+          "label": "Move to In review",
+          "id": "tpl.kanban.move:p2:in-review"
+         },
+         {
+          "label": "Move to Done",
+          "id": "tpl.kanban.move:p2:done"
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "id": "in-review",
+      "title": "In review",
+      "variant": "warning",
+      "tooltip": "Items waiting for your review.",
+      "emptyTitle": "Nothing in review",
+      "emptyDescription": "Items awaiting your review appear here.",
+      "emptyIcon": "clipboard-check",
+      "count": 0,
+      "cards": []
+     },
+     {
+      "id": "done",
+      "title": "Done",
+      "variant": "success",
+      "tooltip": "Items that have been handled.",
+      "emptyTitle": "Nothing done yet",
+      "emptyDescription": "Completed items appear here.",
+      "emptyIcon": "check-circle",
+      "count": 3,
+      "cards": [
+       {
+        "id": "r1",
+        "ref": "Task 4788",
+        "priorityLabel": "Low",
+        "priorityVariant": "teal",
+        "title": "Write the weekly status update",
+        "description": "Summarize progress, blockers, and next steps in a short update for the team.",
+        "edited": "Yesterday",
+        "due": "Jul 1",
+        "meta": "Edited Yesterday · Due Jul 1",
+        "moveTargets": [
+         {
+          "label": "Move to To-do",
+          "id": "tpl.kanban.move:r1:todo"
+         },
+         {
+          "label": "Move to In progress",
+          "id": "tpl.kanban.move:r1:in-progress"
+         },
+         {
+          "label": "Move to In review",
+          "id": "tpl.kanban.move:r1:in-review"
+         }
+        ]
+       },
+       {
+        "id": "r2",
+        "ref": "Task 4789",
+        "priorityLabel": "High",
+        "priorityVariant": "error",
+        "title": "Prepare the demo walkthrough",
+        "description": "Put together a short walkthrough covering the main features for the demo.",
+        "edited": "3d ago",
+        "due": "Jun 30",
+        "meta": "Edited 3d ago · Due Jun 30",
+        "moveTargets": [
+         {
+          "label": "Move to To-do",
+          "id": "tpl.kanban.move:r2:todo"
+         },
+         {
+          "label": "Move to In progress",
+          "id": "tpl.kanban.move:r2:in-progress"
+         },
+         {
+          "label": "Move to In review",
+          "id": "tpl.kanban.move:r2:in-review"
+         }
+        ]
+       },
+       {
+        "id": "r3",
+        "ref": "Task 4790",
+        "priorityLabel": "Medium",
+        "priorityVariant": "warning",
+        "title": "Review and merge open changes",
+        "description": "Go through the pending changes, leave comments, and merge the ones that are ready.",
+        "edited": "4d ago",
+        "due": "Jun 28",
+        "meta": "Edited 4d ago · Due Jun 28",
+        "moveTargets": [
+         {
+          "label": "Move to To-do",
+          "id": "tpl.kanban.move:r3:todo"
+         },
+         {
+          "label": "Move to In progress",
+          "id": "tpl.kanban.move:r3:in-progress"
+         },
+         {
+          "label": "Move to In review",
+          "id": "tpl.kanban.move:r3:in-review"
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   }
+  }
+ },
+ "toast": null,
+ "dialog": null,
+ "theme": {
+  "id": "astryx",
+  "label": "Theme",
+  "setId": "settings.theme",
+  "options": [
+   {
+    "value": "astryx",
+    "label": "Astryx"
+   },
+   {
+    "value": "ocean",
+    "label": "Ocean"
+   },
+   {
+    "value": "ember",
+    "label": "Ember"
+   },
+   {
+    "value": "grape",
+    "label": "Grape"
+   }
+  ]
+ },
+ "scenarios": {
+  "label": "Scenarios",
+  "list": [
+   {
+    "id": "showcase",
+    "title": "Store: pay, ask the chat, manage inventory",
+    "template": "Theme showcase",
+    "steps": "14 steps"
+   },
+   {
+    "id": "dashboard",
+    "title": "Dashboard: chart, views and tables",
+    "template": "Dashboard",
+    "steps": "10 steps"
+   },
+   {
+    "id": "inbox",
+    "title": "Inbox: triage and reply",
+    "template": "Inbox",
+    "steps": "27 steps"
+   },
+   {
+    "id": "kanban",
+    "title": "Board: sprints and moving cards",
+    "template": "Kanban board",
+    "steps": "10 steps"
+   },
+   {
+    "id": "invoice",
+    "title": "Invoice: search, sort and filter lines",
+    "template": "Invoice",
+    "steps": "17 steps"
+   },
+   {
+    "id": "calendar",
+    "title": "Calendar: pick days and page months",
+    "template": "Calendar",
+    "steps": "9 steps"
+   },
+   {
+    "id": "chat",
+    "title": "Chat: ask, edit and open the document",
+    "template": "AI chat",
+    "steps": "13 steps"
+   },
+   {
+    "id": "checkout",
+    "title": "Checkout: from cart to paying",
+    "template": "Checkout",
+    "steps": "16 steps"
+   },
+   {
+    "id": "order",
+    "title": "Order: tabs, menus and panels",
+    "template": "Order detail",
+    "steps": "14 steps"
+   },
+   {
+    "id": "settings",
+    "title": "Settings: edit a profile and search",
+    "template": "Settings",
+    "steps": "12 steps"
+   }
+  ],
+  "drivers": [
+   {
+    "value": "native",
+    "label": "Drive from native",
+    "description": "Each step taps the SwiftUI side; the web drawings follow"
+   },
+   {
+    "value": "web",
+    "label": "Drive from web",
+    "description": "Each step clicks the web page on Hermes; the native side follows"
+   }
+  ],
+  "controls": {
+   "pauseId": "scenario.pause",
+   "resumeId": "scenario.resume",
+   "stopId": "scenario.stop",
+   "pauseLabel": "Pause",
+   "resumeLabel": "Resume",
+   "stopLabel": "Stop"
+  },
+  "playing": null
+ },
+ "surface": {
+  "id": "app.surface",
+  "label": "Show",
+  "value": "native",
+  "options": [
+   {
+    "value": "native",
+    "label": "Native",
+    "description": "SwiftUI, on the shared core in Hermes"
+   },
+   {
+    "value": "web",
+    "label": "Web on Hermes",
+    "description": "The refactored web page, on the same shared core"
+   },
+   {
+    "value": "webOwn",
+    "label": "Web, own core",
+    "description": "The refactored web page, on a core of its own in the page: no Hermes"
+   },
+   {
+    "value": "stock",
+    "label": "Stock Astryx",
+    "description": "Astryx as it is today: its own template and its own state"
+   },
+   {
+    "value": "compare",
+    "label": "Native and web",
+    "description": "Native and web on Hermes, side by side"
+   },
+   {
+    "value": "all",
+    "label": "All four",
+    "description": "All four drawings at once"
+   }
+  ],
+  "groups": [
+   {
+    "label": "Drawing",
+    "values": [
+     "native",
+     "web",
+     "webOwn",
+     "stock"
+    ]
+   },
+   {
+    "label": "Side by side",
+    "values": [
+     "compare",
+     "all"
+    ]
+   }
+  ],
+  "unavailable": "Needs a wider window",
+  "stockTemplate": "kanban-board",
+  "stockLabel": "Astryx as it is today: its own template and its own state"
+ }
+}
