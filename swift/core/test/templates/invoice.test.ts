@@ -31,6 +31,7 @@ test("rows are formatted: quantity, rate, amount and the hover card", () => {
   const r = view(start()).rows[8]!;
   assert.deepEqual(r, {
     id: "li-09",
+    detailsLabel: "Frontend build — page templates details",
     description: "Frontend build — page templates",
     category: "Development",
     quantity: "104",
@@ -155,4 +156,13 @@ test("the view carries the column titles and words, and lists the controls with 
   ]);
   assert.equal(v.words.downloadPdf, "Download PDF");
   assert.deepEqual(v.inert, ["downloadPdf", "dispute"]);
+});
+
+test("the layout numbers, the filter fields' labels and each row's card name come from the view", () => {
+  const v = view(start());
+  assert.deepEqual(v.rules, { factMinWidth: 280, searchWidth: 300, figureWidth: 132 });
+  assert.equal(v.words.linesName, "Lines");
+  assert.deepEqual(v.words.fields, { description: "Description", category: "Category", quantity: "Quantity" });
+  assert.equal(v.rows[0]!.detailsLabel, "Discovery workshop details");
+  assert.deepEqual(v.columns.map((c) => c.title), ["Description", "Category", "Qty", "Rate", "Amount"]);
 });

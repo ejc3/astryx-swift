@@ -16,9 +16,6 @@ struct OrderTemplate: View {
     }
 }
 
-/// The window is narrow when the page and the 320-point panel cannot sit side by side.
-let orderNarrowWidth: CGFloat = 760
-
 struct OrderScreen: View {
     let model: OrderModel
     @Environment(\.ax) private var ax
@@ -28,7 +25,8 @@ struct OrderScreen: View {
 
     /// The template owns its outer padding, as the web page's header and content do (16).
     private var pad: CGFloat { ax.space(4) }
-    private var narrow: Bool { width < orderNarrowWidth }
+    /// Narrow when the page and the panel cannot sit side by side (the core's threshold for a measured pane).
+    private var narrow: Bool { width < model.rules.paneNarrowBelow }
 
     var body: some View {
         Group {
@@ -90,7 +88,7 @@ struct OrderScreen: View {
                     Rectangle().fill(ax.border).frame(width: 1)
                     OrderPanelContent(model: model)
                         .padding(pad)
-                        .frame(width: 320 + 2 * pad, alignment: .topLeading)
+                        .frame(width: model.rules.panelWidth + 2 * pad, alignment: .topLeading)
                 }
             }
         }

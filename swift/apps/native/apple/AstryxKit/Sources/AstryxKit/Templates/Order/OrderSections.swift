@@ -12,7 +12,7 @@ struct OrderMain: View {
             OrderInvoice(model: model, narrow: narrow)
             OrderTimeline(model: model)
         }
-        .frame(maxWidth: 1000, alignment: .topLeading)
+        .frame(maxWidth: model.rules.contentWidth, alignment: .topLeading)
     }
 }
 

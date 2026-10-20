@@ -235,8 +235,10 @@ export type CheckoutView = {
   };
   payment: { cardNumber: string; cardName: string; expiry: string; cvc: string; billingMatches: boolean };
   confirmation: string;
-  /** The words only the native drawing writes (the web page writes its own inline). */
+  /** The words both drawings write: the web page reads them where Astryx's stock markup has them inline. */
   words: CheckoutWords;
+  /** The layout numbers both drawings keep from Astryx's stock template. */
+  rules: CheckoutRules;
   /**
    * True when the page's own heading says what the screen's navigation title already says: a host
    * with a title bar draws the title there and leaves the heading out. (The web page keeps its heading.)
@@ -245,12 +247,51 @@ export type CheckoutView = {
 };
 export type View = CheckoutView;
 
+/**
+ * The layout numbers the stock page keeps and the native drawing repeats. Only thresholds and
+ * fixed sizes are shared; each drawing measures its own widths and compares them with these.
+ */
+export type CheckoutRules = {
+  /** The page stacks (summary first, one-column name rows) when its host is at most this wide, in points. */
+  narrowHostAtMost: number;
+  /** The page's content is capped at this width. */
+  contentWidth: number;
+  /** The order summary's width beside the form (a wide host). */
+  summaryWidth: number;
+  /**
+   * The step indicator collapses to bars and the current step's name when each of its steps would get
+   * less than this much of the form column. (Astryx's own Stepper holds the same number as its default;
+   * the web page leaves the choice to it, the native drawing reads this.)
+   */
+  stepperMinStepWidth: number;
+  /** A line item's quantity: the least, the most, and the field's width. */
+  quantity: { min: number; max: number; fieldWidth: number };
+  /** The delivery note's length limit. */
+  noteMaxLength: number;
+  /** The expiry and CVC fields' width. */
+  shortFieldWidth: number;
+};
+
+const RULES: CheckoutRules = {
+  narrowHostAtMost: 900,
+  contentWidth: 1000,
+  summaryWidth: 360,
+  stepperMinStepWidth: 112,
+  quantity: { min: 0, max: 10, fieldWidth: 96 },
+  noteMaxLength: 240,
+  shortFieldWidth: 140,
+};
+
 export type CheckoutWords = CommonWords & {
   /** The page heading (the stock page writes it inline). */
   title: string;
   secureCheckout: string;
   progress: string;
-  cart: { heading: string; limited: string; remove: string; promoLabel: string; promoPlaceholder: string; apply: string; quantity: string };
+  cart: {
+    heading: string; limited: string; remove: string; promoLabel: string; promoPlaceholder: string; apply: string; quantity: string;
+    /** Follows a unit price: "$78.00 each". */
+    each: string;
+  };
   shipping: {
     heading: string; detail: string; email: string; emailPlaceholder: string; emailHint: string; firstName: string; lastName: string;
     country: string; address: string; addressPlaceholder: string; apartment: string; city: string; state: string; statePlaceholder: string;
@@ -261,7 +302,13 @@ export type CheckoutWords = CommonWords & {
     expiryPlaceholder: string; cvc: string; cvcPlaceholder: string; cvcInfoLabel: string; cvcInfo: string; billingMatches: string;
     billingTitle: string; billingDetail: string;
   };
-  confirmed: { title: string; heading: string; detail: string };
+  confirmed: {
+    title: string; heading: string;
+    /** The ending's sentence for a host that has an app's state to speak of. */
+    detail: string;
+    /** The stock page's own sentence, which speaks of "this page's component state": the web drawing writes it. */
+    pageDetail: string;
+  };
   summary: { title: string; subtotal: string; deliverySuffix: string; tax: string; total: string; qty: string };
 };
 
@@ -274,7 +321,7 @@ const WORDS: CheckoutWords = {
   progress: "Checkout progress",
   cart: {
     heading: "Review your cart", limited: "Limited", remove: "Remove", promoLabel: "Promo code", promoPlaceholder: "WELCOME10",
-    apply: "Apply", quantity: "Quantity",
+    apply: "Apply", quantity: "Quantity", each: "each",
   },
   shipping: {
     heading: "Where should it go?",
@@ -318,6 +365,7 @@ const WORDS: CheckoutWords = {
     title: "Order confirmed",
     heading: "Thanks for your order",
     detail: "The order is recorded in the app's state, so the template ends in a real, reviewable outcome.",
+    pageDetail: "The completion is stored in this page's component state so the template ends in a real, reviewable outcome.",
   },
   summary: { title: "Order summary", subtotal: "Subtotal", deliverySuffix: "delivery", tax: "Estimated tax", total: "Total", qty: "Qty" },
 };
@@ -509,6 +557,7 @@ export const checkout: TemplateModule<CheckoutState, CheckoutView> = {
       payment: { cardNumber: s.cardNumber, cardName: s.cardName, expiry: s.expiry, cvc: s.cvc, billingMatches: s.billingMatches },
       confirmation: `This local example completed an order for ${money(total)}. No payment was sent.`,
       words: WORDS,
+      rules: RULES,
       headingRepeatsTitle: WORDS.title === TITLE,
     };
   },

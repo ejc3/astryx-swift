@@ -386,6 +386,10 @@
      }
     ],
     "itemsLabel": "5 ordered items",
+    "itemsLabelParts": [
+     "5",
+     " ordered items"
+    ],
     "inert": [
      "allOrders",
      "restock",
@@ -435,6 +439,12 @@
      "customer": "Customer",
      "fraudAnalysis": "Fraud Analysis",
      "riskLevel": "Risk level"
+    },
+    "rules": {
+     "viewportNarrowAtMost": 1024,
+     "paneNarrowBelow": 760,
+     "contentWidth": 1000,
+     "panelWidth": 320
     }
    }
   }

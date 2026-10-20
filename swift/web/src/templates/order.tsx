@@ -82,6 +82,9 @@ function PageHeader({
   onTogglePanel: () => void;
   isNarrow: boolean;
 }) {
+  const {words} = view;
+  const mainTabs = view.tabs.filter(tab => !tab.more);
+  const moreTabs = view.tabs.filter(tab => tab.more);
   return (
     <LayoutHeader hasDivider padding={4} paddingBlockEnd={0}>
       <VStack gap={3}>
@@ -91,7 +94,7 @@ function PageHeader({
               <Link href="#" color="secondary">
                 <HStack gap={1} vAlign="center">
                   <Icon icon={ArrowLeftIcon} size="sm" color="inherit" />
-                  All orders
+                  {words.allOrders}
                 </HStack>
               </Link>
               <VStack gap={0}>
@@ -102,7 +105,7 @@ function PageHeader({
                     than collapsing items behind a "+N more" overflow). */}
                 <HStack gap={1} vAlign="center" wrap="wrap">
                   <Text type="body" maxLines={1}>
-                    {view.itemCount} ordered items
+                    {view.itemsLabelParts}
                   </Text>
                   <HStack gap={1} vAlign="center">
                     <Bullet />
@@ -132,7 +135,7 @@ function PageHeader({
                   <HStack gap={1} vAlign="center">
                     <Bullet />
                     <Link href="#" color="secondary">
-                      See all
+                      {words.seeAll}
                     </Link>
                   </HStack>
                 </HStack>
@@ -141,8 +144,8 @@ function PageHeader({
           </StackItem>
           {!isNarrow && (
             <HStack gap={2}>
-              <Button label="Restock" variant="secondary" />
-              <Button label="Edit" variant="secondary" />
+              <Button label={words.restock} variant="secondary" />
+              <Button label={words.edit} variant="secondary" />
             </HStack>
           )}
         </HStack>
@@ -154,12 +157,12 @@ function PageHeader({
           <HStack gap={2}>
             <StackItem size="fill">
               <VStack hAlign="stretch">
-                <Button label="Restock" variant="secondary" />
+                <Button label={words.restock} variant="secondary" />
               </VStack>
             </StackItem>
             <StackItem size="fill">
               <VStack hAlign="stretch">
-                <Button label="Edit" variant="secondary" />
+                <Button label={words.edit} variant="secondary" />
               </VStack>
             </StackItem>
           </HStack>
@@ -172,20 +175,17 @@ function PageHeader({
               onChange={onTabChange}
               size="lg"
               isFullBleed>
-              <Tab value="details" label="Details" />
-              <Tab value="invoices" label="Invoices" />
-              <Tab value="timeline" label="Timeline" />
+              {mainTabs.map(tab => (
+                <Tab key={tab.value} value={tab.value} label={tab.label} />
+              ))}
               <TabMenu
-                label="More"
-                options={[
-                  {value: 'customer', label: 'Customer'},
-                  {value: 'analysis', label: 'Analysis'},
-                ]}
+                label={words.more}
+                options={moreTabs.map(({value, label}) => ({value, label}))}
               />
             </TabList>
           </StackItem>
           <Button
-            label={isPanelOpen ? 'Hide panel' : 'Show panel'}
+            label={isPanelOpen ? words.hidePanel : words.showPanel}
             variant="ghost"
             size="md"
             icon={<Icon icon={ViewColumnsIcon} size="sm" />}
@@ -200,19 +200,20 @@ function PageHeader({
 
 // ─── Items Card ─────────────────────────────────────────────────────────────
 function ItemsCard({view}: {view: View}) {
+  const {words} = view;
   return (
     <Section>
       <VStack gap={4}>
         <HStack vAlign="center" gap={2} wrap="wrap">
           <StackItem size="fill">
             <HStack gap={2} vAlign="center">
-              <Heading level={2}>Items</Heading>
+              <Heading level={2}>{words.items}</Heading>
               <Badge variant="warning" label={view.status} />
             </HStack>
           </StackItem>
           <HStack gap={2}>
-            <Button label="Fulfill item" variant="ghost" />
-            <Button label="Create label" variant="secondary" />
+            <Button label={words.fulfillItem} variant="ghost" />
+            <Button label={words.createLabel} variant="secondary" />
           </HStack>
         </HStack>
 
@@ -258,19 +259,20 @@ function ItemsCard({view}: {view: View}) {
 
 // ─── Invoice Card ───────────────────────────────────────────────────────────
 function InvoiceCard({view}: {view: View}) {
+  const {words} = view;
   return (
     <Section>
       <VStack gap={4}>
         <HStack vAlign="center" gap={2} wrap="wrap">
           <StackItem size="fill">
             <HStack gap={2} vAlign="center">
-              <Heading level={2}>Invoice</Heading>
-              <Badge variant="success" label="Paid" />
+              <Heading level={2}>{words.invoice}</Heading>
+              <Badge variant="success" label={words.paid} />
             </HStack>
           </StackItem>
           <HStack gap={2}>
-            <Button label="Refund" variant="ghost" />
-            <Button label="Send Invoice" variant="secondary" />
+            <Button label={words.refund} variant="ghost" />
+            <Button label={words.sendInvoice} variant="secondary" />
           </HStack>
         </HStack>
 
@@ -308,15 +310,16 @@ function InvoiceCard({view}: {view: View}) {
 
 // ─── Timeline ───────────────────────────────────────────────────────────────
 function TimelineSection({view}: {view: View}) {
+  const {words} = view;
   return (
     <Section>
       <VStack gap={4}>
         <HStack vAlign="center">
           <StackItem size="fill">
-            <Heading level={2}>Timeline</Heading>
+            <Heading level={2}>{words.timeline}</Heading>
           </StackItem>
           <Button
-            label="Filters"
+            label={words.filters}
             variant="ghost"
             icon={<Icon icon={FunnelIcon} />}
             isIconOnly
@@ -367,11 +370,11 @@ function TimelineSection({view}: {view: View}) {
                         </Text>
                       </HStack>
                       <Text type="supporting" color="secondary">
-                        Like
+                        {words.like}
                       </Text>
                       <Bullet />
                       <Text type="supporting" color="secondary">
-                        Reply
+                        {words.reply}
                       </Text>
                       <Bullet />
                       <Text type="supporting" color="secondary">
@@ -393,17 +396,18 @@ function TimelineSection({view}: {view: View}) {
 // Renders as a fixed-width side panel on desktop, and as a plain stacked section
 // on mobile (so it flows below the content instead of squishing beside it).
 function PanelContent({view}: {view: View}) {
+  const {words} = view;
   return (
     <VStack gap={4}>
-      <Collapsible trigger={<Heading level={4}>Notes</Heading>}>
+      <Collapsible trigger={<Heading level={4}>{words.notes}</Heading>}>
         <Text type="body">
           {view.notes}{' '}
           <Link href="#" color="secondary">
-            Show more
+            {words.showMore}
           </Link>
         </Text>
       </Collapsible>
-      <Collapsible trigger={<Heading level={4}>Customer</Heading>}>
+      <Collapsible trigger={<Heading level={4}>{words.customer}</Heading>}>
         <MetadataList>
           {view.customer.map(field => (
             <MetadataListItem key={field.label} label={field.label}>
@@ -412,10 +416,10 @@ function PanelContent({view}: {view: View}) {
           ))}
         </MetadataList>
       </Collapsible>
-      <Collapsible trigger={<Heading level={4}>Fraud Analysis</Heading>}>
+      <Collapsible trigger={<Heading level={4}>{words.fraudAnalysis}</Heading>}>
         <VStack gap={1}>
           <ProgressBar
-            label="Risk level"
+            label={words.riskLevel}
             value={view.fraud.risk}
             variant="success"
             isLabelHidden
@@ -431,7 +435,10 @@ function PanelContent({view}: {view: View}) {
 // Desktop: fixed-width side panel in the layout's `end` slot.
 function RightPanel({view}: {view: View}) {
   return (
-    <LayoutPanel width={320} padding={4} role="complementary">
+    <LayoutPanel
+      width={view.rules.panelWidth}
+      padding={4}
+      role="complementary">
       <PanelContent view={view} />
     </LayoutPanel>
   );
@@ -443,7 +450,9 @@ export default function DetailPage2Template({view: raw, send}: TemplateProps) {
   const activeTab = view.tab;
   const setActiveTab = (value: string) =>
     send({type: 'set', id: 'tpl.order.tab', value});
-  const isNarrow = useMediaQuery('(max-width: 1024px)');
+  const isNarrow = useMediaQuery(
+    `(max-width: ${view.rules.viewportNarrowAtMost}px)`,
+  );
   // Desktop: a fixed-width `end`-slot side panel that can be hidden.
   const showSidePanel = view.sidePanel;
   // Mobile: the panel opens as a full-screen dialog (the side slot would squish
@@ -463,7 +472,7 @@ export default function DetailPage2Template({view: raw, send}: TemplateProps) {
     <>
       <Layout
         height="fill"
-        contentWidth={1000}
+        contentWidth={view.rules.contentWidth}
         defaultHasDividers
         header={
           <PageHeader
@@ -496,7 +505,7 @@ export default function DetailPage2Template({view: raw, send}: TemplateProps) {
         <Layout
           header={
             <DialogHeader
-              title="Order details"
+              title={view.words.panelTitle}
               onOpenChange={setPanelDialogOpen}
             />
           }

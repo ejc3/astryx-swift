@@ -147,6 +147,8 @@ export type InvoiceRowView = {
   quantity: string;
   rate: string;
   amount: string;
+  /** The row's hover card as a whole is named this: "Discovery workshop details". */
+  detailsLabel: string;
   /** What the row's hover card says. */
   card: { category: string; billing: string; calculation: string; amount: string; share: string };
 };
@@ -189,7 +191,23 @@ export type InvoiceWords = {
   detail: { category: string; billing: string; calculation: string; amount: string; share: string };
   /** The table's own accessibility label. */
   tableLabel: string;
+  /** What the column filters' field config is called ("Lines"). */
+  linesName: string;
+  /** The labels of the column filters' fields: the web's popovers say these. */
+  fields: { description: string; category: string; quantity: string };
 };
+
+/** The layout numbers both drawings read. */
+export type InvoiceRules = {
+  /** The facts grid is `auto-fill` columns at least this wide, in px. */
+  factMinWidth: number;
+  /** The search box's width, in px, beside the billing switch. */
+  searchWidth: number;
+  /** The width of the Amount figure box, in px: the column's, and the totals' under it. */
+  figureWidth: number;
+};
+
+const RULES: InvoiceRules = { factMinWidth: 280, searchWidth: 300, figureWidth: 132 };
 
 const WORDS: InvoiceWords = {
   downloadPdf: "Download PDF",
@@ -218,6 +236,8 @@ const WORDS: InvoiceWords = {
   quantityPrompt: "Quantity is…",
   detail: { category: "Category", billing: "Billing", calculation: "Calculation", amount: "Amount", share: "Share of invoice" },
   tableLabel: "Invoice lines",
+  linesName: "Lines",
+  fields: { description: "Description", category: "Category", quantity: "Quantity" },
 };
 
 const COLUMNS: readonly InvoiceColumnView[] = [
@@ -233,6 +253,7 @@ const INERT = ["downloadPdf", "dispute"];
 
 export type InvoiceView = {
   words: InvoiceWords;
+  rules: InvoiceRules;
   columns: InvoiceColumnView[];
   /** Ids of the controls the core has no action for; hosts draw these disabled. */
   inert: string[];
@@ -327,6 +348,7 @@ export const invoice: TemplateModule<InvoiceState, InvoiceView> = {
     const activeFilterCount = (s.query.trim() === "" ? 0 : 1) + Object.keys(s.filters).length + (s.basis === "all" ? 0 : 1);
     return {
       words: WORDS,
+      rules: RULES,
       columns: COLUMNS.map((c) => ({ ...c })),
       inert: INERT,
       title: "Invoice INV-2043",
@@ -344,6 +366,7 @@ export const invoice: TemplateModule<InvoiceState, InvoiceView> = {
         quantity: grouped(item.quantity),
         rate: money(item.unitPriceCents),
         amount: money(item.amountCents),
+        detailsLabel: `${item.description} details`,
         card: {
           category: CATEGORY_LABEL[item.category],
           billing: item.basis === "hourly" ? "Hourly" : "Fixed fee",

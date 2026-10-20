@@ -21,6 +21,8 @@
  *   set  composeOpen       true / false (the sheet's own open and close)
  *   press reply | replyAll start a reply to the open thread
  *   set  recipients | cc | bcc   JSON array of {id, label}
+ *   set  recipientsQuery | ccQuery | bccQuery   the text typed in that field (native; the web page
+ *                          searches inside its own Tokenizer and never sends it)
  *   set  subject | body
  *   press showCc | showBcc
  *   press discard          empty the draft and close the sheet
@@ -30,6 +32,14 @@
  *
  * Controls the core has no action for (Refresh, archive, move, delete, Send, the composer's
  * tools) are listed in the view's `inert`: a host draws them disabled.
+ *
+ * Searching recipients: `searchRecipients` is the one rule, for both drawings. A query matches a
+ * person whose label contains it, ignoring case (the text is not trimmed); an empty query matches
+ * everybody; people already chosen in that field (by id) are left out; at most `RECIPIENT_LIMIT`
+ * come back. That is what Astryx's Tokenizer does with the stock template's source (it removes
+ * the chosen ones and shows `maxMenuItems`, 10). The web page calls it inside its `SearchSource`;
+ * a drawing without one reads `compose.suggestions`, the same function applied to each field's
+ * query. (A drawing may choose to draw no suggestions while a field's text is empty.)
  *
  * Layout is per drawing; content is shared. Several drawings (native, web) show this one state
  * at different widths, so the measurements in `layout` are only ever one drawing's: the web
@@ -51,6 +61,16 @@ export type Recipient = { id: string; label: string };
 /** Three states, because "nothing chosen yet" falls through to the top of the list but "closed" must stay closed. */
 export type Chosen = { kind: "none" } | { kind: "closed" } | { kind: "open"; id: string };
 
+/** Astryx's Tokenizer shows at most this many suggestions (its `maxMenuItems`). */
+export const RECIPIENT_LIMIT = 10;
+
+/** The people a query finds in the directory, for a field that already holds `chosen`. */
+export function searchRecipients<T extends Recipient>(directory: readonly T[], chosen: readonly Recipient[], query: string): T[] {
+  const needle = query.toLowerCase();
+  const taken = new Set(chosen.map((person) => person.id));
+  return directory.filter((person) => !taken.has(person.id) && person.label.toLowerCase().includes(needle)).slice(0, RECIPIENT_LIMIT);
+}
+
 export type ComposeState = {
   isOpen: boolean;
   recipients: Recipient[];
@@ -62,6 +82,8 @@ export type ComposeState = {
   body: string;
   /** The thread the draft belongs to; a reply on another thread starts a clean body. */
   conversationId: string | null;
+  /** The text typed into each recipients field, for a drawing that searches through the core. */
+  queries: { recipients: string; cc: string; bcc: string };
 };
 
 export type InboxState = {
@@ -83,6 +105,11 @@ export type InboxState = {
 const SINGLE_SURFACE_BELOW = 900;
 const STACK_ROWS_BELOW = 560;
 const TIGHTEN_COLUMNS_BELOW = 900;
+const LIST_MIN_WIDTH = 300;
+const PANE_MIN_WIDTH = 440;
+const PANE_DEFAULT_SHARE = 2 / 3;
+const MESSAGE_MEASURE = 680;
+const STATUS_GUTTER_WIDTH = 36;
 const OUR_DOMAIN = "@support.example";
 
 const PRIORITY_COLOR: Record<Priority, "red" | "orange" | "default"> = { urgent: "red", high: "orange", normal: "default" };
@@ -120,6 +147,10 @@ const TEXT = {
   compose: "Compose",
   unselectAll: "Unselect All",
   bullet: "•",
+  /** Between a row's subject and the start of its preview ("Subject — preview"). */
+  previewSeparator: "—",
+  /** Before the count of tags that do not fit in a row ("+2"). */
+  overflowMark: "+",
   unreadStatus: "Unread",
   unreadSuffix: " unread",
   hasAttachments: "Has attachments",
@@ -287,7 +318,7 @@ function recipients(value: string | number | boolean): Recipient[] | null {
   }
 }
 
-const EMPTY_COMPOSE: ComposeState = { isOpen: false, recipients: [], cc: [], bcc: [], hasCc: false, hasBcc: false, subject: "", body: "", conversationId: null };
+const EMPTY_COMPOSE: ComposeState = { isOpen: false, recipients: [], cc: [], bcc: [], hasCc: false, hasBcc: false, subject: "", body: "", conversationId: null, queries: { recipients: "", cc: "", bcc: "" } };
 
 function startReply(s: InboxState, isReplyAll: boolean): InboxState {
   const conversation = derive(s).openConversation;
@@ -365,6 +396,12 @@ function set(s: InboxState, id: string, value: string | number | boolean): Inbox
     case "bcc": {
       const items = recipients(value);
       return items ? { ...s, compose: { ...c, [id]: items } } : s;
+    }
+    case "recipientsQuery":
+    case "ccQuery":
+    case "bccQuery": {
+      const field = id.slice(0, id.length - "Query".length) as keyof ComposeState["queries"];
+      return { ...s, compose: { ...c, queries: { ...c.queries, [field]: asString(value) } } };
     }
     case "subject":
       return { ...s, compose: { ...c, subject: asString(value) } };
@@ -480,6 +517,10 @@ export type ComposeView = {
   body: string;
   /** Everybody the inbox has heard from, offered as recipients. */
   directory: Recipient[];
+  /** The text typed in each field (see `set recipientsQuery`). */
+  queries: { recipients: string; cc: string; bcc: string };
+  /** What each field's text finds in the directory: `searchRecipients` (all of the unchosen when the text is empty). */
+  suggestions: { recipients: Recipient[]; cc: Recipient[]; bcc: Recipient[] };
   /** Whether the draft holds typed content that cancelling would lose. */
   isDirty: boolean;
 };
@@ -516,6 +557,16 @@ export type InboxView = {
       /** The tags column goes below this list width. */
       tightenColumnsBelow: number;
       receivedWidth: ReceivedWidths;
+      /** The list is never narrower than this (px); the pane's handle stops here. */
+      listMin: number;
+      /** The pane is never narrower than this (px). */
+      paneMin: number;
+      /** The pane's share of the surface until the handle moves it. */
+      paneDefaultShare: number;
+      /** A message's text is at most this wide (px). */
+      messageMeasure: number;
+      /** The status gutter's column width (px). */
+      statusGutterWidth: number;
     };
   };
   /** What was opened or closed; a drawing combines it with its own width to pick its open thread. */
@@ -555,6 +606,7 @@ function view(s: InboxState): InboxView {
   const selectedCount = d.visible.filter((item) => selected.has(item.id)).length;
   const rowActions = d.isStacked ? NARROW_ROW_ACTIONS : ROW_ACTIONS;
   const c = s.compose;
+  const directory: Recipient[] = s.conversations.map((item) => ({ id: item.senderEmail, label: item.sender }));
 
   const rows: RowView[] = d.visible.map((item) => ({
     id: item.id,
@@ -631,6 +683,11 @@ function view(s: InboxState): InboxView {
         singleSurfaceBelow: SINGLE_SURFACE_BELOW,
         stackRowsBelow: STACK_ROWS_BELOW,
         tightenColumnsBelow: TIGHTEN_COLUMNS_BELOW,
+        listMin: LIST_MIN_WIDTH,
+        paneMin: PANE_MIN_WIDTH,
+        paneDefaultShare: PANE_DEFAULT_SHARE,
+        messageMeasure: MESSAGE_MEASURE,
+        statusGutterWidth: STATUS_GUTTER_WIDTH,
         receivedWidth: {
           wide: { pointer: trailingWidth(ROW_ACTIONS.length, false), touch: trailingWidth(ROW_ACTIONS.length, true) },
           stacked: { pointer: trailingWidth(NARROW_ROW_ACTIONS.length, false), touch: trailingWidth(NARROW_ROW_ACTIONS.length, true) },
@@ -652,7 +709,13 @@ function view(s: InboxState): InboxView {
       hasBcc: c.hasBcc,
       subject: c.subject,
       body: c.body,
-      directory: s.conversations.map((item) => ({ id: item.senderEmail, label: item.sender })),
+      directory,
+      queries: c.queries,
+      suggestions: {
+        recipients: searchRecipients(directory, c.recipients, c.queries.recipients),
+        cc: searchRecipients(directory, c.cc, c.queries.cc),
+        bcc: searchRecipients(directory, c.bcc, c.queries.bcc),
+      },
       isDirty: isDirty(c),
     },
   };

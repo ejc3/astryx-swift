@@ -146,6 +146,12 @@ struct TChatWords: Decodable {
     var removed = ""
     /// The word beside a delivered message's time ("Delivered").
     var delivered = ""
+    /// The title of the version list in the narrow document menu ("Version").
+    var version = ""
+    /// The document panel's resize handle.
+    var resizePanel = ""
+    /// The label of the document panel's toolbar.
+    var artifactActions = ""
 
     static let empty = TChatWords()
 
@@ -159,9 +165,16 @@ struct TChatWords: Decodable {
     }
 }
 
+private struct TChatRulesKey: EnvironmentKey { static let defaultValue: TChatModel.Rules? = nil }
+
 private struct TChatWordsKey: EnvironmentKey { static let defaultValue = TChatWords.empty }
 
 extension EnvironmentValues {
+    /// The core's layout numbers, set by the screen; nil outside it (a view drawn alone).
+    var tChatRules: TChatModel.Rules? {
+        get { self[TChatRulesKey.self] }
+        set { self[TChatRulesKey.self] = newValue }
+    }
     var tChatWords: TChatWords {
         get { self[TChatWordsKey.self] }
         set { self[TChatWordsKey.self] = newValue }
@@ -173,6 +186,21 @@ extension EnvironmentValues {
 func tChatSide(_ ax: AXStyle) -> CGFloat { 32 * Swift.min(ax.scale, 1.4) }
 
 struct TChatModel: Decodable {
+    /// The layout numbers the core holds (view.rules); the web reads the same ones.
+    struct Rules: Decodable {
+        struct Panel: Decodable {
+            var initial: CGFloat
+            var min: CGFloat
+            var max: CGFloat
+        }
+        /// The document opens as a dialog at or below this width, as a side panel above it.
+        var dialogAtMost: CGFloat
+        var panel: Panel
+        /// The widest the document's reading column grows.
+        var articleWidth: CGFloat
+        /// The widest the in-message document card grows.
+        var cardWidth: CGFloat
+    }
     struct Composer: Decodable {
         struct Mode: Decodable, Identifiable {
             let id: String
@@ -189,22 +217,26 @@ struct TChatModel: Decodable {
         let subtitle: String
         let content: String
         let versions: [String]
+        /// The version the menu button names ("v2").
+        let versionTag: String
         let panelOpen: Bool
         let dialogOpen: Bool
     }
     /// Controls the stock page draws but wires to nothing ("mention", "attach", "versions"); drawn enabled, like the web's.
     let inert: Set<String>
     let words: TChatWords
+    let rules: Rules
     let items: [TChatItem]
     let composer: Composer
     let artifact: Artifact
 
-    private enum Keys: String, CodingKey { case inert, words, items, composer, artifact }
+    private enum Keys: String, CodingKey { case inert, words, rules, items, composer, artifact }
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: Keys.self)
         inert = Set(try c.decodeIfPresent([String].self, forKey: .inert) ?? [])
         words = try c.decodeIfPresent(TChatWords.self, forKey: .words) ?? .empty
+        rules = try c.decode(Rules.self, forKey: .rules)
         items = try c.decode([TChatItem].self, forKey: .items)
         composer = try c.decode(Composer.self, forKey: .composer)
         artifact = try c.decode(Artifact.self, forKey: .artifact)

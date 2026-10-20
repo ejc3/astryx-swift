@@ -167,7 +167,7 @@ struct InboxRowView: View {
                     .lineLimit(1)
                     .layoutPriority(1)
                 // The preview takes only the room the subject leaves.
-                Text("\u{2014} \(row.preview)")
+                Text("\(words.previewSeparator) \(row.preview)")
                     .font(ax.fontBase)
                     .foregroundStyle(ax.textSecondary)
                     .lineLimit(1)
@@ -175,7 +175,7 @@ struct InboxRowView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
 
             if showTags {
-                InboxClippedChips(priority: row.priority, tags: row.tags, width: tagsWidth)
+                InboxClippedChips(priority: row.priority, tags: row.tags, width: tagsWidth, overflowMark: words.overflowMark)
             }
 
             received

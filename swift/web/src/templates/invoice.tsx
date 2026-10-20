@@ -61,16 +61,19 @@ type InvoiceRow = View['rows'][number];
  * typing here is what decides that Category gets a selector and Quantity gets
  * a numeric comparison. The category choices come from the view.
  */
-function searchFields(categories: View['categories']) {
+function searchFields(
+  categories: View['categories'],
+  labels: View['words']['fields'],
+) {
   return [
-    {key: 'description', type: 'string', label: 'Description'},
+    {key: 'description', type: 'string', label: labels.description},
     {
       key: 'category',
       type: 'enum',
-      label: 'Category',
+      label: labels.category,
       enumValues: categories,
     },
-    {key: 'quantity', type: 'number', label: 'Quantity'},
+    {key: 'quantity', type: 'number', label: labels.quantity},
   ] as const;
 }
 
@@ -114,12 +117,18 @@ function Figure({
  * but only alongside `focusTrigger: 'always'`, because the row is not focusable
  * yet at the moment the hook attaches to it.
  */
-function DescriptionCell({item}: {item: InvoiceRow}) {
+function DescriptionCell({
+  item,
+  words,
+}: {
+  item: InvoiceRow;
+  words: View['words'];
+}) {
   const anchorRef = useRef<HTMLElement>(null);
   const hoverCard = useHoverCard({
     placement: 'below',
     alignment: 'start',
-    label: `${item.description} details`,
+    label: item.detailsLabel,
     // The row is a plain `<tr>` made focusable in the effect below, and `auto`
     // decides whether to bind focus listeners at attach time — when the row is
     // still a non-focusable element. It would bind nothing, leaving the card
@@ -160,17 +169,23 @@ function DescriptionCell({item}: {item: InvoiceRow}) {
             {item.description}
           </Heading>
           <MetadataList label={{position: 'start'}}>
-            <MetadataListItem label="Category">{item.card.category}</MetadataListItem>
-            <MetadataListItem label="Billing">{item.card.billing}</MetadataListItem>
-            <MetadataListItem label="Calculation">
+            <MetadataListItem label={words.detail.category}>
+              {item.card.category}
+            </MetadataListItem>
+            <MetadataListItem label={words.detail.billing}>
+              {item.card.billing}
+            </MetadataListItem>
+            <MetadataListItem label={words.detail.calculation}>
               {item.card.calculation}
             </MetadataListItem>
-            <MetadataListItem label="Amount">{item.card.amount}</MetadataListItem>
-            <MetadataListItem label="Share of invoice">
+            <MetadataListItem label={words.detail.amount}>
+              {item.card.amount}
+            </MetadataListItem>
+            <MetadataListItem label={words.detail.share}>
               {item.card.share}
             </MetadataListItem>
           </MetadataList>
-          <Button label="Dispute this line" variant="secondary" width="100%" />
+          <Button label={words.dispute} variant="secondary" width="100%" />
         </VStack>,
       )}
     </>
@@ -179,53 +194,62 @@ function DescriptionCell({item}: {item: InvoiceRow}) {
 
 // ============= COLUMNS =============
 
-const columns: TableColumn<InvoiceRow>[] = [
-  {
-    key: 'description',
-    header: 'Description',
-    width: proportional(3),
-    sortable: true,
-    filter: 'description',
-    renderCell: item => <DescriptionCell item={item} />,
-  },
-  {
-    key: 'category',
-    header: 'Category',
-    width: pixel(160),
-    sortable: true,
-    filter: 'category',
-    renderCell: item => (
-      <Text color="secondary" maxLines={1}>
-        {item.category}
-      </Text>
-    ),
-  },
-  {
-    key: 'quantity',
-    header: 'Qty',
-    width: pixel(80),
-    align: 'end',
-    sortable: true,
-    filter: 'quantity',
-    renderCell: item => <Figure>{item.quantity}</Figure>,
-  },
-  {
-    key: 'unitPrice',
-    header: 'Rate',
-    width: pixel(120),
-    align: 'end',
-    sortable: true,
-    renderCell: item => <Figure>{item.rate}</Figure>,
-  },
-  {
-    key: 'amount',
-    header: 'Amount',
-    width: pixel(132),
-    align: 'end',
-    sortable: true,
-    renderCell: item => <Figure>{item.amount}</Figure>,
-  },
-];
+/** The table's columns: their titles come from the view (`view.columns`), their widths are the web's. */
+function invoiceColumns(
+  columnViews: View['columns'],
+  words: View['words'],
+  figureWidth: number,
+): TableColumn<InvoiceRow>[] {
+  const title = (key: View['columns'][number]['key']) =>
+    columnViews.find(column => column.key === key)?.title ?? '';
+  return [
+    {
+      key: 'description',
+      header: title('description'),
+      width: proportional(3),
+      sortable: true,
+      filter: 'description',
+      renderCell: item => <DescriptionCell item={item} words={words} />,
+    },
+    {
+      key: 'category',
+      header: title('category'),
+      width: pixel(160),
+      sortable: true,
+      filter: 'category',
+      renderCell: item => (
+        <Text color="secondary" maxLines={1}>
+          {item.category}
+        </Text>
+      ),
+    },
+    {
+      key: 'quantity',
+      header: title('quantity'),
+      width: pixel(80),
+      align: 'end',
+      sortable: true,
+      filter: 'quantity',
+      renderCell: item => <Figure>{item.quantity}</Figure>,
+    },
+    {
+      key: 'unitPrice',
+      header: title('unitPrice'),
+      width: pixel(120),
+      align: 'end',
+      sortable: true,
+      renderCell: item => <Figure>{item.rate}</Figure>,
+    },
+    {
+      key: 'amount',
+      header: title('amount'),
+      width: pixel(figureWidth),
+      align: 'end',
+      sortable: true,
+      renderCell: item => <Figure>{item.amount}</Figure>,
+    },
+  ];
+}
 
 // ============= EDGE ALIGNMENT =============
 
@@ -309,15 +333,15 @@ function useFlushEdges(): TablePlugin<InvoiceRow> {
  * three of them are the only ones on the page — which is what lets them read as
  * punctuation rather than as a grid.
  */
-const AMOUNT_COLUMN_WIDTH = 132;
-
 function TotalRow({
   label,
   value,
   emphasis,
+  figureWidth,
 }: {
   label: string;
   value: string;
+  figureWidth: number;
   emphasis?: 'muted' | 'strong';
 }) {
   const weight = emphasis === 'strong' ? 'semibold' : 'normal';
@@ -328,7 +352,7 @@ function TotalRow({
         color={emphasis === 'muted' ? 'secondary' : 'primary'}>
         {label}
       </Text>
-      <VStack width={AMOUNT_COLUMN_WIDTH}>
+      <VStack width={figureWidth}>
         <Text justify="end" display="block" hasTabularNumbers weight={weight}>
           {value}
         </Text>
@@ -351,11 +375,16 @@ export default function InvoiceLineItemsTemplate({
 
   // One config drives the column popovers.
   const categoriesKey = JSON.stringify(view.categories);
+  const fieldLabelsKey = JSON.stringify(view.words.fields);
   const fields = useMemo(
-    () => searchFields(JSON.parse(categoriesKey) as View['categories']),
-    [categoriesKey],
+    () =>
+      searchFields(
+        JSON.parse(categoriesKey) as View['categories'],
+        JSON.parse(fieldLabelsKey) as View['words']['fields'],
+      ),
+    [categoriesKey, fieldLabelsKey],
   );
-  const {config} = usePowerSearchConfig(fields, 'Lines');
+  const {config} = usePowerSearchConfig(fields, view.words.linesName);
   const columnFilters: TableFilterState = view.filters;
   const onFilterChange = (key: string, value: string | number | string[] | null) => {
     if (value == null) {
@@ -388,6 +417,18 @@ export default function InvoiceLineItemsTemplate({
       }),
   });
   const flushPlugin = useFlushEdges();
+  const columnsKey = JSON.stringify(view.columns);
+  const wordsKey = JSON.stringify(view.words);
+  const figureWidth = view.rules.figureWidth;
+  const columns = useMemo(
+    () =>
+      invoiceColumns(
+        JSON.parse(columnsKey) as View['columns'],
+        JSON.parse(wordsKey) as View['words'],
+        figureWidth,
+      ),
+    [columnsKey, wordsKey, figureWidth],
+  );
 
   const clearEverything = () => send({type: 'press', id: 'tpl.invoice.clear'});
 
@@ -418,7 +459,7 @@ export default function InvoiceLineItemsTemplate({
                   <Heading level={1}>{view.title}</Heading>
                 </StackItem>
                 <Button
-                  label="Download PDF"
+                  label={view.words.downloadPdf}
                   variant="secondary"
                   icon={<Icon icon={ArrowDownTrayIcon} size="sm" />}
                 />
@@ -441,7 +482,7 @@ export default function InvoiceLineItemsTemplate({
                 flush right — as a bare flex child it shrinks to content. */}
             <HStack gap={3} vAlign="center" hAlign="between" wrap="wrap">
               <SegmentedControl
-                label="Filter by billing basis"
+                label={view.words.basisLabel}
                 value={view.basis}
                 onChange={value => setBasis(value)}>
                 {view.basisFilters.map(filter => (
@@ -452,13 +493,13 @@ export default function InvoiceLineItemsTemplate({
                   />
                 ))}
               </SegmentedControl>
-              <VStack width={300}>
+              <VStack width={view.rules.searchWidth}>
                 <TextInput
-                  label="Search line items"
+                  label={view.words.searchLabel}
                   isLabelHidden
                   value={view.query}
                   onChange={setQuery}
-                  placeholder="Search…"
+                  placeholder={view.words.searchPlaceholder}
                   startIcon={<Icon icon={MagnifyingGlassIcon} size="sm" />}
                 />
               </VStack>
@@ -471,7 +512,7 @@ export default function InvoiceLineItemsTemplate({
                   description={view.empty.description}
                   actions={
                     <Button
-                      label="Clear filters"
+                      label={view.words.clearFilters}
                       variant="secondary"
                       onClick={clearEverything}
                     />
@@ -499,16 +540,19 @@ export default function InvoiceLineItemsTemplate({
                     <TotalRow
                       label={subtotal.label}
                       value={subtotal.value}
+                      figureWidth={view.rules.figureWidth}
                     />
                     <TotalRow
                       label={tax.label}
                       value={tax.value}
+                      figureWidth={view.rules.figureWidth}
                       emphasis="muted"
                     />
                     <Divider />
                     <TotalRow
                       label={total.label}
                       value={total.value}
+                      figureWidth={view.rules.figureWidth}
                       emphasis="strong"
                     />
                     <Divider />
@@ -525,7 +569,7 @@ export default function InvoiceLineItemsTemplate({
                   description={view.banner.description}
                   endContent={
                     <Button
-                      label="Clear all filters"
+                      label={view.words.clearAllFilters}
                       variant="secondary"
                       onClick={clearEverything}
                     />

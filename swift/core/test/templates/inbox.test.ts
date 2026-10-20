@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { inbox, type InboxState } from "../../src/templates/inbox/model.ts";
+import { inbox, searchRecipients, RECIPIENT_LIMIT, type InboxState } from "../../src/templates/inbox/model.ts";
 import type { TemplateAction } from "../../src/templates/types.ts";
 
 const NOW = { epochMs: Date.UTC(2026, 9, 13, 16, 30), utcOffsetMinutes: -420 };
@@ -301,4 +301,46 @@ test("the content fields of the view are the same whatever the web page measured
   };
   const base = run(start(), press("open:c-02"), set("selection", "c-01,c-02"), press("reply"));
   assert.deepEqual(shared(run(base, set("surface", 390), set("list", 388))), shared(run(base, set("surface", 1440), set("list", 480), set("touch", true))));
+});
+
+test("searchRecipients: label contains the text, ignoring case; chosen people are left out; capped", () => {
+  const dir = view(start()).compose.directory;
+  const priya = dir[0]!;
+  assert.deepEqual(searchRecipients(dir, [], "PRIYA"), [priya]);
+  assert.deepEqual(searchRecipients(dir, [priya], "priya"), []);
+  // Chosen by id: a different label for the same id is still chosen.
+  assert.deepEqual(searchRecipients(dir, [{ id: priya.id, label: "x" }], "priya"), []);
+  assert.equal(searchRecipients(dir, [], "").length, dir.length);
+  assert.equal(searchRecipients(dir, [priya], "").length, dir.length - 1);
+  // Not trimmed, as in the stock source.
+  assert.deepEqual(searchRecipients(dir, [], "priya "), [priya]);
+  assert.deepEqual(searchRecipients(dir, [], " priya"), []);
+  const many = Array.from({ length: RECIPIENT_LIMIT + 3 }, (_, n) => ({ id: `p${n}@example.com`, label: `Person ${n}` }));
+  assert.equal(searchRecipients(many, [], "person").length, RECIPIENT_LIMIT);
+});
+
+test("each recipients field keeps its own text, and the view's suggestions are searchRecipients of it", () => {
+  const people = JSON.stringify([{ id: "priya.raman@northwind.example", label: "Priya Raman" }]);
+  let s = run(start(), press("compose"), set("recipients", people), set("recipientsQuery", "priya"), set("ccQuery", "a"));
+  const c = view(s).compose;
+  assert.deepEqual(c.queries, { recipients: "priya", cc: "a", bcc: "" });
+  assert.deepEqual(c.suggestions.recipients, []);
+  assert.deepEqual(c.suggestions.cc, searchRecipients(c.directory, c.cc, "a"));
+  // Nothing typed finds everybody not chosen in that field; the drawing decides to draw none.
+  assert.equal(c.suggestions.bcc.length, c.directory.length);
+  assert.equal(c.suggestions.recipients.length, 0);
+  s = run(s, set("recipientsQuery", ""));
+  assert.equal(view(s).compose.suggestions.recipients.length, c.directory.length - 1);
+  // Discarding the draft empties the text too.
+  s = run(s, press("discard"));
+  assert.deepEqual(view(s).compose.queries, { recipients: "", cc: "", bcc: "" });
+});
+
+test("the view carries the layout numbers and the marks the page writes", () => {
+  const v = view(start());
+  const { listMin, paneMin, paneDefaultShare, messageMeasure, statusGutterWidth } = v.mode.rules;
+  assert.deepEqual([listMin, paneMin, messageMeasure, statusGutterWidth], [300, 440, 680, 36]);
+  assert.equal(paneDefaultShare, 2 / 3);
+  assert.equal(v.text.previewSeparator, "—");
+  assert.equal(v.text.overflowMark, "+");
 });

@@ -74,12 +74,31 @@ export type ChatWords = {
   removed: string;
   /** The word beside a delivered message's time: "Delivered". */
   delivered: string;
+  /** The title of the version list in the narrow document menu: "Version". */
+  version: string;
+  /** The document panel's resize handle. */
+  resizePanel: string;
+  /** The label of the document panel's toolbar. */
+  artifactActions: string;
+};
+
+/** The layout numbers both drawings read; a drawing measures its own width and compares. */
+export type ChatRules = {
+  /** The document opens as a dialog at or below this width, as a side panel above it. */
+  dialogAtMost: number;
+  /** The side panel's width in px: where it starts, and the range a drag keeps it in. */
+  panel: { initial: number; min: number; max: number };
+  /** The widest the document's reading column grows, in px. */
+  articleWidth: number;
+  /** The widest the in-message document card grows, in px. */
+  cardWidth: number;
 };
 
 export type ChatView = {
   /** Controls the stock page draws but wires to nothing; a native host shows them disabled. */
   inert: ("mention" | "attach" | "versions")[];
   words: ChatWords;
+  rules: ChatRules;
   items: ChatItem[];
   composer: {
     draft: string;
@@ -93,6 +112,8 @@ export type ChatView = {
     subtitle: string;
     content: string;
     versions: string[];
+    /** The version the menu button names: "v2" from "v2 (current)". */
+    versionTag: string;
     panelOpen: boolean;
     dialogOpen: boolean;
   };
@@ -408,7 +429,19 @@ const WORDS: ChatWords = {
   added: "added",
   removed: "removed",
   delivered: "Delivered",
+  version: "Version",
+  resizePanel: "Resize artifact panel",
+  artifactActions: "Artifact actions",
 };
+
+const RULES: ChatRules = {
+  dialogAtMost: 767,
+  panel: { initial: 640, min: 480, max: 960 },
+  articleWidth: 720,
+  cardWidth: 360,
+};
+
+const VERSIONS = ["v2 (current)", "v1"];
 
 const isMode = (v: unknown): v is ComposerMode => v === "ask" || v === "edit";
 
@@ -446,6 +479,7 @@ export const chat: TemplateModule<ChatState, ChatView> = {
   view: (s) => ({
     inert: ["mention", "attach", "versions"],
     words: WORDS,
+    rules: RULES,
     items: ITEMS,
     composer: {
       draft: s.draft,
@@ -458,7 +492,8 @@ export const chat: TemplateModule<ChatState, ChatView> = {
       title: ARTIFACT_TITLE,
       subtitle: ARTIFACT_SUBTITLE,
       content: ARTIFACT_CONTENT,
-      versions: ["v2 (current)", "v1"],
+      versions: VERSIONS,
+      versionTag: VERSIONS[0]!.split(" ")[0]!,
       panelOpen: s.panelOpen,
       dialogOpen: s.dialogOpen,
     },

@@ -5,17 +5,18 @@ import SwiftUI
 /// selected day. Like the stock page it is the Calendar alone, a plain header (previous month,
 /// the month, next month), the two-letter weekdays and six weeks; the template pads itself.
 ///
-/// Actions (the core takes these two `set` ids, with ISO date strings):
-/// - tapping a day: `set` `tpl.calendar.select` "YYYY-MM-DD" (a day of a neighboring month
-///   also moves the view there, with `set` `tpl.calendar.focus`)
-/// - the previous / next month buttons, the arrow keys' equivalent, a horizontal swipe, and
-///   `set` `tpl.calendar.focus` with the first of the month shown
+/// The core works out the month (title, six weeks, flags, spoken labels, the neighboring months);
+/// this file lays it out and sends:
+/// - tapping a day: `set` `tpl.calendar.pick` "YYYY-MM-DD" (the core also moves the view when the
+///   day is in a neighboring month)
+/// - the previous / next month buttons and a horizontal swipe: `set` `tpl.calendar.focus` with the
+///   view's `previous.target` or `next.target`
 struct CalendarTemplate: View {
     let view: JSONValue
 
     var body: some View {
-        if let model = try? view.decode(TCalModel.self), let focus = TCalDate(iso: model.focusDate) {
-            TCalMonth(selected: model.value.flatMap(TCalDate.init(iso:)), month: focus.firstOfMonth, words: model.words)
+        if let model = try? view.decode(TCalModel.self), model.weeks.count == 6 {
+            TCalMonth(model: model)
         } else {
             AXTemplatePlaceholder(template: "calendar")
         }
@@ -23,15 +24,13 @@ struct CalendarTemplate: View {
 }
 
 private struct TCalMonth: View {
-    let selected: TCalDate?
-    let month: TCalDate
-    let words: TCalModel.Words
+    let model: TCalModel
     @Environment(\.ax) private var ax
     @Environment(\.axSend) private var send
     @Environment(\.axWidth) private var width
     @Environment(\.dynamicTypeSize) private var typeSize
 
-    private var today: TCalDate { TCalDate(Date()) }
+    private var words: TCalModel.Words { model.words }
 
     /// The page's own padding (the stock calendar sits 24 points in), and the Calendar's own 12 inside it.
     private var pagePad: CGFloat { width < 600 ? ax.space(4) : ax.space(6) }
@@ -55,20 +54,20 @@ private struct TCalMonth: View {
     private var agenda: Bool { typeSize.isAccessibilitySize || room / 7 < axMinTarget }
 
     var body: some View {
-        let weeks = TCalendarMath.weeks(of: month)
+        let weeks = model.weeks
         let cell = cell
         VStack(alignment: .leading, spacing: ax.space(2)) {
             header
             if agenda {
-                TCalAgenda(days: weeks.flatMap { $0 }.filter(\.inMonth).map(\.date), selected: selected, today: today, words: words, choose: choose)
+                TCalAgenda(days: weeks.flatMap { $0 }.filter(\.inMonth), words: words, choose: choose)
             } else {
                 VStack(spacing: 0) {
                     weekdayRow(cell: cell)
                     ForEach(Array(weeks.enumerated()), id: \.offset) { _, week in
                         HStack(spacing: 0) {
                             ForEach(Array(week.enumerated()), id: \.offset) { _, day in
-                                TCalDayCell(date: day.date, inMonth: day.inMonth, selected: day.date == selected, today: day.date == today, side: cell, words: words) {
-                                    choose(day.date)
+                                TCalDayCell(day: day, side: cell) {
+                                    choose(day)
                                 }
                             }
                         }
@@ -82,17 +81,17 @@ private struct TCalMonth: View {
         .gesture(
             DragGesture(minimumDistance: 24).onEnded { value in
                 guard abs(value.translation.width) > abs(value.translation.height) * 1.5 else { return }
-                move(value.translation.width < 0 ? 1 : -1)
+                focus((value.translation.width < 0 ? model.next : model.previous).target)
             }
         )
         .padding(pagePad)
         .frame(maxWidth: .infinity, alignment: .topLeading)
         // VoiceOver hears the new day and the new month; nothing else on the screen changes.
-        .onChange(of: selected) { _, new in
-            if let new { AccessibilityNotification.Announcement("\(words.selected), \(long(new))").post() }
+        .onChange(of: model.selectedAnnouncement) { _, new in
+            if let new { AccessibilityNotification.Announcement(new).post() }
         }
-        .onChange(of: month) { _, new in
-            AccessibilityNotification.Announcement(formatted(new, "MMMM yyyy")).post()
+        .onChange(of: model.title) { _, new in
+            AccessibilityNotification.Announcement(new).post()
         }
     }
 
@@ -121,7 +120,7 @@ private struct TCalMonth: View {
     }
 
     private var title: some View {
-        Text(monthTitle)
+        Text(model.title)
             .font(ax.fontStrong)
             .foregroundStyle(ax.text)
             .multilineTextAlignment(.center)
@@ -130,11 +129,11 @@ private struct TCalMonth: View {
     }
 
     private var previous: some View {
-        step("chevron.left", label: "\(words.previousMonth), \(formatted(TCalendarMath.shift(month, months: -1), "MMMM yyyy"))") { move(-1) }
+        step("chevron.left", label: model.previous.label) { focus(model.previous.target) }
     }
 
     private var next: some View {
-        step("chevron.right", label: "\(words.nextMonth), \(formatted(TCalendarMath.shift(month, months: 1), "MMMM yyyy"))") { move(1) }
+        step("chevron.right", label: model.next.label) { focus(model.next.target) }
     }
 
     /// A month step: a thin chevron on a 32 point square (44 on a touch screen).
@@ -173,85 +172,36 @@ private struct TCalMonth: View {
 
     // MARK: Actions
 
-    private func choose(_ date: TCalDate) {
-        send(.set(id: "tpl.calendar.select", value: .string(date.iso)))
-        if date.firstOfMonth != month { focus(date.firstOfMonth) }
+    private func choose(_ day: TCalModel.Day) {
+        send(.set(id: "tpl.calendar.pick", value: .string(day.date)))
     }
 
-    private func move(_ months: Int) { focus(TCalendarMath.shift(month, months: months)) }
-
-    private func focus(_ date: TCalDate) {
-        send(.set(id: "tpl.calendar.focus", value: .string(date.firstOfMonth.iso)))
+    private func focus(_ target: String) {
+        send(.set(id: "tpl.calendar.focus", value: .string(target)))
     }
-
-    // MARK: Words
-
-    private var monthTitle: String { formatted(month, "MMMM yyyy") }
-
-    private func formatted(_ date: TCalDate, _ template: String) -> String {
-        let f = DateFormatter()
-        f.calendar = TCalDate.calendar
-        f.timeZone = TCalDate.calendar.timeZone
-        f.locale = .autoupdatingCurrent
-        f.setLocalizedDateFormatFromTemplate(template)
-        return f.string(from: date.date)
-    }
-
-    private func long(_ date: TCalDate) -> String { TCalFormats.full(date) }
-}
-
-/// Date words for the grid, formatted in the Gregorian calendar of `TCalDate` and the
-/// device's language. Formatters are made once: a month draws 42 of them.
-enum TCalFormats {
-    nonisolated(unsafe) private static let fullFormatter: DateFormatter = {
-        let f = DateFormatter()
-        f.calendar = TCalDate.calendar
-        f.timeZone = TCalDate.calendar.timeZone
-        f.locale = .autoupdatingCurrent
-        f.dateStyle = .full
-        return f
-    }()
-
-    nonisolated(unsafe) private static let agendaFormatter: DateFormatter = {
-        let f = DateFormatter()
-        f.calendar = TCalDate.calendar
-        f.timeZone = TCalDate.calendar.timeZone
-        f.locale = .autoupdatingCurrent
-        f.setLocalizedDateFormatFromTemplate("EEEEd")
-        return f
-    }()
-
-    static func full(_ date: TCalDate) -> String { fullFormatter.string(from: date.date) }
-
-    /// "Wednesday 15": the day's name and number, for the agenda's rows.
-    static func agenda(_ date: TCalDate) -> String { agendaFormatter.string(from: date.date) }
 }
 
 private struct TCalDayCell: View {
-    let date: TCalDate
-    let inMonth: Bool
-    let selected: Bool
-    let today: Bool
+    let day: TCalModel.Day
     let side: CGFloat
-    let words: TCalModel.Words
     let action: () -> Void
     @Environment(\.ax) private var ax
 
     var body: some View {
         Button(action: action) {
-            Text("\(date.day)")
-                .font(ax.font("font-size-base", 14, weight: today && !selected ? "font-weight-semibold" : "font-weight-normal").monospacedDigit())
+            Text("\(day.day)")
+                .font(ax.font("font-size-base", 14, weight: day.today && !day.selected ? "font-weight-semibold" : "font-weight-normal").monospacedDigit())
                 .foregroundStyle(foreground)
                 .lineLimit(1)
                 .minimumScaleFactor(0.6)
                 .frame(width: side, height: side)
-                .background(Circle().fill(selected ? ax.accent : Color.clear).padding(ring))
-                .overlay(Circle().strokeBorder(today && !selected ? ax.accent : Color.clear, lineWidth: 1.5).padding(ring))
+                .background(Circle().fill(day.selected ? ax.accent : Color.clear).padding(ring))
+                .overlay(Circle().strokeBorder(day.today && !day.selected ? ax.accent : Color.clear, lineWidth: 1.5).padding(ring))
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(spoken)
-        .accessibilityAddTraits(selected ? [.isSelected, .isButton] : .isButton)
+        .accessibilityLabel(day.label)
+        .accessibilityAddTraits(day.selected ? [.isSelected, .isButton] : .isButton)
     }
 
     /// The painted circle is the stock's 28 points in every cell: 2 points in from the Mac's 32, and
@@ -267,23 +217,18 @@ private struct TCalDayCell: View {
     /// A day of a neighboring month is the secondary text at 30 percent, as the stock Calendar paints it
     /// (inactive content is exempt from the contrast minimum).
     private var foreground: Color {
-        if selected { return ax.onAccent }
-        if today { return ax.tone(.accent).text }
-        return inMonth ? ax.text : ax.textSecondary.opacity(0.3)
+        if day.selected { return ax.onAccent }
+        if day.today { return ax.tone(.accent).text }
+        return day.inMonth ? ax.text : ax.textSecondary.opacity(0.3)
     }
-
-    /// "Today, Wednesday, April 15, 2026".
-    private var spoken: String { today ? "\(words.today), \(TCalFormats.full(date))" : TCalFormats.full(date) }
 }
 
 /// The month as a list of days, for text sizes and widths a seven-column grid cannot hold. A day is
 /// a row: its name and number, a mark for the selected day and the core's word for today.
 private struct TCalAgenda: View {
-    let days: [TCalDate]
-    let selected: TCalDate?
-    let today: TCalDate
+    let days: [TCalModel.Day]
     let words: TCalModel.Words
-    let choose: (TCalDate) -> Void
+    let choose: (TCalModel.Day) -> Void
     @Environment(\.ax) private var ax
 
     var body: some View {
@@ -296,16 +241,16 @@ private struct TCalAgenda: View {
         .accessibilityElement(children: .contain)
     }
 
-    private func row(_ day: TCalDate) -> some View {
-        let isSelected = day == selected
-        let isToday = day == today
+    private func row(_ day: TCalModel.Day) -> some View {
+        let isSelected = day.selected
+        let isToday = day.today
         return Button { choose(day) } label: {
             HStack(spacing: ax.space(3)) {
                 Image(systemName: isSelected ? "checkmark.circle.fill" : (isToday ? "circle" : "circle.dotted"))
                     .font(.system(size: ax.fontSize("font-size-base", 14)))
                     .foregroundStyle(isSelected || isToday ? ax.accent : ax.textDisabled)
                     .accessibilityHidden(true)
-                Text(TCalFormats.agenda(day))
+                Text(day.agendaLabel)
                     .font(ax.font("font-size-base", 14, weight: isSelected || isToday ? "font-weight-semibold" : "font-weight-normal").monospacedDigit())
                     .foregroundStyle(isSelected ? ax.tone(.accent).text : ax.text)
                     .multilineTextAlignment(.leading)
@@ -323,7 +268,7 @@ private struct TCalAgenda: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(isToday ? "\(words.today), \(TCalFormats.full(day))" : TCalFormats.full(day))
+        .accessibilityLabel(day.label)
         .accessibilityAddTraits(isSelected ? [.isSelected, .isButton] : .isButton)
     }
 }

@@ -196,6 +196,7 @@ private struct TChatBubbleView: View {
     let openArtifact: () -> Void
     @Environment(\.ax) private var ax
     @Environment(\.tChatWords) private var words
+    @Environment(\.tChatRules) private var rules
     @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
@@ -279,7 +280,7 @@ private struct TChatBubbleView: View {
                     .foregroundStyle(ax.textSecondary)
             }
             .padding(ax.space(3))
-            .frame(maxWidth: 360 * min(ax.scale, 1.4), alignment: .leading)
+            .frame(maxWidth: (rules?.cardWidth ?? .infinity) * min(ax.scale, 1.4), alignment: .leading)
             .background(RoundedRectangle(cornerRadius: ax.radiusContainer, style: .continuous).fill(ax.muted))
             .contentShape(RoundedRectangle(cornerRadius: ax.radiusContainer, style: .continuous))
         }

@@ -36,6 +36,10 @@ struct InboxModel: Decodable, Equatable {
         var compose: String
         var unselectAll: String
         var bullet: String
+        /// Between a row's subject and its preview.
+        var previewSeparator: String
+        /// Before the count of tags that do not fit in a row.
+        var overflowMark: String
         var unreadStatus: String
         var unreadSuffix: String
         var hasAttachments: String
@@ -189,6 +193,13 @@ struct InboxModel: Decodable, Equatable {
             var stackRowsBelow: Int
             var tightenColumnsBelow: Int
             var receivedWidth: ReceivedWidths
+            /// The list is never narrower, nor the pane (points).
+            var listMin: Double
+            var paneMin: Double
+            /// The pane's share of the surface until the handle moves it.
+            var paneDefaultShare: Double
+            /// A message's text is at most this wide (points).
+            var messageMeasure: Double
         }
         struct ReceivedWidths: Decodable, Equatable {
             var wide: Pair
@@ -213,6 +224,8 @@ struct InboxModel: Decodable, Equatable {
     }
 
     struct Compose: Decodable, Equatable {
+        struct Queries: Decodable, Equatable { var recipients: String; var cc: String; var bcc: String }
+        struct Suggestions: Decodable, Equatable { var recipients: [Person]; var cc: [Person]; var bcc: [Person] }
         var isOpen: Bool
         var recipients: [Person]
         var cc: [Person]
@@ -223,6 +236,12 @@ struct InboxModel: Decodable, Equatable {
         var body: String
         /// Everybody the inbox has heard from, offered as recipients.
         var directory: [Person]
+        /// The text typed in each recipients field (`set recipientsQuery`, `ccQuery`, `bccQuery`).
+        var queries: Queries
+        /// What each field's text finds in the directory (the core's `searchRecipients`: the people
+        /// not yet chosen in that field whose name contains the text, at most 10). Everybody when
+        /// the text is empty, which this drawing does not draw.
+        var suggestions: Suggestions
         /// Whether the draft holds typed content that cancelling would lose.
         var isDirty: Bool
     }

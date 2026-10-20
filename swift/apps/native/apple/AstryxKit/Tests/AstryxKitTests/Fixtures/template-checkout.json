@@ -343,7 +343,8 @@
       "promoLabel": "Promo code",
       "promoPlaceholder": "WELCOME10",
       "apply": "Apply",
-      "quantity": "Quantity"
+      "quantity": "Quantity",
+      "each": "each"
      },
      "shipping": {
       "heading": "Where should it go?",
@@ -386,7 +387,8 @@
      "confirmed": {
       "title": "Order confirmed",
       "heading": "Thanks for your order",
-      "detail": "The order is recorded in the app's state, so the template ends in a real, reviewable outcome."
+      "detail": "The order is recorded in the app's state, so the template ends in a real, reviewable outcome.",
+      "pageDetail": "The completion is stored in this page's component state so the template ends in a real, reviewable outcome."
      },
      "summary": {
       "title": "Order summary",
@@ -396,6 +398,19 @@
       "total": "Total",
       "qty": "Qty"
      }
+    },
+    "rules": {
+     "narrowHostAtMost": 900,
+     "contentWidth": 1000,
+     "summaryWidth": 360,
+     "stepperMinStepWidth": 112,
+     "quantity": {
+      "min": 0,
+      "max": 10,
+      "fieldWidth": 96
+     },
+     "noteMaxLength": 240,
+     "shortFieldWidth": 140
     },
     "headingRepeatsTitle": true
    }

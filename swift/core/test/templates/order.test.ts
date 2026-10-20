@@ -83,7 +83,28 @@ test("the view says which controls are inert, and carries tabs, labels and the n
     ["customer", "Customer", true], ["analysis", "Analysis", true],
   ]);
   assert.equal(v.itemsLabel, "5 ordered items");
+  assert.equal(v.itemsLabelParts.join(""), v.itemsLabel);
   assert.deepEqual(v.activity.map((a) => a.reactionsLabel), ["2 reactions", "3 reactions", "Reactions", "1 reaction"]);
   assert.equal(v.fraud.riskValue, "15 percent");
   assert.equal(v.words.panelTitle, "Order details");
+});
+
+test("the rules carry the layout numbers the stock page keeps, and the web words are the stock page's", async () => {
+  const { readFileSync } = await import("node:fs");
+  const flat = readFileSync(new URL("../../../web/src/stock/templates/detail-page.tsx", import.meta.url), "utf8").replace(/\s+/g, " ");
+  const v = view(start());
+  assert.ok(flat.includes(`useMediaQuery('(max-width: ${v.rules.viewportNarrowAtMost}px)')`));
+  assert.ok(flat.includes(`contentWidth={${v.rules.contentWidth}}`));
+  assert.ok(flat.includes(`width={${v.rules.panelWidth}}`));
+  // A drawing that measures its pane goes narrow where the page and the panel no longer fit together.
+  assert.ok(v.rules.paneNarrowBelow < v.rules.viewportNarrowAtMost);
+
+  const w = v.words;
+  const drawn = [
+    w.allOrders, w.restock, w.edit, w.seeAll, w.showPanel, w.hidePanel, w.more, w.panelTitle, w.items, w.fulfillItem,
+    w.createLabel, w.invoice, w.paid, w.refund, w.sendInvoice, w.timeline, w.filters, w.like, w.reply, w.notes, w.showMore,
+    w.customer, w.fraudAnalysis, w.riskLevel, ...v.tabs.map((t) => t.label),
+  ];
+  for (const word of drawn) assert.ok(flat.includes(word), `the stock page does not write "${word}"`);
+  assert.ok(flat.includes("ordered items"));
 });

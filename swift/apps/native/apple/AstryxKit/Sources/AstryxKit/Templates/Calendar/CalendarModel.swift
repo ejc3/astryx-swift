@@ -1,7 +1,9 @@
 import Foundation
 
 /// The calendar template's view model: a Swift mirror of `View` in
-/// core/src/templates/calendar/model.ts. Dates are plain ISO "YYYY-MM-DD" strings.
+/// core/src/templates/calendar/model.ts. The core works out the month: its title, the six weeks of
+/// days with their flags and spoken labels, and the previous and next months. Swift draws them and
+/// does no date math or date formatting of its own.
 struct TCalModel: Decodable {
     /// The words VoiceOver speaks for the grid (view.words in the core). A model from an older
     /// core has none; they are then empty rather than invented here.
@@ -14,93 +16,54 @@ struct TCalModel: Decodable {
         var weekdays: [String] = []
     }
 
+    /// One cell of the grid.
+    struct Day: Decodable, Hashable {
+        /// "YYYY-MM-DD": what tapping the day sends as `pick`.
+        let date: String
+        /// The number drawn in the cell.
+        let day: Int
+        let inMonth: Bool
+        let selected: Bool
+        let today: Bool
+        /// Spoken: "Wednesday, April 15, 2026", "Today, " first for today.
+        let label: String
+        /// For the list form of the month: "Wednesday 15".
+        let agendaLabel: String
+    }
+
+    /// A month to step to.
+    struct Step: Decodable {
+        /// The first of that month: the `focus` value that shows it.
+        var target = ""
+        /// Spoken: "Previous month, March 2026".
+        var label = ""
+    }
+
     /// The selected day, or nil when none is.
     let value: String?
     /// A day in the visible month.
     let focusDate: String
     let words: Words
+    /// The visible month: "April 2026".
+    let title: String
+    /// Six weeks of seven days, Sunday first.
+    let weeks: [[Day]]
+    let previous: Step
+    let next: Step
+    /// What VoiceOver announces when the selection changes.
+    let selectedAnnouncement: String?
 
-    private enum Keys: String, CodingKey { case value, focusDate, words }
+    private enum Keys: String, CodingKey { case value, focusDate, words, title, weeks, previous, next, selectedAnnouncement }
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: Keys.self)
         value = try c.decodeIfPresent(String.self, forKey: .value)
         focusDate = try c.decode(String.self, forKey: .focusDate)
         words = try c.decodeIfPresent(Words.self, forKey: .words) ?? Words()
-    }
-}
-
-/// A calendar date with no time zone: year, month and day, read from and written as ISO.
-struct TCalDate: Hashable, Comparable {
-    let year: Int
-    let month: Int
-    let day: Int
-
-    init(year: Int, month: Int, day: Int) {
-        self.year = year; self.month = month; self.day = day
-    }
-
-    init?(iso: String) {
-        let parts = iso.split(separator: "-")
-        guard parts.count == 3, let y = Int(parts[0]), let m = Int(parts[1]), let d = Int(parts[2]),
-              (1...12).contains(m), (1...31).contains(d) else { return nil }
-        self.init(year: y, month: m, day: d)
-    }
-
-    var iso: String {
-        String(format: "%04d-%02d-%02d", year, month, day)
-    }
-
-    static func < (a: TCalDate, b: TCalDate) -> Bool { (a.year, a.month, a.day) < (b.year, b.month, b.day) }
-
-    /// Gregorian, Sunday first (Astryx's Calendar default), independent of the device zone.
-    static let calendar: Calendar = {
-        var c = Calendar(identifier: .gregorian)
-        c.timeZone = TimeZone(identifier: "UTC")!
-        c.firstWeekday = 1
-        return c
-    }()
-
-    var date: Date {
-        TCalDate.calendar.date(from: DateComponents(year: year, month: month, day: day, hour: 12))!
-    }
-
-    init(_ date: Date) {
-        let c = TCalDate.calendar.dateComponents([.year, .month, .day], from: date)
-        self.init(year: c.year!, month: c.month!, day: c.day!)
-    }
-
-    /// The first day of this date's month.
-    var firstOfMonth: TCalDate { TCalDate(year: year, month: month, day: 1) }
-
-    func addingMonths(_ n: Int) -> TCalDate {
-        TCalendarMath.shift(self, months: n)
-    }
-}
-
-enum TCalendarMath {
-    static func shift(_ d: TCalDate, months: Int) -> TCalDate {
-        let c = TCalDate.calendar
-        let first = c.date(from: DateComponents(year: d.year, month: d.month, day: 1, hour: 12))!
-        let moved = c.date(byAdding: .month, value: months, to: first)!
-        return TCalDate(moved)
-    }
-
-    /// The weeks of a month: always six rows of seven days, as the stock Calendar draws them, from the
-    /// Sunday on or before the 1st. Days outside the month are flagged.
-    static func weeks(of month: TCalDate) -> [[(date: TCalDate, inMonth: Bool)]] {
-        let c = TCalDate.calendar
-        let first = c.date(from: DateComponents(year: month.year, month: month.month, day: 1, hour: 12))!
-        let lead = (c.component(.weekday, from: first) - c.firstWeekday + 7) % 7
-        let total = 42
-        var out: [[(TCalDate, Bool)]] = []
-        var row: [(TCalDate, Bool)] = []
-        for i in 0..<total {
-            let day = c.date(byAdding: .day, value: i - lead, to: first)!
-            let d = TCalDate(day)
-            row.append((d, d.month == month.month && d.year == month.year))
-            if row.count == 7 { out.append(row); row = [] }
-        }
-        return out.map { $0.map { (date: $0.0, inMonth: $0.1) } }
+        title = try c.decodeIfPresent(String.self, forKey: .title) ?? ""
+        weeks = try c.decodeIfPresent([[Day]].self, forKey: .weeks) ?? []
+        previous = try c.decodeIfPresent(Step.self, forKey: .previous) ?? Step()
+        next = try c.decodeIfPresent(Step.self, forKey: .next) ?? Step()
+        selectedAnnouncement = try c.decodeIfPresent(String.self, forKey: .selectedAnnouncement)
     }
 }

@@ -22,11 +22,11 @@ final class TemplatesInboxKanbanInvoiceTests: XCTestCase {
     /// gap 16): one column on a 390 pt phone (358 of content), two on the Mac pane, three on a
     /// wide window.
     func testInvoiceFactsFollowTheWebsAutoFillGrid() {
-        XCTAssertEqual(InvoiceScreen.factColumns(contentWidth: 358, gap: 16), 1)
-        XCTAssertEqual(InvoiceScreen.factColumns(contentWidth: 575, gap: 16), 1)
-        XCTAssertEqual(InvoiceScreen.factColumns(contentWidth: 576, gap: 16), 2)
-        XCTAssertEqual(InvoiceScreen.factColumns(contentWidth: 708, gap: 16), 2)
-        XCTAssertEqual(InvoiceScreen.factColumns(contentWidth: 872, gap: 16), 3)
+        XCTAssertEqual(InvoiceScreen.factColumns(contentWidth: 358, gap: 16, minWidth: 280), 1)
+        XCTAssertEqual(InvoiceScreen.factColumns(contentWidth: 575, gap: 16, minWidth: 280), 1)
+        XCTAssertEqual(InvoiceScreen.factColumns(contentWidth: 576, gap: 16, minWidth: 280), 2)
+        XCTAssertEqual(InvoiceScreen.factColumns(contentWidth: 708, gap: 16, minWidth: 280), 2)
+        XCTAssertEqual(InvoiceScreen.factColumns(contentWidth: 872, gap: 16, minWidth: 280), 3)
     }
 
     /// Astryx's touch rules for a field and its marks: 16 pt text and 24 pt boxes on an iPhone,
@@ -90,6 +90,15 @@ final class TemplatesInboxKanbanInvoiceTests: XCTestCase {
         XCTAssertEqual(inbox.rows.first?.priority?.color, .red)
         XCTAssertEqual(inbox.text.composer.tools.count, 4)
         XCTAssertFalse(inbox.compose.directory.isEmpty)
+        // The layout numbers, the marks and the recipients' search are the core's.
+        XCTAssertEqual(inbox.mode.rules.listMin, 300)
+        XCTAssertEqual(inbox.mode.rules.paneMin, 440)
+        XCTAssertEqual(inbox.mode.rules.messageMeasure, 680)
+        XCTAssertEqual(inbox.mode.rules.paneDefaultShare, 2.0 / 3.0, accuracy: 1e-9)
+        XCTAssertEqual(inbox.text.previewSeparator, "\u{2014}")
+        XCTAssertEqual(inbox.text.overflowMark, "+")
+        XCTAssertEqual(inbox.compose.queries, .init(recipients: "", cc: "", bcc: ""))
+        XCTAssertEqual(inbox.compose.suggestions.recipients, inbox.compose.directory)
 
         let kanban = try templateView(try app("template-kanban")).decode(KanbanModel.self)
         XCTAssertEqual(kanban.title, "Sprint Board")

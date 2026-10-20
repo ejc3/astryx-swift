@@ -216,6 +216,41 @@
      }
     ],
     "search": null,
+    "searchQuery": "",
+    "results": [
+     {
+      "id": "1",
+      "label": "Username"
+     },
+     {
+      "id": "2",
+      "label": "First name"
+     },
+     {
+      "id": "3",
+      "label": "Last name"
+     },
+     {
+      "id": "4",
+      "label": "Email address"
+     },
+     {
+      "id": "5",
+      "label": "Change password"
+     },
+     {
+      "id": "6",
+      "label": "Data Export Access"
+     },
+     {
+      "id": "7",
+      "label": "Allow Admin to Add Members"
+     },
+     {
+      "id": "8",
+      "label": "Two-Factor Authentication"
+     }
+    ],
     "username": "nicol43",
     "firstName": "Stephanie",
     "lastName": "Nicol",
@@ -226,6 +261,12 @@
     "dataExport": false,
     "adminMembers": false,
     "twoFactor": false,
+    "rules": {
+     "narrowMaxWidth": 768,
+     "contentMaxWidth": 1440,
+     "sidebarWidth": 260,
+     "groupColumnMin": 320
+    },
     "inert": [
      "save.basic",
      "save.password",
@@ -241,6 +282,7 @@
      "previous": "Previous",
      "next": "Next",
      "done": "Done",
+     "title": "Settings",
      "sections": "Settings sections",
      "searchLabel": "Search",
      "searchPlaceholder": "Search settings...",

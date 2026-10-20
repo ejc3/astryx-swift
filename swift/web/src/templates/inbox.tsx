@@ -83,6 +83,7 @@ import {
   XMarkIcon,
 } from '@heroicons/react/24/outline';
 
+import {searchRecipients} from '../../../core/src/templates/inbox/model.ts';
 import type {
   ActionView,
   ComposeView,
@@ -127,20 +128,8 @@ const HOVER_INTENT_MS = 90;
 /** Matches the wash the selection plugin paints, so both states look native. */
 const OPEN_CELL_STYLE = {backgroundColor: 'var(--color-accent-muted)'};
 
-/** What the pane is worth on arrival: two thirds, leaving the list a third. */
-const PANE_DEFAULT_SHARE = 2 / 3;
-
-/** The narrowest the list may be dragged. */
-const LIST_MIN_WIDTH = 300;
-
-/** The narrowest the pane may be dragged. */
-const PANE_MIN_WIDTH = 440;
-
 /** The tab strip's height, borrowed by the bulk-selection bar that replaces it. */
 const SELECTION_BAR_HEIGHT = 37;
-
-/** How wide a message is allowed to get, regardless of the pane. */
-const MESSAGE_MEASURE = 680;
 
 /**
  * Reports the width of the box this template was given, as it changes: to the
@@ -203,25 +192,24 @@ const THREAD_HEADER_GAP = 3;
 const AVATAR_SIZE = 36;
 
 /**
- * The status gutter is re-sized to what its own contents cost: 16px of inset,
- * the 8px dot, and the 12px the density puts after every cell.
- */
-const STATUS_GUTTER_WIDTH = 36;
-
-/**
  * The plugin's own column key. It is internal to `useTableRowStatus`, and if it
  * is ever renamed this quietly stops applying rather than failing.
  */
 const STATUS_COLUMN_KEY = '__rowStatus';
 
-const ALIGN_STATUS_GUTTER: TablePlugin<RowView> = {
+/**
+ * The status gutter is re-sized to what its own contents cost: 16px of inset,
+ * the 8px dot, and the 12px the density puts after every cell. The core says
+ * how wide (`rules.statusGutterWidth`).
+ */
+const alignStatusGutter = (width: number): TablePlugin<RowView> => ({
   transformColumns: columns =>
     columns.map(column =>
       column.key === STATUS_COLUMN_KEY
-        ? {...column, width: pixel(STATUS_GUTTER_WIDTH)}
+        ? {...column, width: pixel(width)}
         : column,
     ),
-};
+});
 
 /**
  * The actions take the whole cell the moment they enter flow, which is what
@@ -459,7 +447,16 @@ function AttachmentStrip({
  * The whole thread, oldest first, with the message the row points at last.
  * `type="multiple"`: reading a thread is usually comparing two messages.
  */
-function ThreadHistory({pane, send}: {pane: PaneView; send: Send}) {
+function ThreadHistory({
+  pane,
+  measure,
+  send,
+}: {
+  pane: PaneView;
+  /** How wide a message is allowed to get, regardless of the pane. */
+  measure: number;
+  send: Send;
+}) {
   return (
     <VStack gap={2}>
       <CollapsibleGroup
@@ -499,7 +496,7 @@ function ThreadHistory({pane, send}: {pane: PaneView; send: Send}) {
             <HStack gap={THREAD_HEADER_GAP}>
               <ThreadGutter />
               <StackItem size="fill">
-                <VStack gap={3} maxWidth={MESSAGE_MEASURE}>
+                <VStack gap={3} maxWidth={measure}>
                   {message.body.map(paragraph => (
                     <Text key={paragraph}>{paragraph}</Text>
                   ))}
@@ -517,11 +514,13 @@ function ThreadHistory({pane, send}: {pane: PaneView; send: Send}) {
 function ConversationPane({
   pane,
   text,
+  messageMeasure,
   send,
   isFullWidth,
 }: {
   pane: PaneView;
   text: View['text']['pane'];
+  messageMeasure: number;
   send: Send;
   /** True when the pane has replaced the list rather than sitting beside it. */
   isFullWidth: boolean;
@@ -612,7 +611,7 @@ function ConversationPane({
             ))}
           </HStack>
 
-          <ThreadHistory pane={pane} send={send} />
+          <ThreadHistory pane={pane} measure={messageMeasure} send={send} />
 
           <HStack gap={THREAD_HEADER_GAP}>
             <ThreadGutter />
@@ -639,6 +638,28 @@ function ConversationPane({
 
 // ============= COMPOSER =============
 
+/**
+ * A search source over the directory, for a field that already holds `chosen`: the core's own
+ * rule (`searchRecipients`), called here so typing needs no round trip. Kept stable while the
+ * directory and the chosen people are unchanged.
+ */
+function useRecipientSource(
+  directory: ComposeView['directory'],
+  chosen: ComposeView['recipients'],
+): SearchSource {
+  const key = JSON.stringify([directory, chosen]);
+  return useMemo<SearchSource>(() => {
+    const [people, taken] = JSON.parse(key) as [
+      ComposeView['directory'],
+      ComposeView['recipients'],
+    ];
+    return {
+      search: (query: string) => searchRecipients(people, taken, query),
+      bootstrap: () => searchRecipients(people, taken, ''),
+    };
+  }, [key]);
+}
+
 /** The compose sheet. The fields and whether it is open are the core's. */
 function ComposeWindow({
   compose,
@@ -649,18 +670,11 @@ function ComposeWindow({
   text: View['text']['composer'];
   send: Send;
 }) {
-  // A source over the directory the core offers, kept stable while it is unchanged.
-  const directoryKey = JSON.stringify(compose.directory);
-  const recipientSource = useMemo<SearchSource>(() => {
-    const directory = JSON.parse(directoryKey) as ComposeView['directory'];
-    return {
-      search: (query: string) =>
-        directory.filter(person =>
-          person.label.toLowerCase().includes(query.toLowerCase()),
-        ),
-      bootstrap: () => directory,
-    };
-  }, [directoryKey]);
+  // A source over the directory the core offers, for what each field holds already.
+  const {directory} = compose;
+  const recipientSource = useRecipientSource(directory, compose.recipients);
+  const ccSource = useRecipientSource(directory, compose.cc);
+  const bccSource = useRecipientSource(directory, compose.bcc);
 
   const onOpenChange = (isOpen: boolean) => set(send, 'composeOpen', isOpen);
   const people = (field: 'recipients' | 'cc' | 'bcc') =>
@@ -738,7 +752,7 @@ function ComposeWindow({
                     label={text.cc}
                     isLabelHidden
                     placeholder={text.cc}
-                    searchSource={recipientSource}
+                    searchSource={ccSource}
                     value={compose.cc}
                     onChange={people('cc')}
                     hasCreate
@@ -749,7 +763,7 @@ function ComposeWindow({
                     label={text.bcc}
                     isLabelHidden
                     placeholder={text.bcc}
-                    searchSource={recipientSource}
+                    searchSource={bccSource}
                     value={compose.bcc}
                     onChange={people('bcc')}
                     hasCreate
@@ -825,6 +839,11 @@ export default function SupportInboxTemplate({view: rawView, send}: TemplateProp
   const view = rawView as View;
   const {text, mode} = view;
   const {isSingleSurface, isPaneFullWidth, isStacked, isTight, isTouch} = mode;
+  const {rules} = mode;
+  const statusGutter = useMemo(
+    () => alignStatusGutter(rules.statusGutterWidth),
+    [rules.statusGutterWidth],
+  );
 
   // The page measures; the core decides what the measurements mean.
   const reportSurface = useCallback(
@@ -888,9 +907,9 @@ export default function SupportInboxTemplate({view: rawView, send}: TemplateProp
 
   const pane = useResizable({
     defaultSize: '58%',
-    minSize: PANE_MIN_WIDTH,
+    minSize: rules.paneMin,
     maxSize: isMeasured
-      ? Math.max(PANE_MIN_WIDTH, surfaceWidth - LIST_MIN_WIDTH)
+      ? Math.max(rules.paneMin, surfaceWidth - rules.listMin)
       : undefined,
     onSizeChange: onPaneSizeChange,
   });
@@ -903,9 +922,9 @@ export default function SupportInboxTemplate({view: rawView, send}: TemplateProp
       return;
     }
     isPlacingPane.current = true;
-    resizePane(Math.round(surfaceWidth * PANE_DEFAULT_SHARE));
+    resizePane(Math.round(surfaceWidth * rules.paneDefaultShare));
     isPlacingPane.current = false;
-  }, [isMeasured, surfaceWidth, resizePane]);
+  }, [isMeasured, surfaceWidth, resizePane, rules.paneDefaultShare]);
 
   const handleOpen = useCallback(
     (item: RowView) => press(send, `open:${item.id}`),
@@ -936,7 +955,12 @@ export default function SupportInboxTemplate({view: rawView, send}: TemplateProp
   });
 
   const {receivedWidth} = view;
-  const {columns: columnText, hasAttachments: hasAttachmentsLabel} = text;
+  const {
+    columns: columnText,
+    hasAttachments: hasAttachmentsLabel,
+    overflowMark,
+    previewSeparator,
+  } = text;
   const columns = useMemo((): TableColumn<RowView>[] => {
     const received: TableColumn<RowView> = {
       key: 'receivedAt',
@@ -1002,7 +1026,7 @@ export default function SupportInboxTemplate({view: rawView, send}: TemplateProp
             </StackItem>
             <StackItem size="fill">
               <Text maxLines={1} color="secondary">
-                — {item.preview}
+                {previewSeparator} {item.preview}
               </Text>
             </StackItem>
           </HStack>
@@ -1019,7 +1043,7 @@ export default function SupportInboxTemplate({view: rawView, send}: TemplateProp
             overflowRenderer={hidden => (
               <Token
                 size="sm"
-                label={`+${hidden.length}`}
+                label={`${overflowMark}${hidden.length}`}
                 description={hidden
                   .map(entry => entry.child.key)
                   .filter(Boolean)
@@ -1051,6 +1075,8 @@ export default function SupportInboxTemplate({view: rawView, send}: TemplateProp
     reveal,
     receivedWidth,
     hasAttachmentsLabel,
+    overflowMark,
+    previewSeparator,
     columnText.received,
     columnText.conversation,
     columnText.from,
@@ -1060,8 +1086,8 @@ export default function SupportInboxTemplate({view: rawView, send}: TemplateProp
 
   // Stacked, the checkbox column goes.
   const tablePlugins: Record<string, TablePlugin<RowView>> = isStacked
-    ? {rowStatus, rows, gutter: ALIGN_STATUS_GUTTER}
-    : {selection, rowStatus, rows, gutter: ALIGN_STATUS_GUTTER};
+    ? {rowStatus, rows, gutter: statusGutter}
+    : {selection, rowStatus, rows, gutter: statusGutter};
 
   const openPane = view.pane;
 
@@ -1180,6 +1206,7 @@ export default function SupportInboxTemplate({view: rawView, send}: TemplateProp
               <ConversationPane
                 pane={openPane}
                 text={text.pane}
+                messageMeasure={rules.messageMeasure}
                 send={send}
                 isFullWidth
               />
@@ -1231,6 +1258,7 @@ export default function SupportInboxTemplate({view: rawView, send}: TemplateProp
                 <ConversationPane
                   pane={openPane}
                   text={text.pane}
+                  messageMeasure={rules.messageMeasure}
                   send={send}
                   isFullWidth={false}
                 />

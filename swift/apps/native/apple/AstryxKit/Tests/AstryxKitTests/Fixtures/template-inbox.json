@@ -161,6 +161,8 @@
      "compose": "Compose",
      "unselectAll": "Unselect All",
      "bullet": "•",
+     "previewSeparator": "—",
+     "overflowMark": "+",
      "unreadStatus": "Unread",
      "unreadSuffix": " unread",
      "hasAttachments": "Has attachments",
@@ -971,6 +973,11 @@
       "singleSurfaceBelow": 900,
       "stackRowsBelow": 560,
       "tightenColumnsBelow": 900,
+      "listMin": 300,
+      "paneMin": 440,
+      "paneDefaultShare": 0.6666666666666666,
+      "messageMeasure": 680,
+      "statusGutterWidth": 36,
       "receivedWidth": {
        "wide": {
         "pointer": 142,
@@ -1689,6 +1696,127 @@
        "label": "Sofia Marchetti"
       }
      ],
+     "queries": {
+      "recipients": "",
+      "cc": "",
+      "bcc": ""
+     },
+     "suggestions": {
+      "recipients": [
+       {
+        "id": "priya.raman@northwind.example",
+        "label": "Priya Raman"
+       },
+       {
+        "id": "m.feld@harbourpoint.example",
+        "label": "Marcus Feld"
+       },
+       {
+        "id": "dana@osei-consulting.example",
+        "label": "Dana Osei"
+       },
+       {
+        "id": "tomas.ibarra@meridian.example",
+        "label": "Tomás Ibarra"
+       },
+       {
+        "id": "h.lindqvist@varda.example",
+        "label": "Hannah Lindqvist"
+       },
+       {
+        "id": "obaptiste@fieldstone.example",
+        "label": "Owen Baptiste"
+       },
+       {
+        "id": "aiko.tanaka@shorebird.example",
+        "label": "Aiko Tanaka"
+       },
+       {
+        "id": "r.cole@atlasgrid.example",
+        "label": "Reuben Cole"
+       },
+       {
+        "id": "sofia@marchetti-legal.example",
+        "label": "Sofia Marchetti"
+       }
+      ],
+      "cc": [
+       {
+        "id": "priya.raman@northwind.example",
+        "label": "Priya Raman"
+       },
+       {
+        "id": "m.feld@harbourpoint.example",
+        "label": "Marcus Feld"
+       },
+       {
+        "id": "dana@osei-consulting.example",
+        "label": "Dana Osei"
+       },
+       {
+        "id": "tomas.ibarra@meridian.example",
+        "label": "Tomás Ibarra"
+       },
+       {
+        "id": "h.lindqvist@varda.example",
+        "label": "Hannah Lindqvist"
+       },
+       {
+        "id": "obaptiste@fieldstone.example",
+        "label": "Owen Baptiste"
+       },
+       {
+        "id": "aiko.tanaka@shorebird.example",
+        "label": "Aiko Tanaka"
+       },
+       {
+        "id": "r.cole@atlasgrid.example",
+        "label": "Reuben Cole"
+       },
+       {
+        "id": "sofia@marchetti-legal.example",
+        "label": "Sofia Marchetti"
+       }
+      ],
+      "bcc": [
+       {
+        "id": "priya.raman@northwind.example",
+        "label": "Priya Raman"
+       },
+       {
+        "id": "m.feld@harbourpoint.example",
+        "label": "Marcus Feld"
+       },
+       {
+        "id": "dana@osei-consulting.example",
+        "label": "Dana Osei"
+       },
+       {
+        "id": "tomas.ibarra@meridian.example",
+        "label": "Tomás Ibarra"
+       },
+       {
+        "id": "h.lindqvist@varda.example",
+        "label": "Hannah Lindqvist"
+       },
+       {
+        "id": "obaptiste@fieldstone.example",
+        "label": "Owen Baptiste"
+       },
+       {
+        "id": "aiko.tanaka@shorebird.example",
+        "label": "Aiko Tanaka"
+       },
+       {
+        "id": "r.cole@atlasgrid.example",
+        "label": "Reuben Cole"
+       },
+       {
+        "id": "sofia@marchetti-legal.example",
+        "label": "Sofia Marchetti"
+       }
+      ]
+     },
      "isDirty": false
     }
    }

@@ -5,6 +5,8 @@ import Foundation
 struct InvoiceModel: Decodable, Equatable {
     /// The words of the table's controls and spoken labels.
     var words: Words
+    /// The layout numbers the core holds; the web reads the same ones.
+    var rules: Rules
     /// The table's columns: key, title and the filter each offers.
     var columns: [Column]
     /// Ids of the controls the core has no action for ("downloadPdf", "dispute"): drawn disabled.
@@ -25,6 +27,15 @@ struct InvoiceModel: Decodable, Equatable {
     var totals: [Total]
     /// Shown under the table when the figures describe a subset.
     var banner: Notice?
+
+    struct Rules: Decodable, Equatable {
+        /// The facts grid is `auto-fill` columns at least this wide (Astryx's own, which the web's page inherits).
+        var factMinWidth: CGFloat
+        /// The search box's width beside the billing switch.
+        var searchWidth: CGFloat
+        /// The width of the Amount figure box: the column's, and the totals' under it.
+        var figureWidth: CGFloat
+    }
 
     struct Words: Decodable, Equatable {
         var downloadPdf: String
@@ -53,6 +64,16 @@ struct InvoiceModel: Decodable, Equatable {
         var quantityPrompt: String
         var detail: DetailWords
         var tableLabel: String
+        /// What the column filters' field config is called (the web's power search).
+        var linesName: String
+        /// The labels of the column filters' fields.
+        var fields: FieldWords
+
+        struct FieldWords: Decodable, Equatable {
+            var description: String
+            var category: String
+            var quantity: String
+        }
 
         struct DetailWords: Decodable, Equatable {
             var category: String
@@ -129,6 +150,8 @@ struct InvoiceModel: Decodable, Equatable {
         var quantity: String
         var rate: String
         var amount: String
+        /// The row's hover card as a whole is named this ("Discovery workshop details").
+        var detailsLabel: String
         /// What the row's hover card says.
         var card: Card
     }
@@ -166,19 +189,19 @@ struct InvoiceColumn: Identifiable {
     var id: String { key }
 
     /// The width and alignment of a column by key; the words are the model's.
-    private static func layout(_ key: String) -> (width: CGFloat?, trailing: Bool) {
+    private static func layout(_ key: String, figure: CGFloat) -> (width: CGFloat?, trailing: Bool) {
         switch key {
         case "category": (150, false)
         case "quantity": (72, true)
         case "unitPrice": (104, true)
-        case "amount": (132, true)
+        case "amount": (figure, true)
         default: (nil, false)
         }
     }
 
     static func all(_ model: InvoiceModel) -> [InvoiceColumn] {
         model.columns.map { column in
-            let fit = layout(column.key)
+            let fit = layout(column.key, figure: model.rules.figureWidth)
             return InvoiceColumn(key: column.key, title: column.title, filter: column.filter, width: fit.width, trailing: fit.trailing)
         }
     }

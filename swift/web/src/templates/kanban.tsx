@@ -19,6 +19,7 @@ import type {
   ColumnId,
   ColumnView,
   EmptyIcon,
+  KanbanWords,
   View,
 } from '../../../core/src/templates/kanban/model.ts';
 import type {Action} from '@astryx-native/core';
@@ -95,8 +96,8 @@ const EMPTY_ICONS: Record<EmptyIcon, typeof InboxIcon> = {
 // on card controls still register normally.
 const DRAG_THRESHOLD = 5;
 
-// Shared width for every board column, so they stay visually aligned.
-const COLUMN_WIDTH = 300;
+// The shared width of every board column (`view.rules.columnWidth`) keeps them visually
+// aligned; the core holds the number so the native drawing uses the same one.
 
 // ============= STYLES =============
 
@@ -107,11 +108,11 @@ const styles = stylex.create({
     height: '100%',
     padding: 'var(--spacing-4)',
   },
-  columnShell: {
+  columnShell: (width: number) => ({
     flexShrink: 0,
-    flexBasis: COLUMN_WIDTH,
+    flexBasis: width,
     height: '100%',
-  },
+  }),
   card: {
     cursor: 'grab',
     userSelect: 'none',
@@ -157,7 +158,15 @@ const styles = stylex.create({
 
 // Shared card contents, rendered both in the column list and inside the
 // floating drag clone so the two stay pixel-identical.
-function BoardCardBody({item, send}: {item: CardView; send: Send}) {
+function BoardCardBody({
+  item,
+  words,
+  send,
+}: {
+  item: CardView;
+  words: KanbanWords;
+  send: Send;
+}) {
   const moveTargets = item.moveTargets.map(t => ({
     label: t.label,
     onClick: () => send({type: 'press', id: t.id}),
@@ -171,11 +180,11 @@ function BoardCardBody({item, send}: {item: CardView; send: Send}) {
           <Badge label={item.priorityLabel} variant={item.priorityVariant} />
         </HStack>
         <MoreMenu
-          label="Work item actions"
+          label={words.workItemActions}
           size="sm"
           items={[
-            {label: 'Open', onClick: () => {}},
-            {label: 'Assign to me', onClick: () => {}},
+            {label: words.open, onClick: () => {}},
+            {label: words.assignToMe, onClick: () => {}},
             {type: 'divider'},
             ...moveTargets,
           ]}
@@ -190,7 +199,7 @@ function BoardCardBody({item, send}: {item: CardView; send: Send}) {
       </VStack>
 
       <Text type="supporting" color="secondary">
-        Edited {item.edited} · Due {item.due}
+        {item.metaParts}
       </Text>
     </VStack>
   );
@@ -200,11 +209,13 @@ function BoardCardBody({item, send}: {item: CardView; send: Send}) {
 
 function BoardCard({
   item,
+  words,
   cardRef,
   onPointerDown,
   send,
 }: {
   item: CardView;
+  words: KanbanWords;
   cardRef: (el: HTMLDivElement | null) => void;
   onPointerDown: (e: ReactPointerEvent, id: string) => void;
   send: Send;
@@ -215,7 +226,7 @@ function BoardCard({
       padding={3}
       xstyle={styles.card}
       onPointerDown={e => onPointerDown(e, item.id)}>
-      <BoardCardBody item={item} send={send} />
+      <BoardCardBody item={item} words={words} send={send} />
     </Card>
   );
 }
@@ -224,15 +235,17 @@ function BoardCard({
 
 function BoardColumn({
   meta,
+  width,
   contentRef,
   children,
 }: {
   meta: ColumnView;
+  width: number;
   contentRef: (el: HTMLDivElement | null) => void;
   children: ReactNode;
 }) {
   return (
-    <Card variant="muted" padding={0} xstyle={styles.columnShell}>
+    <Card variant="muted" padding={0} xstyle={styles.columnShell(width)}>
       <Layout
         height="fill"
         header={
@@ -241,7 +254,7 @@ function BoardColumn({
               <HStack gap={2} vAlign="center">
                 <StatusDot
                   variant={meta.variant}
-                  label={`${meta.title} status`}
+                  label={meta.statusLabel}
                 />
                 <Heading level={4}>{meta.title}</Heading>
                 <Tooltip content={meta.tooltip}>
@@ -483,6 +496,7 @@ export default function KanbanBoardTemplate({view: raw, send}: TemplateProps) {
       <BoardCard
         key={it.id}
         item={it}
+        words={view.words}
         cardRef={getCardRef(it.id)}
         onPointerDown={onCardPointerDown}
         send={send}
@@ -508,7 +522,7 @@ export default function KanbanBoardTemplate({view: raw, send}: TemplateProps) {
         header={
           <LayoutHeader hasDivider padding={4}>
             <Toolbar
-              label="Board actions"
+              label={view.words.boardActions}
               gap={2}
               startContent={
                 <>
@@ -519,8 +533,8 @@ export default function KanbanBoardTemplate({view: raw, send}: TemplateProps) {
               endContent={
                 <HStack gap={2}>
                   <Selector
-                    label="Sprint"
-                    width={200}
+                    label={view.words.sprint}
+                    width={view.rules.sprintWidth}
                     isLabelHidden
                     value={view.sprint}
                     onChange={value =>
@@ -536,19 +550,19 @@ export default function KanbanBoardTemplate({view: raw, send}: TemplateProps) {
                   <HStack gap={1} vAlign="center">
                     <IconButton
                       icon={<Icon icon={ArrowsUpDownIcon} size="sm" />}
-                      label="Sort"
+                      label={view.words.sort}
                     />
                     <IconButton
                       icon={<Icon icon={FunnelIcon} size="sm" />}
-                      label="Filter"
+                      label={view.words.filter}
                     />
                     <IconButton
                       icon={<Icon icon={MagnifyingGlassIcon} size="sm" />}
-                      label="Search"
+                      label={view.words.search}
                     />
                   </HStack>
                   <Button
-                    label="Add task"
+                    label={view.words.addTask}
                     variant="primary"
                     icon={<Icon icon={PlusIcon} size="sm" />}
                   />
@@ -564,6 +578,7 @@ export default function KanbanBoardTemplate({view: raw, send}: TemplateProps) {
                 <BoardColumn
                   key={meta.id}
                   meta={meta}
+                  width={view.rules.columnWidth}
                   contentRef={getColumnRef(meta.id)}>
                   {renderColumnCards(meta.id)}
                 </BoardColumn>
@@ -583,7 +598,7 @@ export default function KanbanBoardTemplate({view: raw, send}: TemplateProps) {
               drag.width,
             ),
           ]}>
-          <BoardCardBody item={draggedItem} send={() => {}} />
+          <BoardCardBody item={draggedItem} words={view.words} send={() => {}} />
         </Card>
       ) : null}
     </Section>

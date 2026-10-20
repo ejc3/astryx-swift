@@ -41,7 +41,7 @@ final class TemplatesCheckoutOrderSettingsTests: XCTestCase {
         let screen = try XCTUnwrap(fixture["screen"] as? [String: Any])
         let body = try XCTUnwrap(screen["body"] as? [String: Any])
         let current = try XCTUnwrap(current ?? (body["view"] as? [String: Any]))
-        for key in ["words", "inert", "tabs", "itemsLabel", "fieldOrder", "headingRepeatsTitle"] where replaced[key] == nil { replaced[key] = current[key] }
+        for key in ["words", "inert", "tabs", "itemsLabel", "fieldOrder", "headingRepeatsTitle", "rules", "searchQuery", "results"] where replaced[key] == nil { replaced[key] = current[key] }
         if var steps = replaced["steps"] as? [[String: Any]], let fixtureSteps = current["steps"] as? [[String: Any]] {
             for i in steps.indices where steps[i]["spoken"] == nil {
                 steps[i]["spoken"] = fixtureSteps[i]["spoken"]; steps[i]["state"] = ""
@@ -84,6 +84,17 @@ final class TemplatesCheckoutOrderSettingsTests: XCTestCase {
         XCTAssertEqual(checkout.items.first?.removeLabel, "Remove Speckled Stoneware Mug")
         XCTAssertEqual(checkout.steps.first?.spoken, "Cart, step 1 of 4")
         XCTAssertEqual(checkout.fieldOrder, [])
+        // The layout numbers are the core's: the stock page's, read by this drawing.
+        XCTAssertEqual(checkout.rules.narrowHostAtMost, 900)
+        XCTAssertEqual(checkout.rules.contentWidth, 1000)
+        XCTAssertEqual(checkout.rules.summaryWidth, 360)
+        XCTAssertEqual(checkout.rules.stepperMinStepWidth, 112)
+        XCTAssertEqual(checkout.rules.quantity.max, 10)
+        XCTAssertEqual(checkout.rules.noteMaxLength, 240)
+        XCTAssertEqual(checkout.words.cart.each, "each")
+        // Four steps collapse below 448 points of form column, the width at which each gets 112.
+        XCTAssertFalse(CheckoutStepper.collapses(columnWidth: 448, steps: checkout.steps.count, minStepWidth: checkout.rules.stepperMinStepWidth))
+        XCTAssertTrue(CheckoutStepper.collapses(columnWidth: 447, steps: checkout.steps.count, minStepWidth: checkout.rules.stepperMinStepWidth))
 
         let order = try templateView(app("order")).decode(OrderModel.self)
         XCTAssertEqual(order.number, "#1001")
@@ -99,6 +110,10 @@ final class TemplatesCheckoutOrderSettingsTests: XCTestCase {
         XCTAssertTrue(order.isInert("refund"))
         XCTAssertFalse(order.isInert("nonsense"))
         XCTAssertEqual(order.words.panelTitle, "Order details")
+        XCTAssertEqual(order.rules.viewportNarrowAtMost, 1024)
+        XCTAssertEqual(order.rules.paneNarrowBelow, 760)
+        XCTAssertEqual(order.rules.contentWidth, 1000)
+        XCTAssertEqual(order.rules.panelWidth, 320)
         XCTAssertEqual(order.activity[0].reactionsLabel, "2 reactions")
 
         let settings = try templateView(app("settings")).decode(SettingsModel.self)
@@ -110,6 +125,12 @@ final class TemplatesCheckoutOrderSettingsTests: XCTestCase {
         XCTAssertEqual(settings.inert, ["save.basic", "save.password", "save.advanced"])
         XCTAssertEqual(settings.words.password.currentPlaceholder, "Current password")
         XCTAssertEqual(settings.words.common.optional, "Optional")
+        XCTAssertEqual(settings.words.title, "Settings")
+        XCTAssertEqual(settings.rules.groupColumnMin, 320)
+        XCTAssertEqual(settings.rules.contentMaxWidth, 1440)
+        XCTAssertEqual(settings.rules.narrowMaxWidth, 768)
+        XCTAssertEqual(settings.searchQuery, "")
+        XCTAssertEqual(settings.results, settings.searchItems)
     }
 
     private func variant(_ name: String) throws -> JSONValue {

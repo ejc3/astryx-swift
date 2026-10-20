@@ -57,24 +57,29 @@ final class TemplatesDashboardChatTests: XCTestCase {
         XCTAssertEqual(model.artifact.versions, ["v2 (current)", "v1"])
     }
 
-    func testCalendarDecodesAndCountsWeeks() throws {
+    func testCalendarDecodesTheCoresMonth() throws {
         let model = try node("calendar").template.view.decode(TCalModel.self)
         XCTAssertEqual(model.value, "2026-04-15")
-        let focus = try XCTUnwrap(TCalDate(iso: model.focusDate))
+        XCTAssertEqual(model.title, "April 2026")
         // April 2026 starts on a Wednesday: Mar 29 (Sunday) to May 9 (Saturday). The stock Calendar
         // always draws six weeks, so the sixth is the first week of May.
-        let weeks = TCalendarMath.weeks(of: focus.firstOfMonth)
+        let weeks = model.weeks
         XCTAssertEqual(weeks.count, 6)
-        XCTAssertEqual(weeks[0][0].date.iso, "2026-03-29")
+        XCTAssertTrue(weeks.allSatisfy { $0.count == 7 })
+        XCTAssertEqual(weeks[0][0].date, "2026-03-29")
         XCTAssertFalse(weeks[0][0].inMonth)
-        XCTAssertEqual(weeks[0][3].date.iso, "2026-04-01")
+        XCTAssertEqual(weeks[0][3].date, "2026-04-01")
         XCTAssertTrue(weeks[0][3].inMonth)
-        XCTAssertEqual(weeks[4][6].date.iso, "2026-05-02")
-        XCTAssertEqual(weeks[5][6].date.iso, "2026-05-09")
+        XCTAssertEqual(weeks[4][6].date, "2026-05-02")
+        XCTAssertEqual(weeks[5][6].date, "2026-05-09")
+        XCTAssertEqual(weeks.flatMap { $0 }.filter(\.selected).map(\.date), ["2026-04-15"])
+        XCTAssertEqual(weeks.flatMap { $0 }.first { $0.selected }?.label, "Wednesday, April 15, 2026")
+        XCTAssertEqual(model.previous.target, "2026-03-01")
+        XCTAssertEqual(model.previous.label, "Previous month, March 2026")
+        XCTAssertEqual(model.next.target, "2026-05-01")
+        XCTAssertEqual(model.next.label, "Next month, May 2026")
+        XCTAssertEqual(model.selectedAnnouncement, "Selected, Wednesday, April 15, 2026")
         XCTAssertEqual(model.words.weekdays, ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"])
-        XCTAssertEqual(TCalendarMath.shift(focus, months: -4).iso, "2025-12-01")
-        XCTAssertEqual(TCalendarMath.shift(TCalDate(year: 2026, month: 1, day: 31), months: 1).iso, "2026-02-01")
-        XCTAssertNil(TCalDate(iso: "April"))
     }
 
     func testShowcaseDecodes() throws {

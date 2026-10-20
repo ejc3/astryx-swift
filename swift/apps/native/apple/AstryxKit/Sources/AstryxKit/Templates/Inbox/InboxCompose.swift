@@ -146,15 +146,15 @@ struct InboxComposeForm: View {
     private var recipientFields: some View {
         InboxRecipientField(
             field: "recipients", placeholder: words.recipient, remove: words.remove,
-            people: compose.recipients, directory: compose.directory,
+            people: compose.recipients, query: compose.queries.recipients, suggestions: compose.suggestions.recipients,
             showCc: compose.hasCc ? nil : words.cc,
             showBcc: compose.hasBcc ? nil : words.bcc
         )
         if compose.hasCc {
-            InboxRecipientField(field: "cc", placeholder: words.cc, remove: words.remove, people: compose.cc, directory: compose.directory)
+            InboxRecipientField(field: "cc", placeholder: words.cc, remove: words.remove, people: compose.cc, query: compose.queries.cc, suggestions: compose.suggestions.cc)
         }
         if compose.hasBcc {
-            InboxRecipientField(field: "bcc", placeholder: words.bcc, remove: words.remove, people: compose.bcc, directory: compose.directory)
+            InboxRecipientField(field: "bcc", placeholder: words.bcc, remove: words.remove, people: compose.bcc, query: compose.queries.bcc, suggestions: compose.suggestions.bcc)
         }
     }
 
@@ -247,19 +247,27 @@ struct InboxRecipientField: View {
     /// Spoken before a person's name on the control that removes them.
     let remove: String
     let people: [InboxModel.Person]
-    let directory: [InboxModel.Person]
+    /// The text the core holds for this field, and what it finds (`compose.queries`, `compose.suggestions`).
+    let query: String
+    let suggestions: [InboxModel.Person]
     var showCc: String? = nil
     var showBcc: String? = nil
     @Environment(\.ax) private var ax
     @Environment(\.axSend) private var send
     @Environment(\.axStatic) private var isStatic
-    @State private var query = ""
+    @State private var text: String
 
-    private var suggestions: [InboxModel.Person] {
-        let term = query.trimmingCharacters(in: .whitespaces).lowercased()
-        guard !term.isEmpty else { return [] }
-        let chosen = Set(people.map(\.id))
-        return directory.filter { !chosen.contains($0.id) && $0.label.lowercased().contains(term) }.prefix(5).map { $0 }
+    init(field: String, placeholder: String, remove: String, people: [InboxModel.Person], query: String,
+         suggestions: [InboxModel.Person], showCc: String? = nil, showBcc: String? = nil) {
+        self.field = field; self.placeholder = placeholder; self.remove = remove; self.people = people
+        self.query = query; self.suggestions = suggestions; self.showCc = showCc; self.showBcc = showBcc
+        _text = State(initialValue: query)
+    }
+
+    /// The suggestions to draw: the core's, while the box holds something to look for. An empty
+    /// box finds everybody in the core, and this drawing offers nobody until the person types.
+    private var shown: [InboxModel.Person] {
+        text.trimmingCharacters(in: .whitespaces).isEmpty ? [] : suggestions
     }
 
     private func commit(_ next: [InboxModel.Person]) {
@@ -270,14 +278,14 @@ struct InboxRecipientField: View {
     private func add(_ person: InboxModel.Person) {
         guard !people.contains(where: { $0.id == person.id }) else { return }
         commit(people + [person])
-        query = ""
+        text = ""
     }
 
     /// Return adds the first suggestion, or the typed text itself as a new recipient.
     private func submit() {
-        let typed = query.trimmingCharacters(in: .whitespaces)
+        let typed = text.trimmingCharacters(in: .whitespaces)
         guard !typed.isEmpty else { return }
-        add(suggestions.first ?? InboxModel.Person(id: typed, label: typed))
+        add(shown.first ?? InboxModel.Person(id: typed, label: typed))
     }
 
     var body: some View {
@@ -293,9 +301,9 @@ struct InboxRecipientField: View {
             }
             .modifier(InboxFieldFrame(horizontal: ax.space(2), vertical: ax.space(1), minHeight: 38 * min(ax.scale, 1.4)))
 
-            if !suggestions.isEmpty {
+            if !shown.isEmpty {
                 VStack(alignment: .leading, spacing: 0) {
-                    ForEach(suggestions) { person in
+                    ForEach(shown) { person in
                         Button { add(person) } label: {
                             HStack(spacing: ax.space(2)) {
                                 AXAvatar(name: person.label, initials: InboxPeople.initials(person.label), hue: InboxPeople.hue(person.label), size: .sm)
@@ -325,13 +333,14 @@ struct InboxRecipientField: View {
                 .foregroundStyle(ax.textDisabled)
                 .frame(minWidth: 100, alignment: .leading)
         } else {
-            TextField(placeholder, text: $query, prompt: Text(placeholder).foregroundColor(ax.textDisabled))
+            TextField(placeholder, text: $text, prompt: Text(placeholder).foregroundColor(ax.textDisabled))
                 .labelsHidden()
                 .textFieldStyle(.plain)
                 .font(showFieldFont(ax))
                 .foregroundStyle(ax.text)
                 .frame(minWidth: 120)
                 .onSubmit(submit)
+                .syncedText(id: inboxAction(field + "Query"), value: query, text: $text)
                 #if os(iOS)
                 .textInputAutocapitalization(.never)
                 .keyboardType(.emailAddress)

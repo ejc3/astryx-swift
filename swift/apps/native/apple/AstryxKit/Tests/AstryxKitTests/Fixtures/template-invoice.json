@@ -187,7 +187,18 @@
       "amount": "Amount",
       "share": "Share of invoice"
      },
-     "tableLabel": "Invoice lines"
+     "tableLabel": "Invoice lines",
+     "linesName": "Lines",
+     "fields": {
+      "description": "Description",
+      "category": "Category",
+      "quantity": "Quantity"
+     }
+    },
+    "rules": {
+     "factMinWidth": 280,
+     "searchWidth": 300,
+     "figureWidth": 132
     },
     "columns": [
      {
@@ -287,6 +298,7 @@
       "quantity": "1",
       "rate": "$2,400.00",
       "amount": "$2,400.00",
+      "detailsLabel": "Discovery workshop details",
       "card": {
        "category": "Design",
        "billing": "Fixed fee",
@@ -302,6 +314,7 @@
       "quantity": "12",
       "rate": "$145.00",
       "amount": "$1,740.00",
+      "detailsLabel": "Stakeholder interviews details",
       "card": {
        "category": "Design",
        "billing": "Hourly",
@@ -317,6 +330,7 @@
       "quantity": "18",
       "rate": "$145.00",
       "amount": "$2,610.00",
+      "detailsLabel": "User research synthesis details",
       "card": {
        "category": "Design",
        "billing": "Hourly",
@@ -332,6 +346,7 @@
       "quantity": "34",
       "rate": "$145.00",
       "amount": "$4,930.00",
+      "detailsLabel": "Wireframes — key templates details",
       "card": {
        "category": "Design",
        "billing": "Hourly",
@@ -347,6 +362,7 @@
       "quantity": "1",
       "rate": "$6,800.00",
       "amount": "$6,800.00",
+      "detailsLabel": "Visual design system details",
       "card": {
        "category": "Design",
        "billing": "Fixed fee",
@@ -362,6 +378,7 @@
       "quantity": "62",
       "rate": "$145.00",
       "amount": "$8,990.00",
+      "detailsLabel": "Page designs — 14 templates details",
       "card": {
        "category": "Design",
        "billing": "Hourly",
@@ -377,6 +394,7 @@
       "quantity": "22",
       "rate": "$145.00",
       "amount": "$3,190.00",
+      "detailsLabel": "Prototype & usability testing details",
       "card": {
        "category": "Design",
        "billing": "Hourly",
@@ -392,6 +410,7 @@
       "quantity": "88",
       "rate": "$165.00",
       "amount": "$14,520.00",
+      "detailsLabel": "Frontend build — component library details",
       "card": {
        "category": "Development",
        "billing": "Hourly",
@@ -407,6 +426,7 @@
       "quantity": "104",
       "rate": "$165.00",
       "amount": "$17,160.00",
+      "detailsLabel": "Frontend build — page templates details",
       "card": {
        "category": "Development",
        "billing": "Hourly",
@@ -422,6 +442,7 @@
       "quantity": "40",
       "rate": "$165.00",
       "amount": "$6,600.00",
+      "detailsLabel": "CMS setup & content modelling details",
       "card": {
        "category": "Development",
        "billing": "Hourly",
@@ -437,6 +458,7 @@
       "quantity": "26",
       "rate": "$165.00",
       "amount": "$4,290.00",
+      "detailsLabel": "Search & filtering integration details",
       "card": {
        "category": "Development",
        "billing": "Hourly",
@@ -452,6 +474,7 @@
       "quantity": "10",
       "rate": "$165.00",
       "amount": "$1,650.00",
+      "detailsLabel": "Analytics & tag manager setup details",
       "card": {
        "category": "Development",
        "billing": "Hourly",
@@ -467,6 +490,7 @@
       "quantity": "1",
       "rate": "$3,200.00",
       "amount": "$3,200.00",
+      "detailsLabel": "Accessibility audit & remediation details",
       "card": {
        "category": "Development",
        "billing": "Fixed fee",
@@ -482,6 +506,7 @@
       "quantity": "24",
       "rate": "$135.00",
       "amount": "$3,240.00",
+      "detailsLabel": "Cross-browser QA details",
       "card": {
        "category": "Development",
        "billing": "Hourly",
@@ -497,6 +522,7 @@
       "quantity": "36",
       "rate": "$125.00",
       "amount": "$4,500.00",
+      "detailsLabel": "Copywriting — 14 pages details",
       "card": {
        "category": "Content",
        "billing": "Hourly",
@@ -512,6 +538,7 @@
       "quantity": "28",
       "rate": "$95.00",
       "amount": "$2,660.00",
+      "detailsLabel": "Content migration details",
       "card": {
        "category": "Content",
        "billing": "Hourly",
@@ -527,6 +554,7 @@
       "quantity": "24",
       "rate": "$18.00",
       "amount": "$432.00",
+      "detailsLabel": "Stock photography licences details",
       "card": {
        "category": "Content",
        "billing": "Fixed fee",
@@ -542,6 +570,7 @@
       "quantity": "12",
       "rate": "$850.00",
       "amount": "$10,200.00",
+      "detailsLabel": "Project management — 12 weeks details",
       "card": {
        "category": "Project management",
        "billing": "Fixed fee",
@@ -557,6 +586,7 @@
       "quantity": "2",
       "rate": "$1,200.00",
       "amount": "$2,400.00",
+      "detailsLabel": "Training & handover session details",
       "card": {
        "category": "Project management",
        "billing": "Fixed fee",

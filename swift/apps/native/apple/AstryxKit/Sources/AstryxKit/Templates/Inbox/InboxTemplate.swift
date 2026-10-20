@@ -35,8 +35,8 @@ struct InboxScreen: View {
     @State private var movedPane: CGFloat?
     @State private var paneAtDragStart: CGFloat?
 
-    private let listMin: CGFloat = 300
-    private let paneMin: CGFloat = 440
+    private var listMin: CGFloat { model.mode.rules.listMin }
+    private var paneMin: CGFloat { model.mode.rules.paneMin }
     private let handleWidth: CGFloat = 9
 
     // MARK: Layout facts
@@ -60,7 +60,7 @@ struct InboxScreen: View {
 
     private var paneWidth: CGFloat {
         let widest = max(paneMin, inner - listMin - handleWidth)
-        let wanted = movedPane ?? (inner * 2 / 3).rounded()
+        let wanted = movedPane ?? (inner * model.mode.rules.paneDefaultShare).rounded()
         return min(max(wanted, paneMin), widest)
     }
 

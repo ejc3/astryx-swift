@@ -219,3 +219,30 @@ test("the view carries the words, per-item labels and spoken step states the nat
     ["Payment, step 4 of 4", ""],
   ]);
 });
+
+test("the rules carry the layout numbers the stock page keeps, and the web words are the stock page's", async () => {
+  const { readFileSync } = await import("node:fs");
+  const stock = readFileSync(new URL("../../../web/src/stock/templates/checkout-wizard.tsx", import.meta.url), "utf8");
+  const flat = stock.replace(/\s+/g, " ");
+  const v = view(start());
+  assert.equal(v.rules.narrowHostAtMost, Number(/const NARROW_HOST_WIDTH = (\d+);/.exec(stock)![1]));
+  assert.ok(flat.includes(`contentWidth={${v.rules.contentWidth}}`));
+  assert.ok(flat.includes(`width: ${v.rules.summaryWidth},`));
+  assert.ok(flat.includes(`max={${v.rules.quantity.max}}`) && flat.includes(`min={${v.rules.quantity.min}}`));
+  assert.ok(flat.includes(`width={${v.rules.quantity.fieldWidth}}`));
+  assert.ok(flat.includes(`maxLength={${v.rules.noteMaxLength}}`));
+  assert.equal(flat.split(`width={${v.rules.shortFieldWidth}}`).length - 1, 2);
+  // Astryx's Stepper collapses below this width for each step.
+  const stepper = readFileSync(new URL("../../../node_modules/@astryxdesign/core/src/Stepper/Stepper.tsx", import.meta.url), "utf8");
+  assert.equal(v.rules.stepperMinStepWidth, Number(/DEFAULT_MIN_STEP_WIDTH = (\d+)/.exec(stepper)![1]));
+
+  const w = v.words;
+  const drawn = [
+    w.title, w.secureCheckout, w.progress, w.confirmed.title, w.confirmed.heading, w.confirmed.pageDetail,
+    w.summary.subtotal, w.summary.tax, w.summary.total, w.summary.title, w.summary.qty,
+    w.cart.heading, w.cart.limited, w.cart.remove, w.cart.promoLabel, w.cart.promoPlaceholder, w.cart.apply, w.cart.each,
+    ...Object.values({ ...w.shipping }), ...Object.values({ ...w.delivery }), ...Object.values({ ...w.payment }),
+  ].filter((word) => word !== w.payment.cvcInfoLabel);
+  for (const word of drawn) assert.ok(flat.includes(word), `the stock page does not write "${word}"`);
+  assert.ok(flat.includes(`${w.summary.deliverySuffix}`));
+});

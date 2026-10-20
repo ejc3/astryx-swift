@@ -109,7 +109,7 @@ struct CheckoutCartStep: View {
                     Text(item.lineTotal).font(ax.fontStrong).foregroundStyle(ax.text)
                 }
             }
-            Text("\(item.variant) \u{B7} \(item.priceEach) each")
+            Text("\(item.variant) \u{B7} \(item.priceEach) \(model.words.cart.each)")
                 .font(ax.fontSmall)
                 .foregroundStyle(ax.textSecondary)
                 .axLeading(ax, size: ax.fontSize("font-size-sm", 12), ratio: ax.supportingLeading)
@@ -135,7 +135,8 @@ struct CheckoutCartStep: View {
 
     private func quantity(_ item: CheckoutModel.Item) -> some View {
         CheckoutQuantity(
-            label: item.quantityLabel, field: model.words.cart.quantity, qty: item.qty, focusKey: "qty:\(item.id)", focus: focus
+            label: item.quantityLabel, field: model.words.cart.quantity, qty: item.qty, limits: model.rules.quantity,
+            focusKey: "qty:\(item.id)", focus: focus
         ) { actions.set("qty:\(item.id)", .number(Double($0))) }
     }
 
@@ -182,6 +183,8 @@ struct CheckoutQuantity: View {
     let label: String
     let field: String
     let qty: Int
+    /// The least and most, and the Mac field's width: the core's.
+    let limits: CheckoutModel.Rules.Quantity
     var focusKey: String? = nil
     var focus: FocusState<String?>.Binding? = nil
     let change: (Int) -> Void
@@ -191,10 +194,10 @@ struct CheckoutQuantity: View {
     @Environment(\.axStatic) private var isStatic
 
     init(
-        label: String, field: String, qty: Int, focusKey: String? = nil, focus: FocusState<String?>.Binding? = nil,
-        change: @escaping (Int) -> Void
+        label: String, field: String, qty: Int, limits: CheckoutModel.Rules.Quantity, focusKey: String? = nil,
+        focus: FocusState<String?>.Binding? = nil, change: @escaping (Int) -> Void
     ) {
-        self.label = label; self.field = field; self.qty = qty; self.focusKey = focusKey; self.focus = focus
+        self.label = label; self.field = field; self.qty = qty; self.limits = limits; self.focusKey = focusKey; self.focus = focus
         self.change = change
         _text = State(initialValue: String(qty))
     }
@@ -210,7 +213,7 @@ struct CheckoutQuantity: View {
             arrows
                 .padding(.trailing, ax.space(2))
         }
-        .frame(width: 96 * min(ax.scale, 1.4), height: side)
+        .frame(width: limits.fieldWidth * min(ax.scale, 1.4), height: side)
         .background(shape.fill(ax.surface))
         .overlay(shape.strokeBorder(ax.border, lineWidth: 1))
         .modifier(quantityBehaviour)
@@ -238,7 +241,7 @@ struct CheckoutQuantity: View {
     /// Typing sends the new number; the model's own change shows in the box; VoiceOver adjusts.
     private var quantityBehaviour: some ViewModifier {
         QuantityBehaviour(
-            text: $text, qty: qty, label: label, change: change
+            text: $text, qty: qty, label: label, limits: limits, change: change
         )
     }
 
@@ -266,7 +269,7 @@ struct CheckoutQuantity: View {
                 .font(.system(size: ax.fontSize("font-size-xs", 10), weight: .semibold))
                 .foregroundStyle(ax.iconSecondary)
         } else {
-            Stepper(label, value: Binding(get: { qty }, set: { change($0) }), in: 0...10)
+            Stepper(label, value: Binding(get: { qty }, set: { change($0) }), in: limits.min...limits.max)
                 .labelsHidden()
         }
     }
@@ -285,7 +288,7 @@ struct CheckoutQuantity: View {
             .foregroundStyle(ax.text)
             .background(Capsule().fill(ax.color("color-neutral")))
         } else {
-            Stepper(label, value: Binding(get: { qty }, set: { change($0) }), in: 0...10)
+            Stepper(label, value: Binding(get: { qty }, set: { change($0) }), in: limits.min...limits.max)
                 .labelsHidden()
         }
     }
@@ -298,12 +301,13 @@ private struct QuantityBehaviour: ViewModifier {
     @Binding var text: String
     let qty: Int
     let label: String
+    let limits: CheckoutModel.Rules.Quantity
     let change: (Int) -> Void
 
     func body(content: Content) -> some View {
         content
             .onChange(of: text) { _, new in
-                if let value = Int(new), (0...10).contains(value), value != qty { change(value) }
+                if let value = Int(new), (limits.min...limits.max).contains(value), value != qty { change(value) }
             }
             .onChange(of: qty) { _, new in
                 if Int(text) != new { text = String(new) }
@@ -313,8 +317,8 @@ private struct QuantityBehaviour: ViewModifier {
             .accessibilityValue("\(qty)")
             .accessibilityAdjustableAction { direction in
                 switch direction {
-                case .increment: if qty < 10 { change(qty + 1) }
-                case .decrement: if qty > 0 { change(qty - 1) }
+                case .increment: if qty < limits.max { change(qty + 1) }
+                case .decrement: if qty > limits.min { change(qty - 1) }
                 @unknown default: break
                 }
             }
@@ -409,7 +413,7 @@ struct CheckoutDeliveryStep: View {
                 COSField(label: d.noteLabel, optional: true, hint: d.noteDescription) {
                     COSTextBox(
                         id: CheckoutSender.id("deliveryNote"), label: d.noteLabel, value: d.note,
-                        placeholder: d.notePlaceholder, content: .plain, multiline: true, maxLength: 240
+                        placeholder: d.notePlaceholder, content: .plain, multiline: true, maxLength: model.rules.noteMaxLength
                     )
                 }
             }
@@ -495,12 +499,12 @@ struct CheckoutPaymentStep: View {
                 FormText(key: "cardName", label: w.cardName, value: p.cardName, model: model, content: .fullName, focus: focus)
                 HStack(alignment: .top, spacing: ax.space(4)) {
                     FormText(key: "expiry", label: w.expiry, value: p.expiry, model: model, placeholder: w.expiryPlaceholder, content: .cardExpiry, focus: focus)
-                        .frame(maxWidth: 140)
+                        .frame(maxWidth: model.rules.shortFieldWidth)
                     FormText(
                         key: "cvc", label: w.cvc, value: p.cvc, model: model, placeholder: w.cvcPlaceholder, content: .cardCode,
                         info: w.cvcInfo, infoLabel: w.cvcInfoLabel, focus: focus
                     )
-                    .frame(maxWidth: 140)
+                    .frame(maxWidth: model.rules.shortFieldWidth)
                     Spacer(minLength: 0)
                 }
                 AXDivider()

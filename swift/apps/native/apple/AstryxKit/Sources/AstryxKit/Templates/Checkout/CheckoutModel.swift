@@ -1,7 +1,7 @@
 import Foundation
 
 /// The checkout wizard's view model: a mirror of `View` in core/src/templates/checkout/model.ts.
-/// Every string and number is the core's; the drawing adds only the page's fixed words.
+/// Every string and number is the core's: the words, and the thresholds and sizes in `rules`.
 struct CheckoutModel: Decodable, Sendable {
     let step: Int
     let isLastStep: Bool
@@ -21,10 +21,32 @@ struct CheckoutModel: Decodable, Sendable {
     let delivery: Delivery
     let payment: Payment
     let confirmation: String
-    /// The words only the native drawing writes.
+    /// The words both drawings write.
     let words: Words
+    /// The layout numbers both drawings keep from Astryx's stock template.
+    let rules: Rules
     /// The page's heading says what the navigation title says: leave it out (nil in older snapshots).
     let headingRepeatsTitle: Bool?
+
+    /// Thresholds and fixed sizes; each drawing compares its own measured widths with them.
+    struct Rules: Decodable, Sendable {
+        struct Quantity: Decodable, Sendable {
+            let min: Int
+            let max: Int
+            let fieldWidth: CGFloat
+        }
+        /// The page stacks when its host is at most this wide.
+        let narrowHostAtMost: CGFloat
+        /// The content's width cap.
+        let contentWidth: CGFloat
+        /// The order summary's width beside the form.
+        let summaryWidth: CGFloat
+        /// The step indicator collapses when each step would get less than this much of the form column.
+        let stepperMinStepWidth: CGFloat
+        let quantity: Quantity
+        let noteMaxLength: Int
+        let shortFieldWidth: CGFloat
+    }
 
     struct Step: Decodable, Sendable {
         let label: String
@@ -129,7 +151,7 @@ struct CheckoutModel: Decodable, Sendable {
     struct Words: Decodable, Sendable {
         struct Cart: Decodable, Sendable {
             let heading: String, limited: String, remove: String, promoLabel: String, promoPlaceholder: String
-            let apply: String, quantity: String
+            let apply: String, quantity: String, each: String
         }
         struct Shipping: Decodable, Sendable {
             let heading: String, detail: String, email: String, emailPlaceholder: String, emailHint: String
