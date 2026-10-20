@@ -85,3 +85,12 @@ test("a code block carries the header line the stock page draws", () => {
   );
   assert.deepEqual(codes, ["middleware.ts — typescript", "middleware.test.ts — typescript"]);
 });
+
+test("the layout numbers and the words the web used to hold come from the view", () => {
+  const v = chat.view(start(), NOW);
+  assert.deepEqual(v.rules, { dialogAtMost: 767, panel: { initial: 640, min: 480, max: 960 }, articleWidth: 720, cardWidth: 360 });
+  assert.equal(v.artifact.versionTag, "v2");
+  assert.ok(v.artifact.versions[0]!.startsWith(v.artifact.versionTag));
+  assert.deepEqual([v.words.version, v.words.resizePanel, v.words.artifactActions], ["Version", "Resize artifact panel", "Artifact actions"]);
+  assert.deepEqual(chat.view(set(start(), "draft", "hi"), NOW).rules, v.rules);
+});

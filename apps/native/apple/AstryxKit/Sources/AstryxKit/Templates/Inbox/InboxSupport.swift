@@ -105,6 +105,8 @@ struct InboxClippedChips: View {
     let priority: InboxModel.Token?
     let tags: [String]
     let width: CGFloat
+    /// Before the count of the chips that do not fit.
+    let overflowMark: String
     @Environment(\.ax) private var ax
 
     private var all: [(label: String, color: InboxModel.TokenColor)] {
@@ -137,7 +139,7 @@ struct InboxClippedChips: View {
             ForEach(Array(items.prefix(shown).enumerated()), id: \.offset) { _, item in
                 InboxChip(label: item.label, color: item.color)
             }
-            if hidden > 0 { InboxChip(label: "+\(hidden)") }
+            if hidden > 0 { InboxChip(label: "\(overflowMark)\(hidden)") }
         }
         .frame(width: width, alignment: .leading)
         .clipped()

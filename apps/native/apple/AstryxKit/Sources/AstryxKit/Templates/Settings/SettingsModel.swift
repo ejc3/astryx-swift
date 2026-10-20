@@ -17,6 +17,10 @@ struct SettingsModel: Decodable, Sendable {
     let searchItems: [SearchItem]
     /// The chosen search result, or nil.
     let search: SearchItem?
+    /// The text in the search box; `set searchQuery` changes it, and the core chooses the result it spells.
+    let searchQuery: String
+    /// What the text finds (the core's `searchSettings`): the suggestions to draw.
+    let results: [SearchItem]
     let username: String
     let firstName: String
     let lastName: String
@@ -27,10 +31,20 @@ struct SettingsModel: Decodable, Sendable {
     let dataExport: Bool
     let adminMembers: Bool
     let twoFactor: Bool
+    let rules: Rules
     /// Controls that do nothing in the stock template: "save.basic", "save.password", "save.advanced".
     let inert: [String]
     /// The words only the native drawing writes.
     let words: Words
+
+    /// The layout numbers both drawings read.
+    struct Rules: Decodable, Sendable {
+        let narrowMaxWidth: Double
+        let contentMaxWidth: Double
+        let sidebarWidth: Double
+        /// Each column of a group's side-by-side form is at least this wide; else the group stacks.
+        let groupColumnMin: Double
+    }
 
     func isInert(_ control: String) -> Bool { inert.contains(control) }
 
@@ -48,6 +62,7 @@ struct SettingsModel: Decodable, Sendable {
         }
 
         let common: COSWords
+        let title: String
         let sections: String
         let searchLabel: String
         let searchPlaceholder: String
@@ -58,12 +73,13 @@ struct SettingsModel: Decodable, Sendable {
         let advanced: Advanced
 
         private enum CodingKeys: String, CodingKey {
-            case sections, searchLabel, searchPlaceholder, clearSearch, save, basic, password, advanced
+            case title, sections, searchLabel, searchPlaceholder, clearSearch, save, basic, password, advanced
         }
 
         init(from decoder: Decoder) throws {
             common = try COSWords(from: decoder)
             let c = try decoder.container(keyedBy: CodingKeys.self)
+            title = try c.decode(String.self, forKey: .title)
             sections = try c.decode(String.self, forKey: .sections)
             searchLabel = try c.decode(String.self, forKey: .searchLabel)
             searchPlaceholder = try c.decode(String.self, forKey: .searchPlaceholder)

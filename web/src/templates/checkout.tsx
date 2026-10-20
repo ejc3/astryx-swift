@@ -114,8 +114,6 @@ const STEP_ICONS = {
   card: CreditCardIcon,
 } as const;
 
-const NARROW_HOST_WIDTH = 900;
-
 // ── Styles ────────────────────────────────────────────────────────────────────
 // Plain inline styles over Astryx token CSS variables, so the template compiles
 // in a project with no StyleX pipeline.
@@ -124,16 +122,18 @@ const NARROW_HOST_WIDTH = 900;
 // pins itself as the form scrolls past — the sticky offset is the page inset,
 // so a stuck card sits where an unstuck one would. The narrow summary needs no
 // order override because it is rendered before the form in the DOM.
-const summaryColumn: CSSProperties = {
-  width: 360,
+const summaryColumn = (width: number): CSSProperties => ({
+  width,
   flexShrink: 0,
   position: 'sticky',
   top: 'var(--spacing-6)',
   alignSelf: 'flex-start',
-};
+});
 
 export default function CheckoutWizardPage({view: raw, send}: TemplateProps) {
   const view = raw as View;
+  const {words, rules} = view;
+  const narrowHostWidth = rules.narrowHostAtMost;
   const press = (id: string) => send({type: 'press', id: `tpl.checkout.${id}`});
   const set = (id: string) => (value: string | number | boolean) =>
     send({type: 'set', id: `tpl.checkout.${id}`, value});
@@ -146,9 +146,9 @@ export default function CheckoutWizardPage({view: raw, send}: TemplateProps) {
   const attachHost = useCallback((element: HTMLElement | null) => {
     hostRef.current = element;
     if (element && element.clientWidth > 0) {
-      setIsNarrow(element.clientWidth <= NARROW_HOST_WIDTH);
+      setIsNarrow(element.clientWidth <= narrowHostWidth);
     }
-  }, []);
+  }, [narrowHostWidth]);
 
   useEffect(() => {
     const host = hostRef.current;
@@ -159,12 +159,12 @@ export default function CheckoutWizardPage({view: raw, send}: TemplateProps) {
     const observer = new ResizeObserver(entries => {
       const width = entries[0]?.contentRect.width ?? host.clientWidth;
       if (width > 0) {
-        setIsNarrow(width <= NARROW_HOST_WIDTH);
+        setIsNarrow(width <= narrowHostWidth);
       }
     });
     observer.observe(host);
     return () => observer.disconnect();
-  }, []);
+  }, [narrowHostWidth]);
 
   const currentErrors = view.errors;
 
@@ -199,7 +199,7 @@ export default function CheckoutWizardPage({view: raw, send}: TemplateProps) {
     <VStack gap={2}>
       <HStack hAlign="between" vAlign="center">
         <Text type="body" color="secondary">
-          Subtotal
+          {words.summary.subtotal}
         </Text>
         <Text type="body">{view.summary.subtotal}</Text>
       </HStack>
@@ -213,20 +213,21 @@ export default function CheckoutWizardPage({view: raw, send}: TemplateProps) {
       )}
       <HStack hAlign="between" vAlign="center">
         <Text type="body" color="secondary">
-          {view.summary.deliveryLabel} delivery
+          {view.summary.deliveryLabel}
+          {` ${words.summary.deliverySuffix}`}
         </Text>
         <Text type="body">{view.summary.shipping}</Text>
       </HStack>
       <HStack hAlign="between" vAlign="center">
         <Text type="body" color="secondary">
-          Estimated tax
+          {words.summary.tax}
         </Text>
         <Text type="body">{view.summary.tax}</Text>
       </HStack>
       <Divider />
       <HStack hAlign="between" vAlign="center">
         <Text type="large" weight="bold">
-          Total
+          {words.summary.total}
         </Text>
         <Text type="large" weight="bold">
           {view.summary.total}
@@ -252,7 +253,7 @@ export default function CheckoutWizardPage({view: raw, send}: TemplateProps) {
                   </Text>
                 </HStack>
                 <Text type="supporting" color="secondary">
-                  {item.variant} · Qty {item.qty}
+                  {item.variant}{` · ${words.summary.qty} `}{item.qty}
                 </Text>
               </VStack>
             </StackItem>
@@ -285,7 +286,7 @@ export default function CheckoutWizardPage({view: raw, send}: TemplateProps) {
       ) : (
         <VStack gap={4}>
           <HStack gap={2} vAlign="center" hAlign="between">
-            <Text type="label">Order summary</Text>
+            <Text type="label">{words.summary.title}</Text>
             <Badge
               variant="neutral"
               label={view.summary.itemCount}
@@ -307,7 +308,7 @@ export default function CheckoutWizardPage({view: raw, send}: TemplateProps) {
       activeStep={view.step}
       orientation="horizontal"
       onStepClick={index => press(`goto:${index}`)}
-      label="Checkout progress"
+      label={words.progress}
       density="balanced">
       {view.steps.map(({label, icon, hasError}, i) => {
         return (
@@ -372,18 +373,18 @@ export default function CheckoutWizardPage({view: raw, send}: TemplateProps) {
       // this width, which is what keeps "Checkout", "Review your cart" and
       // "Continue" on the same content line.
       padding={6}
-      contentWidth={1000}
+      contentWidth={rules.contentWidth}
       content={
         <LayoutContent>
           <VStack ref={attachHost} gap={6}>
             <HStack gap={3} vAlign="center">
               <StackItem size="fill">
-                <Heading level={1}>Checkout</Heading>
+                <Heading level={1}>{words.title}</Heading>
               </StackItem>
               <HStack gap={1.5} vAlign="center">
                 <Icon icon={LockClosedIcon} size="sm" color="secondary" />
                 <Text type="supporting" color="secondary">
-                  Secure checkout
+                  {words.secureCheckout}
                 </Text>
               </HStack>
             </HStack>
@@ -404,13 +405,12 @@ export default function CheckoutWizardPage({view: raw, send}: TemplateProps) {
                     <VStack gap={4}>
                       <Banner
                         status="success"
-                        title="Order confirmed"
+                        title={words.confirmed.title}
                         description={view.confirmation}
                       />
-                      <Heading level={2}>Thanks for your order</Heading>
+                      <Heading level={2}>{words.confirmed.heading}</Heading>
                       <Text type="body" color="secondary">
-                        The completion is stored in this page's component state
-                        so the template ends in a real, reviewable outcome.
+                        {words.confirmed.pageDetail}
                       </Text>
                     </VStack>
                   ) : (
@@ -423,7 +423,7 @@ export default function CheckoutWizardPage({view: raw, send}: TemplateProps) {
                       gap={5}
                       aria-invalid={currentErrors.items ? true : undefined}
                       tabIndex={-1}>
-                      <Heading level={2}>Review your cart</Heading>
+                      <Heading level={2}>{words.cart.heading}</Heading>
                       <VStack gap={4}>
                         {view.items.map(item => (
                           <VStack key={item.id} gap={3}>
@@ -442,7 +442,7 @@ export default function CheckoutWizardPage({view: raw, send}: TemplateProps) {
                                       {item.isLimited && (
                                         <Badge
                                           variant="green"
-                                          label="Limited"
+                                          label={words.cart.limited}
                                         />
                                       )}
                                     </HStack>
@@ -451,7 +451,8 @@ export default function CheckoutWizardPage({view: raw, send}: TemplateProps) {
                                     </Text>
                                   </HStack>
                                   <Text type="supporting" color="secondary">
-                                    {item.variant} · {item.priceEach} each
+                                    {item.variant} · {item.priceEach}
+                                    {` ${words.cart.each}`}
                                   </Text>
                                   <HStack gap={2} vAlign="center">
                                     {/* Steppers on, because a quantity is
@@ -461,22 +462,22 @@ export default function CheckoutWizardPage({view: raw, send}: TemplateProps) {
                                         number, and going 1 → 2 costs a
                                         selection and a keystroke. */}
                                     <NumberInput
-                                      label={`Quantity of ${item.name}`}
+                                      label={item.quantityLabel}
                                       isLabelHidden
                                       value={item.qty}
                                       onChange={set(`qty:${item.id}`)}
-                                      min={0}
-                                      max={10}
+                                      min={rules.quantity.min}
+                                      max={rules.quantity.max}
                                       isIntegerOnly
                                       hasNumberSteppers
                                       // Sized for two digits and the steppers,
                                       // not for the column. A quantity field
                                       // as wide as the row reads as somewhere
                                       // to type a sentence.
-                                      width={96}
+                                      width={rules.quantity.fieldWidth}
                                     />
                                     <Button
-                                      label="Remove"
+                                      label={words.cart.remove}
                                       variant="ghost"
                                       onClick={() => press(`remove:${item.id}`)}
                                     />
@@ -501,15 +502,15 @@ export default function CheckoutWizardPage({view: raw, send}: TemplateProps) {
                       <HStack gap={2} vAlign="end">
                         <StackItem size="fill">
                           <TextInput
-                            label="Promo code"
+                            label={words.cart.promoLabel}
                             value={view.promo.value}
                             onChange={set('promo')}
-                            placeholder="WELCOME10"
+                            placeholder={words.cart.promoPlaceholder}
                             status={view.promo.status ?? undefined}
                           />
                         </StackItem>
                         <Button
-                          label="Apply"
+                          label={words.cart.apply}
                           variant="secondary"
                           onClick={() => press('apply')}
                         />
@@ -520,10 +521,9 @@ export default function CheckoutWizardPage({view: raw, send}: TemplateProps) {
                   {!view.isComplete && view.step === 1 && (
                     <VStack ref={stepContentRef} gap={5}>
                       <VStack gap={1}>
-                        <Heading level={2}>Where should it go?</Heading>
+                        <Heading level={2}>{words.shipping.heading}</Heading>
                         <Text type="supporting" color="secondary">
-                          Delivery options and tax are calculated from this
-                          address.
+                          {words.shipping.detail}
                         </Text>
                       </VStack>
                       {/* An address form is the canonical FormLayout case: a
@@ -533,11 +533,11 @@ export default function CheckoutWizardPage({view: raw, send}: TemplateProps) {
                     a badge is the one line you can skip. */}
                       <FormLayout defaultOptionality="required">
                         <TextInput
-                          label="Email"
+                          label={words.shipping.email}
                           value={view.shipping.email}
                           onChange={set('email')}
-                          placeholder="you@example.com"
-                          description="Order confirmation and tracking go here."
+                          placeholder={words.shipping.emailPlaceholder}
+                          description={words.shipping.emailHint}
                           status={
                             currentErrors.email
                               ? {type: 'error', message: currentErrors.email}
@@ -548,7 +548,7 @@ export default function CheckoutWizardPage({view: raw, send}: TemplateProps) {
                           direction={isNarrow ? 'vertical' : 'horizontal'}
                           defaultOptionality="required">
                           <TextInput
-                            label="First name"
+                            label={words.shipping.firstName}
                             value={view.shipping.firstName}
                             onChange={set('firstName')}
                             status={
@@ -561,7 +561,7 @@ export default function CheckoutWizardPage({view: raw, send}: TemplateProps) {
                             }
                           />
                           <TextInput
-                            label="Last name"
+                            label={words.shipping.lastName}
                             value={view.shipping.lastName}
                             onChange={set('lastName')}
                             status={
@@ -575,16 +575,16 @@ export default function CheckoutWizardPage({view: raw, send}: TemplateProps) {
                           />
                         </FormLayout>
                         <Selector
-                          label="Country"
+                          label={words.shipping.country}
                           options={view.shipping.countries}
                           value={view.shipping.country}
                           onChange={set('country')}
                         />
                         <TextInput
-                          label="Street address"
+                          label={words.shipping.address}
                           value={view.shipping.address}
                           onChange={set('address')}
-                          placeholder="123 Main Street"
+                          placeholder={words.shipping.addressPlaceholder}
                           status={
                             currentErrors.address
                               ? {
@@ -595,7 +595,7 @@ export default function CheckoutWizardPage({view: raw, send}: TemplateProps) {
                           }
                         />
                         <TextInput
-                          label="Apartment, suite, etc."
+                          label={words.shipping.apartment}
                           isOptional
                           value={view.shipping.apartment}
                           onChange={set('apartment')}
@@ -604,7 +604,7 @@ export default function CheckoutWizardPage({view: raw, send}: TemplateProps) {
                           direction={isNarrow ? 'vertical' : 'horizontal'}
                           defaultOptionality="required">
                           <TextInput
-                            label="City"
+                            label={words.shipping.city}
                             value={view.shipping.city}
                             onChange={set('city')}
                             status={
@@ -615,8 +615,8 @@ export default function CheckoutWizardPage({view: raw, send}: TemplateProps) {
                           />
                           {view.shipping.hasState && (
                             <Selector
-                              label="State"
-                              placeholder="Select state"
+                              label={words.shipping.state}
+                              placeholder={words.shipping.statePlaceholder}
                               options={view.shipping.states}
                               value={view.shipping.state}
                               onChange={set('state')}
@@ -653,15 +653,14 @@ export default function CheckoutWizardPage({view: raw, send}: TemplateProps) {
                   {!view.isComplete && view.step === 2 && (
                     <VStack ref={stepContentRef} gap={5}>
                       <VStack gap={1}>
-                        <Heading level={2}>How fast do you need it?</Heading>
+                        <Heading level={2}>{words.delivery.heading}</Heading>
                         <Text type="supporting" color="secondary">
-                          Estimates run from the day the order ships, usually
-                          1–3 business days after you place it.
+                          {words.delivery.detail}
                         </Text>
                       </VStack>
                       <FormLayout defaultOptionality="required">
                         <RadioList
-                          label="Delivery method"
+                          label={words.delivery.method}
                           value={view.delivery.value}
                           onChange={set('delivery')}
                           status={
@@ -688,7 +687,7 @@ export default function CheckoutWizardPage({view: raw, send}: TemplateProps) {
                         </RadioList>
                         <Divider />
                         <CheckboxInput
-                          label="This is a gift"
+                          label={words.delivery.gift}
                           value={view.delivery.isGift}
                           onChange={set('isGift')}
                         />
@@ -696,7 +695,7 @@ export default function CheckoutWizardPage({view: raw, send}: TemplateProps) {
                           label={view.delivery.noteLabel}
                           isOptional
                           rows={3}
-                          maxLength={240}
+                          maxLength={rules.noteMaxLength}
                           value={view.delivery.note}
                           onChange={set('deliveryNote')}
                           placeholder={view.delivery.notePlaceholder}
@@ -709,18 +708,17 @@ export default function CheckoutWizardPage({view: raw, send}: TemplateProps) {
                   {!view.isComplete && view.step === 3 && (
                     <VStack ref={stepContentRef} gap={5}>
                       <VStack gap={1}>
-                        <Heading level={2}>Payment</Heading>
+                        <Heading level={2}>{words.payment.heading}</Heading>
                         <Text type="supporting" color="secondary">
-                          This template validates payment details and completes
-                          locally. No card is charged.
+                          {words.payment.detail}
                         </Text>
                       </VStack>
                       <FormLayout defaultOptionality="required">
                         <TextInput
-                          label="Card number"
+                          label={words.payment.cardNumber}
                           value={view.payment.cardNumber}
                           onChange={set('cardNumber')}
-                          placeholder="4242 4242 4242 4242"
+                          placeholder={words.payment.cardNumberPlaceholder}
                           startIcon={LockClosedIcon}
                           status={
                             currentErrors.cardNumber
@@ -732,7 +730,7 @@ export default function CheckoutWizardPage({view: raw, send}: TemplateProps) {
                           }
                         />
                         <TextInput
-                          label="Name on card"
+                          label={words.payment.cardName}
                           value={view.payment.cardName}
                           onChange={set('cardName')}
                           status={
@@ -751,11 +749,11 @@ export default function CheckoutWizardPage({view: raw, send}: TemplateProps) {
                       rather than divided. */}
                         <HStack gap={4} wrap="wrap">
                           <TextInput
-                            label="Expiry"
-                            width={140}
+                            label={words.payment.expiry}
+                            width={rules.shortFieldWidth}
                             value={view.payment.expiry}
                             onChange={set('expiry')}
-                            placeholder="MM/YY"
+                            placeholder={words.payment.expiryPlaceholder}
                             status={
                               currentErrors.expiry
                                 ? {
@@ -766,12 +764,12 @@ export default function CheckoutWizardPage({view: raw, send}: TemplateProps) {
                             }
                           />
                           <TextInput
-                            label="CVC"
-                            width={140}
+                            label={words.payment.cvc}
+                            width={rules.shortFieldWidth}
                             value={view.payment.cvc}
                             onChange={set('cvc')}
-                            placeholder="123"
-                            labelTooltip="Three digits on the back of the card, or four on the front for American Express."
+                            placeholder={words.payment.cvcPlaceholder}
+                            labelTooltip={words.payment.cvcInfo}
                             status={
                               currentErrors.cvc
                                 ? {type: 'error', message: currentErrors.cvc}
@@ -781,15 +779,15 @@ export default function CheckoutWizardPage({view: raw, send}: TemplateProps) {
                         </HStack>
                         <Divider />
                         <CheckboxInput
-                          label="Billing address matches the shipping address"
+                          label={words.payment.billingMatches}
                           value={view.payment.billingMatches}
                           onChange={set('billingMatches')}
                         />
                         {!view.payment.billingMatches && (
                           <Banner
                             status="info"
-                            title="Connect a billing-address step"
-                            description="This local example does not collect a separate billing address or send payment. Add that flow with your payment provider."
+                            title={words.payment.billingTitle}
+                            description={words.payment.billingDetail}
                           />
                         )}
                       </FormLayout>
@@ -802,7 +800,9 @@ export default function CheckoutWizardPage({view: raw, send}: TemplateProps) {
 
               {/* Sticky beside the form on wide hosts only. */}
               {!isNarrow && (
-                <StackItem style={summaryColumn}>{summaryCard}</StackItem>
+                <StackItem style={summaryColumn(rules.summaryWidth)}>
+                  {summaryCard}
+                </StackItem>
               )}
             </Stack>
           </VStack>

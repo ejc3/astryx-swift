@@ -97,6 +97,7 @@ struct InboxPaneView: View {
                     InboxMessageView(
                         message: message,
                         words: words,
+                        measure: model.mode.rules.messageMeasure,
                         isOpen: pane.openMessages.contains(message.id),
                         toggle: { toggleMessage(message.id) }
                     )
@@ -142,6 +143,8 @@ struct InboxPaneView: View {
 struct InboxMessageView: View {
     let message: InboxModel.Message
     let words: InboxModel.Words.PaneText
+    /// The widest a message's text gets (the core's `messageMeasure`).
+    let measure: CGFloat
     let isOpen: Bool
     let toggle: () -> Void
     @Environment(\.ax) private var ax
@@ -193,7 +196,7 @@ struct InboxMessageView: View {
                     }
                     if !message.attachments.isEmpty { InboxAttachmentStrip(message: message) }
                 }
-                .frame(maxWidth: 680, alignment: .leading)
+                .frame(maxWidth: measure, alignment: .leading)
                 .padding(.leading, 36 + ax.space(3))
             }
         }

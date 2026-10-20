@@ -31,10 +31,21 @@ struct OrderModel: Decodable, Sendable {
     /// If Refund is ever wired it moves money out and cannot be undone: it needs a destructive
     /// confirmation (a `.confirmationDialog` with a destructive Refund and a Cancel) first.
     let inert: [String]
-    /// The words only the native drawing writes.
+    /// The words both drawings write.
     let words: Words
+    /// The layout numbers both drawings keep from Astryx's stock template.
+    let rules: Rules
 
     func isInert(_ control: String) -> Bool { inert.contains(control) }
+
+    struct Rules: Decodable, Sendable {
+        /// The web page's viewport threshold; this drawing measures its pane and uses `paneNarrowBelow`.
+        let viewportNarrowAtMost: CGFloat
+        /// Narrow below this pane width, in points: the page and the panel cannot sit side by side.
+        let paneNarrowBelow: CGFloat
+        let contentWidth: CGFloat
+        let panelWidth: CGFloat
+    }
 
     struct Tab: Decodable, Sendable {
         let value: String

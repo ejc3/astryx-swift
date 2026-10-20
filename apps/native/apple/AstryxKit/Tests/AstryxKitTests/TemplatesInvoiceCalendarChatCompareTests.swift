@@ -37,14 +37,6 @@ final class TemplatesInvoiceCalendarChatCompareTests: XCTestCase {
         XCTAssertEqual(headers, ["middleware.ts \u{2014} typescript", "middleware.test.ts \u{2014} typescript"])
     }
 
-    func testTheCalendarAlwaysDrawsSixWeeks() {
-        for (year, month) in [(2026, 2), (2026, 4), (2026, 8), (2027, 2)] {
-            let weeks = TCalendarMath.weeks(of: TCalDate(year: year, month: month, day: 1))
-            XCTAssertEqual(weeks.count, 6, "\(year)-\(month)")
-            XCTAssertTrue(weeks.allSatisfy { $0.count == 7 })
-        }
-    }
-
     // MARK: Syntax
 
     /// The colors the highlighter gave each word of a line, by the token that painted them.

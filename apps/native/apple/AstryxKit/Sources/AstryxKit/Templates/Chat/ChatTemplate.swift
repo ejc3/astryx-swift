@@ -8,7 +8,7 @@ import SwiftUI
 /// - Return or the send button: `press` `tpl.chat.send`, then `set` `tpl.chat.draft` ""
 /// - the Ask / Edit menu: `set` `tpl.chat.mode` ("ask" or "edit")
 /// - the artifact card: `press` `tpl.chat.openArtifact:panel` on a wide screen, `...:dialog`
-///   on a narrow one (the web decides at 767 points, so this does too)
+///   on a narrow one (the core says where, `rules.dialogAtMost`, to both drawings)
 /// - the panel's close button: `press` `tpl.chat.closeArtifact`
 /// - the full-screen document closing: `set` `tpl.chat.dialog` false
 struct ChatTemplate: View {
@@ -23,9 +23,6 @@ struct ChatTemplate: View {
     }
 }
 
-/// The widest a screen can be and still use the document dialog instead of the side panel.
-private let tChatNarrowMax: CGFloat = 767
-
 private struct TChatScreen: View {
     let model: TChatModel
     @Environment(\.ax) private var ax
@@ -36,7 +33,7 @@ private struct TChatScreen: View {
     @State private var dragStart: CGFloat?
 
     var body: some View {
-        let wide = width > tChatNarrowMax
+        let wide = width > model.rules.dialogAtMost
         let panel = wide && model.artifact.panelOpen
         let gap = ax.space(4)
         let panelWidth = clampedPanel(total: width)
@@ -58,6 +55,7 @@ private struct TChatScreen: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .environment(\.tChatWords, model.words)
+        .environment(\.tChatRules, model.rules)
         .tChatDialog(isPresented: Binding(
             get: { model.artifact.dialogOpen },
             set: { if !$0 { send(.set(id: "tpl.chat.dialog", value: .bool(false))) } }
@@ -67,13 +65,14 @@ private struct TChatScreen: View {
     }
 
     private func open() {
-        send(.press(id: width > tChatNarrowMax ? "tpl.chat.openArtifact:panel" : "tpl.chat.openArtifact:dialog"))
+        send(.press(id: width > model.rules.dialogAtMost ? "tpl.chat.openArtifact:panel" : "tpl.chat.openArtifact:dialog"))
     }
 
-    /// The panel keeps the web's 640 default and 480 to 960 range, leaving the chat 320.
+    /// The panel keeps the core's initial width and range (`rules.panel`, the web's too), leaving the chat 320.
     private func clampedPanel(total: CGFloat) -> CGFloat {
-        let wanted = dragged ?? max(480, min(640, total * 0.5))
-        return min(max(wanted, 480), min(960, max(total - 320, 480)))
+        let panel = model.rules.panel
+        let wanted = dragged ?? max(panel.min, min(panel.initial, total * 0.5))
+        return min(max(wanted, panel.min), min(panel.max, max(total - 320, panel.min)))
     }
 
     /// The divider between chat and panel: drag it to resize the panel.
@@ -368,10 +367,8 @@ struct TChatArtifactActions: View {
         }
     }
 
-    /// "v2" from "v2 (current)": the version the menu button names.
-    private var versionTag: String {
-        artifact.versions.first.map { String($0.prefix(while: { !$0.isWhitespace })) } ?? ""
-    }
+    /// "v2": the version the menu button names (the core's).
+    private var versionTag: String { artifact.versionTag }
 
     private func glyph(_ symbol: String) -> some View {
         Image(systemName: symbol)
@@ -393,6 +390,7 @@ struct TChatArtifactActions: View {
 struct TChatArtifactBody: View {
     let artifact: TChatModel.Artifact
     @Environment(\.ax) private var ax
+    @Environment(\.tChatRules) private var rules
 
     var body: some View {
         VStack(alignment: .leading, spacing: ax.space(2)) {
@@ -403,7 +401,7 @@ struct TChatArtifactBody: View {
                 .accessibilityAddTraits(.isHeader)
             TChatMarkdown(text: artifact.content, compact: false)
         }
-        .frame(maxWidth: 720, alignment: .leading)
+        .frame(maxWidth: rules?.articleWidth ?? .infinity, alignment: .leading)
         .frame(maxWidth: .infinity, alignment: .center)
     }
 }
@@ -464,7 +462,7 @@ struct TChatArtifactDialog: View {
     /// Version, Copy and Share folded into one menu, as the web's narrow header does.
     private var overflow: some View {
         Menu {
-            Section(artifact.versions.first.map { String($0.prefix(while: { !$0.isWhitespace })) } ?? "") {
+            Section(words.version) {
                 ForEach(artifact.versions, id: \.self) { version in Button(version) {} }
             }
             Button { tChatCopy(artifact.content) } label: { Label(words.copy, systemImage: "doc.on.doc") }

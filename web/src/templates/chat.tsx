@@ -57,14 +57,16 @@ import {
 import type {
   ChatItem,
   ChatPart,
+  ChatRules,
   ChatView as View,
+  ChatWords,
   ToolCall,
 } from '../../../core/src/templates/chat/model.ts';
 import type {TemplateProps} from './props.ts';
 
-// Below this width the split-pane collapses to a single chat column. Shared by
-// the CSS container query and the JS check in openArtifact so they can't drift.
-const MOBILE_MAX_WIDTH = 767;
+// Below `rules.dialogAtMost` the split-pane collapses to a single chat column. The core holds
+// the number, so the CSS container query and the JS check in openArtifact (and the native
+// drawing) can't drift.
 
 const root: CSSProperties = {
   height: '100dvh',
@@ -86,10 +88,10 @@ const artifactScroll: CSSProperties = {
   flex: 1,
   overflowY: 'auto',
 };
-const articleBody: CSSProperties = {
-  maxWidth: 720,
+const articleBody = (rules: ChatRules): CSSProperties => ({
+  maxWidth: rules.articleWidth,
   marginInline: 'auto',
-};
+});
 
 // Runtime width for the artifact panel, passed in via the --artifact-panel-width
 // custom property so the MOBILE container query can still override it to 100%
@@ -100,7 +102,7 @@ const artifactPanelWidthVar = (size: number | string): CSSProperties =>
     '--artifact-panel-width': typeof size === 'number' ? `${size}px` : size,
   }) as CSSProperties;
 
-const AI_CHAT_CSS = `
+const aiChatCss = (mobileMaxWidth: number) => `
 .ai-chat-resize-handle {
   display: flex;
 }
@@ -111,7 +113,7 @@ const AI_CHAT_CSS = `
   width: var(--artifact-panel-width);
   flex-shrink: 0;
 }
-@container artifact (max-width: ${MOBILE_MAX_WIDTH}px) {
+@container artifact (max-width: ${mobileMaxWidth}px) {
   .ai-chat-resize-handle {
     display: none;
   }
@@ -130,31 +132,33 @@ type Artifact = View['artifact'];
 // Header actions: version menu, copy, share. Pass `onClose` for the desktop
 // close button. A fragment so each control is a direct child of the toolbar.
 function ArtifactActions({
-  versions,
+  artifact,
+  words,
   onClose,
 }: {
-  versions: string[];
+  artifact: Artifact;
+  words: ChatWords;
   onClose?: () => void;
 }) {
   return (
     <>
       <DropdownMenu
         button={{
-          label: 'v2',
+          label: artifact.versionTag,
           variant: 'ghost',
           size: 'sm',
         }}
-        items={versions.map(label => ({label}))}
+        items={artifact.versions.map(label => ({label}))}
       />
       <Button
-        label="Copy"
+        label={words.copy}
         variant="ghost"
         size="sm"
         icon={<Icon icon={ClipboardDocumentIcon} size="sm" />}
         isIconOnly
       />
       <Button
-        label="Share"
+        label={words.share}
         variant="ghost"
         size="sm"
         icon={<Icon icon={ShareIcon} size="sm" />}
@@ -162,7 +166,7 @@ function ArtifactActions({
       />
       {onClose != null && (
         <Button
-          label="Close document"
+          label={words.closeDocument}
           variant="ghost"
           size="sm"
           icon={<Icon icon={XMarkIcon} size="sm" />}
@@ -175,30 +179,42 @@ function ArtifactActions({
 }
 
 // Mobile variant: the actions collapse into an overflow menu.
-function MobileArtifactActions({versions}: {versions: string[]}) {
+function MobileArtifactActions({
+  artifact,
+  words,
+}: {
+  artifact: Artifact;
+  words: ChatWords;
+}) {
   return (
     <MoreMenu
-      label="Document actions"
+      label={words.documentActions}
       size="sm"
       items={[
         {
           type: 'section',
-          title: 'Version',
-          items: versions.map(label => ({label, onClick: () => {}})),
+          title: words.version,
+          items: artifact.versions.map(label => ({label, onClick: () => {}})),
         },
         {type: 'divider'},
-        {label: 'Copy', icon: ClipboardDocumentIcon},
-        {label: 'Share', icon: ShareIcon},
+        {label: words.copy, icon: ClipboardDocumentIcon},
+        {label: words.share, icon: ShareIcon},
       ]}
     />
   );
 }
 
 // Scrollable artifact body — the formatted document.
-function ArtifactBody({artifact}: {artifact: Artifact}) {
+function ArtifactBody({
+  artifact,
+  rules,
+}: {
+  artifact: Artifact;
+  rules: ChatRules;
+}) {
   return (
     <Section variant="transparent" style={artifactScroll}>
-      <VStack gap={2} style={articleBody}>
+      <VStack gap={2} style={articleBody(rules)}>
         <Heading level={1}>{artifact.title}</Heading>
         <Markdown>{artifact.content}</Markdown>
       </VStack>
@@ -211,11 +227,13 @@ function ArtifactCard({
   label,
   title,
   caption,
+  maxWidth,
   onOpen,
 }: {
   label: string;
   title: string;
   caption: string;
+  maxWidth: number;
   onOpen: () => void;
 }) {
   return (
@@ -224,7 +242,7 @@ function ArtifactCard({
       onClick={onOpen}
       variant="muted"
       padding={3}
-      maxWidth={360}>
+      maxWidth={maxWidth}>
       <HStack gap={3} vAlign="center" width="100%">
         <Icon icon={DocumentTextIcon} size="md" color="secondary" />
         <StackItem size="fill">
@@ -251,9 +269,11 @@ function Time({at}: {at: string}) {
 
 function BubbleContent({
   content,
+  cardWidth,
   onOpen,
 }: {
   content: Extract<ChatPart, {kind: 'bubble'}>['content'];
+  cardWidth: number;
   onOpen: () => void;
 }) {
   switch (content.kind) {
@@ -281,13 +301,22 @@ function BubbleContent({
           label={content.label}
           title={content.title}
           caption={content.caption}
+          maxWidth={cardWidth}
           onOpen={onOpen}
         />
       );
   }
 }
 
-function MessagePart({part, onOpen}: {part: ChatPart; onOpen: () => void}) {
+function MessagePart({
+  part,
+  cardWidth,
+  onOpen,
+}: {
+  part: ChatPart;
+  cardWidth: number;
+  onOpen: () => void;
+}) {
   switch (part.kind) {
     case 'bubble':
       return (
@@ -303,7 +332,11 @@ function MessagePart({part, onOpen}: {part: ChatPart; onOpen: () => void}) {
               />
             ) : undefined
           }>
-          <BubbleContent content={part.content} onOpen={onOpen} />
+          <BubbleContent
+            content={part.content}
+            cardWidth={cardWidth}
+            onOpen={onOpen}
+          />
         </ChatMessageBubble>
       );
     case 'tools':
@@ -329,7 +362,15 @@ function MessagePart({part, onOpen}: {part: ChatPart; onOpen: () => void}) {
   }
 }
 
-function Item({item, onOpen}: {item: ChatItem; onOpen: () => void}) {
+function Item({
+  item,
+  cardWidth,
+  onOpen,
+}: {
+  item: ChatItem;
+  cardWidth: number;
+  onOpen: () => void;
+}) {
   switch (item.kind) {
     case 'divider':
       return <ChatSystemMessage variant="divider">{item.text}</ChatSystemMessage>;
@@ -350,7 +391,12 @@ function Item({item, onOpen}: {item: ChatItem; onOpen: () => void}) {
             </HStack>
           )}
           {item.parts.map((part, i) => (
-            <MessagePart key={i} part={part} onOpen={onOpen} />
+            <MessagePart
+              key={i}
+              part={part}
+              cardWidth={cardWidth}
+              onOpen={onOpen}
+            />
           ))}
         </ChatMessage>
       );
@@ -364,12 +410,12 @@ export default function AIChatConversationTemplate({
   send,
 }: TemplateProps) {
   const view = raw as View;
-  const {composer, artifact} = view;
+  const {composer, artifact, words, rules} = view;
   const rootRef = useRef<HTMLElement>(null);
   const artifactResize = useResizable({
-    defaultSize: 640,
-    minSize: 480,
-    maxSize: 960,
+    defaultSize: rules.panel.initial,
+    minSize: rules.panel.min,
+    maxSize: rules.panel.max,
     autoSaveId: 'ai-chat-artifact-panel',
   });
   const setDialogOpen = (open: boolean) =>
@@ -381,7 +427,7 @@ export default function AIChatConversationTemplate({
     send({
       type: 'press',
       id:
-        width <= MOBILE_MAX_WIDTH
+        width <= rules.dialogAtMost
           ? 'tpl.chat.openArtifact:dialog'
           : 'tpl.chat.openArtifact:panel',
     });
@@ -389,7 +435,7 @@ export default function AIChatConversationTemplate({
 
   return (
     <VStack ref={rootRef} style={root}>
-      <style>{AI_CHAT_CSS}</style>
+      <style>{aiChatCss(rules.dialogAtMost)}</style>
       <Layout
         height="fill"
         content={
@@ -412,14 +458,14 @@ export default function AIChatConversationTemplate({
                       headerActions={
                         <>
                           <Button
-                            label="Mention"
+                            label={words.mention}
                             variant="ghost"
                             size="sm"
                             icon={<Icon icon={AtSymbolIcon} size="sm" />}
                             isIconOnly
                           />
                           <Button
-                            label="Attach"
+                            label={words.attach}
                             variant="ghost"
                             size="sm"
                             icon={<Icon icon={PaperClipIcon} size="sm" />}
@@ -449,7 +495,12 @@ export default function AIChatConversationTemplate({
                   }>
                   <ChatMessageList>
                     {view.items.map((item, i) => (
-                      <Item key={i} item={item} onOpen={openArtifact} />
+                      <Item
+                        key={i}
+                        item={item}
+                        cardWidth={rules.cardWidth}
+                        onOpen={openArtifact}
+                      />
                     ))}
                   </ChatMessageList>
                 </ChatLayout>
@@ -464,7 +515,7 @@ export default function AIChatConversationTemplate({
                     isReversed
                     pillPlacement="start"
                     hasDivider
-                    label="Resize artifact panel"
+                    label={words.resizePanel}
                     className="ai-chat-resize-handle"
                   />
 
@@ -475,7 +526,7 @@ export default function AIChatConversationTemplate({
                     className="ai-chat-artifact-panel"
                     style={artifactPanelWidthVar(artifactResize.size)}>
                     <Toolbar
-                      label="Artifact actions"
+                      label={words.artifactActions}
                       dividers={['bottom']}
                       startContent={
                         <HStack gap={3} vAlign="center">
@@ -496,7 +547,8 @@ export default function AIChatConversationTemplate({
                       }
                       endContent={
                         <ArtifactActions
-                          versions={artifact.versions}
+                          artifact={artifact}
+                          words={words}
                           onClose={() =>
                             send({type: 'press', id: 'tpl.chat.closeArtifact'})
                           }
@@ -504,7 +556,7 @@ export default function AIChatConversationTemplate({
                       }
                     />
 
-                    <ArtifactBody artifact={artifact} />
+                    <ArtifactBody artifact={artifact} rules={rules} />
                   </Card>
                 </>
               )}
@@ -525,12 +577,14 @@ export default function AIChatConversationTemplate({
               subtitle={artifact.subtitle}
               hasDivider
               onOpenChange={setDialogOpen}
-              endContent={<MobileArtifactActions versions={artifact.versions} />}
+              endContent={
+                <MobileArtifactActions artifact={artifact} words={words} />
+              }
             />
           }
           content={
             <LayoutContent padding={0}>
-              <ArtifactBody artifact={artifact} />
+              <ArtifactBody artifact={artifact} rules={rules} />
             </LayoutContent>
           }
         />

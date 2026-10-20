@@ -171,7 +171,409 @@
       "Fr",
       "Sa"
      ]
-    }
+    },
+    "title": "April 2026",
+    "weeks": [
+     [
+      {
+       "date": "2026-03-29",
+       "day": 29,
+       "inMonth": false,
+       "selected": false,
+       "today": false,
+       "label": "Sunday, March 29, 2026",
+       "agendaLabel": "Sunday 29"
+      },
+      {
+       "date": "2026-03-30",
+       "day": 30,
+       "inMonth": false,
+       "selected": false,
+       "today": false,
+       "label": "Monday, March 30, 2026",
+       "agendaLabel": "Monday 30"
+      },
+      {
+       "date": "2026-03-31",
+       "day": 31,
+       "inMonth": false,
+       "selected": false,
+       "today": false,
+       "label": "Tuesday, March 31, 2026",
+       "agendaLabel": "Tuesday 31"
+      },
+      {
+       "date": "2026-04-01",
+       "day": 1,
+       "inMonth": true,
+       "selected": false,
+       "today": false,
+       "label": "Wednesday, April 1, 2026",
+       "agendaLabel": "Wednesday 1"
+      },
+      {
+       "date": "2026-04-02",
+       "day": 2,
+       "inMonth": true,
+       "selected": false,
+       "today": false,
+       "label": "Thursday, April 2, 2026",
+       "agendaLabel": "Thursday 2"
+      },
+      {
+       "date": "2026-04-03",
+       "day": 3,
+       "inMonth": true,
+       "selected": false,
+       "today": false,
+       "label": "Friday, April 3, 2026",
+       "agendaLabel": "Friday 3"
+      },
+      {
+       "date": "2026-04-04",
+       "day": 4,
+       "inMonth": true,
+       "selected": false,
+       "today": false,
+       "label": "Saturday, April 4, 2026",
+       "agendaLabel": "Saturday 4"
+      }
+     ],
+     [
+      {
+       "date": "2026-04-05",
+       "day": 5,
+       "inMonth": true,
+       "selected": false,
+       "today": false,
+       "label": "Sunday, April 5, 2026",
+       "agendaLabel": "Sunday 5"
+      },
+      {
+       "date": "2026-04-06",
+       "day": 6,
+       "inMonth": true,
+       "selected": false,
+       "today": false,
+       "label": "Monday, April 6, 2026",
+       "agendaLabel": "Monday 6"
+      },
+      {
+       "date": "2026-04-07",
+       "day": 7,
+       "inMonth": true,
+       "selected": false,
+       "today": false,
+       "label": "Tuesday, April 7, 2026",
+       "agendaLabel": "Tuesday 7"
+      },
+      {
+       "date": "2026-04-08",
+       "day": 8,
+       "inMonth": true,
+       "selected": false,
+       "today": false,
+       "label": "Wednesday, April 8, 2026",
+       "agendaLabel": "Wednesday 8"
+      },
+      {
+       "date": "2026-04-09",
+       "day": 9,
+       "inMonth": true,
+       "selected": false,
+       "today": false,
+       "label": "Thursday, April 9, 2026",
+       "agendaLabel": "Thursday 9"
+      },
+      {
+       "date": "2026-04-10",
+       "day": 10,
+       "inMonth": true,
+       "selected": false,
+       "today": false,
+       "label": "Friday, April 10, 2026",
+       "agendaLabel": "Friday 10"
+      },
+      {
+       "date": "2026-04-11",
+       "day": 11,
+       "inMonth": true,
+       "selected": false,
+       "today": false,
+       "label": "Saturday, April 11, 2026",
+       "agendaLabel": "Saturday 11"
+      }
+     ],
+     [
+      {
+       "date": "2026-04-12",
+       "day": 12,
+       "inMonth": true,
+       "selected": false,
+       "today": false,
+       "label": "Sunday, April 12, 2026",
+       "agendaLabel": "Sunday 12"
+      },
+      {
+       "date": "2026-04-13",
+       "day": 13,
+       "inMonth": true,
+       "selected": false,
+       "today": false,
+       "label": "Monday, April 13, 2026",
+       "agendaLabel": "Monday 13"
+      },
+      {
+       "date": "2026-04-14",
+       "day": 14,
+       "inMonth": true,
+       "selected": false,
+       "today": false,
+       "label": "Tuesday, April 14, 2026",
+       "agendaLabel": "Tuesday 14"
+      },
+      {
+       "date": "2026-04-15",
+       "day": 15,
+       "inMonth": true,
+       "selected": true,
+       "today": false,
+       "label": "Wednesday, April 15, 2026",
+       "agendaLabel": "Wednesday 15"
+      },
+      {
+       "date": "2026-04-16",
+       "day": 16,
+       "inMonth": true,
+       "selected": false,
+       "today": false,
+       "label": "Thursday, April 16, 2026",
+       "agendaLabel": "Thursday 16"
+      },
+      {
+       "date": "2026-04-17",
+       "day": 17,
+       "inMonth": true,
+       "selected": false,
+       "today": false,
+       "label": "Friday, April 17, 2026",
+       "agendaLabel": "Friday 17"
+      },
+      {
+       "date": "2026-04-18",
+       "day": 18,
+       "inMonth": true,
+       "selected": false,
+       "today": false,
+       "label": "Saturday, April 18, 2026",
+       "agendaLabel": "Saturday 18"
+      }
+     ],
+     [
+      {
+       "date": "2026-04-19",
+       "day": 19,
+       "inMonth": true,
+       "selected": false,
+       "today": false,
+       "label": "Sunday, April 19, 2026",
+       "agendaLabel": "Sunday 19"
+      },
+      {
+       "date": "2026-04-20",
+       "day": 20,
+       "inMonth": true,
+       "selected": false,
+       "today": false,
+       "label": "Monday, April 20, 2026",
+       "agendaLabel": "Monday 20"
+      },
+      {
+       "date": "2026-04-21",
+       "day": 21,
+       "inMonth": true,
+       "selected": false,
+       "today": false,
+       "label": "Tuesday, April 21, 2026",
+       "agendaLabel": "Tuesday 21"
+      },
+      {
+       "date": "2026-04-22",
+       "day": 22,
+       "inMonth": true,
+       "selected": false,
+       "today": false,
+       "label": "Wednesday, April 22, 2026",
+       "agendaLabel": "Wednesday 22"
+      },
+      {
+       "date": "2026-04-23",
+       "day": 23,
+       "inMonth": true,
+       "selected": false,
+       "today": false,
+       "label": "Thursday, April 23, 2026",
+       "agendaLabel": "Thursday 23"
+      },
+      {
+       "date": "2026-04-24",
+       "day": 24,
+       "inMonth": true,
+       "selected": false,
+       "today": false,
+       "label": "Friday, April 24, 2026",
+       "agendaLabel": "Friday 24"
+      },
+      {
+       "date": "2026-04-25",
+       "day": 25,
+       "inMonth": true,
+       "selected": false,
+       "today": false,
+       "label": "Saturday, April 25, 2026",
+       "agendaLabel": "Saturday 25"
+      }
+     ],
+     [
+      {
+       "date": "2026-04-26",
+       "day": 26,
+       "inMonth": true,
+       "selected": false,
+       "today": false,
+       "label": "Sunday, April 26, 2026",
+       "agendaLabel": "Sunday 26"
+      },
+      {
+       "date": "2026-04-27",
+       "day": 27,
+       "inMonth": true,
+       "selected": false,
+       "today": false,
+       "label": "Monday, April 27, 2026",
+       "agendaLabel": "Monday 27"
+      },
+      {
+       "date": "2026-04-28",
+       "day": 28,
+       "inMonth": true,
+       "selected": false,
+       "today": false,
+       "label": "Tuesday, April 28, 2026",
+       "agendaLabel": "Tuesday 28"
+      },
+      {
+       "date": "2026-04-29",
+       "day": 29,
+       "inMonth": true,
+       "selected": false,
+       "today": false,
+       "label": "Wednesday, April 29, 2026",
+       "agendaLabel": "Wednesday 29"
+      },
+      {
+       "date": "2026-04-30",
+       "day": 30,
+       "inMonth": true,
+       "selected": false,
+       "today": false,
+       "label": "Thursday, April 30, 2026",
+       "agendaLabel": "Thursday 30"
+      },
+      {
+       "date": "2026-05-01",
+       "day": 1,
+       "inMonth": false,
+       "selected": false,
+       "today": false,
+       "label": "Friday, May 1, 2026",
+       "agendaLabel": "Friday 1"
+      },
+      {
+       "date": "2026-05-02",
+       "day": 2,
+       "inMonth": false,
+       "selected": false,
+       "today": false,
+       "label": "Saturday, May 2, 2026",
+       "agendaLabel": "Saturday 2"
+      }
+     ],
+     [
+      {
+       "date": "2026-05-03",
+       "day": 3,
+       "inMonth": false,
+       "selected": false,
+       "today": false,
+       "label": "Sunday, May 3, 2026",
+       "agendaLabel": "Sunday 3"
+      },
+      {
+       "date": "2026-05-04",
+       "day": 4,
+       "inMonth": false,
+       "selected": false,
+       "today": false,
+       "label": "Monday, May 4, 2026",
+       "agendaLabel": "Monday 4"
+      },
+      {
+       "date": "2026-05-05",
+       "day": 5,
+       "inMonth": false,
+       "selected": false,
+       "today": false,
+       "label": "Tuesday, May 5, 2026",
+       "agendaLabel": "Tuesday 5"
+      },
+      {
+       "date": "2026-05-06",
+       "day": 6,
+       "inMonth": false,
+       "selected": false,
+       "today": false,
+       "label": "Wednesday, May 6, 2026",
+       "agendaLabel": "Wednesday 6"
+      },
+      {
+       "date": "2026-05-07",
+       "day": 7,
+       "inMonth": false,
+       "selected": false,
+       "today": false,
+       "label": "Thursday, May 7, 2026",
+       "agendaLabel": "Thursday 7"
+      },
+      {
+       "date": "2026-05-08",
+       "day": 8,
+       "inMonth": false,
+       "selected": false,
+       "today": false,
+       "label": "Friday, May 8, 2026",
+       "agendaLabel": "Friday 8"
+      },
+      {
+       "date": "2026-05-09",
+       "day": 9,
+       "inMonth": false,
+       "selected": false,
+       "today": false,
+       "label": "Saturday, May 9, 2026",
+       "agendaLabel": "Saturday 9"
+      }
+     ]
+    ],
+    "previous": {
+     "target": "2026-03-01",
+     "label": "Previous month, March 2026"
+    },
+    "next": {
+     "target": "2026-05-01",
+     "label": "Next month, May 2026"
+    },
+    "selectedAnnouncement": "Selected, Wednesday, April 15, 2026"
    }
   }
  },

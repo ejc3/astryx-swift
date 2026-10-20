@@ -8,6 +8,8 @@ import SwiftUI
 struct CheckoutStepper: View {
     let model: CheckoutModel
     let actions: CheckoutSender
+    /// The form column's width, which this drawing measures (the core holds only the threshold).
+    let columnWidth: CGFloat
     @Environment(\.ax) private var ax
     @Environment(\.dynamicTypeSize) private var typeSize
 
@@ -29,7 +31,10 @@ struct CheckoutStepper: View {
                         .modifier(StepAccessibility(model: model, index: index, step: step))
                     }
                 }
+            } else if collapses {
+                compact
             } else {
+                // Where the core's threshold lets the names stand, they still have to fit whole.
                 ViewThatFits(in: .horizontal) {
                     full
                     compact
@@ -38,6 +43,16 @@ struct CheckoutStepper: View {
         }
         .accessibilityElement(children: .contain)
         .accessibilityLabel(model.words.progress)
+    }
+
+    /// Astryx's Stepper collapses once each step would get less of the column than the core's
+    /// `stepperMinStepWidth`.
+    private var collapses: Bool {
+        Self.collapses(columnWidth: columnWidth, steps: model.steps.count, minStepWidth: model.rules.stepperMinStepWidth)
+    }
+
+    static func collapses(columnWidth: CGFloat, steps: Int, minStepWidth: CGFloat) -> Bool {
+        steps > 0 && columnWidth / CGFloat(steps) < minStepWidth
     }
 
     /// Astryx's form: a bar for each step, the step's icon and name in one row under it. Every

@@ -27,18 +27,18 @@ import {CheckboxInput} from '@astryxdesign/core/CheckboxInput';
 import {Typeahead} from '@astryxdesign/core/Typeahead';
 import {MagnifyingGlassIcon} from '@heroicons/react/24/outline';
 import type {SearchableItem, SearchSource} from '@astryxdesign/core/Typeahead';
+import {searchSettings} from '../../../core/src/templates/settings/model.ts';
 import type {View} from '../../../core/src/templates/settings/model.ts';
 import type {TemplateProps} from './props.ts';
 
 export default function SettingsTemplate({view: raw, send}: TemplateProps) {
   const view = raw as View;
-  const isNarrow = useMediaQuery('(max-width: 768px)');
+  const {words, rules} = view;
+  const isNarrow = useMediaQuery(`(max-width: ${rules.narrowMaxWidth}px)`);
+  // The core's rule (searchSettings), called here so typing needs no round trip.
   const searchSource = useMemo<SearchSource<SearchableItem>>(
     () => ({
-      search: (query: string) =>
-        view.searchItems.filter(item =>
-          item.label.toLowerCase().includes(query.toLowerCase()),
-        ),
+      search: (query: string) => searchSettings(view.searchItems, query),
       bootstrap: () => view.searchItems,
     }),
     [view.searchItems],
@@ -54,17 +54,17 @@ export default function SettingsTemplate({view: raw, send}: TemplateProps) {
   return (
     <Layout
       height="fill"
-      contentWidth={1440}
+      contentWidth={rules.contentMaxWidth}
       header={
         <LayoutHeader hasDivider>
           <HStack vAlign="center">
             <StackItem size="fill">
-              <Heading level={1}>Settings</Heading>
+              <Heading level={1}>{words.title}</Heading>
             </StackItem>
             <Typeahead
-              label="Search"
+              label={words.searchLabel}
               isLabelHidden
-              placeholder="Search settings..."
+              placeholder={words.searchPlaceholder}
               searchSource={searchSource}
               value={view.search}
               onChange={item =>
@@ -82,7 +82,10 @@ export default function SettingsTemplate({view: raw, send}: TemplateProps) {
       }
       start={
         isNarrow ? undefined : (
-          <LayoutPanel hasDivider={false} width={260} padding={2}>
+          <LayoutPanel
+            hasDivider={false}
+            width={rules.sidebarWidth}
+            padding={2}>
             <List density="balanced">
               {view.navItems.map(({label, isSelected}) => (
                 <ListItem
@@ -110,104 +113,98 @@ export default function SettingsTemplate({view: raw, send}: TemplateProps) {
                 </TabList>
               </VStack>
             )}
-            <Grid columns={{minWidth: 320}} gap={10}>
+            <Grid columns={{minWidth: rules.groupColumnMin}} gap={10}>
               <VStack gap={1}>
-                <Heading level={3}>Basic information</Heading>
-                <Text type="supporting" color="secondary">
-                  View and update your personal details and account information.
-                </Text>
+                <Heading level={3}>{words.basic.title}</Heading>
+                <Text type="supporting" color="secondary">{words.basic.detail}</Text>
               </VStack>
               <VStack gap={4}>
                 <TextInput
-                  label="Username"
+                  label={words.basic.username}
                   value={view.username}
                   onChange={setText('username')}
                 />
                 <TextInput
-                  label="First name"
+                  label={words.basic.firstName}
                   value={view.firstName}
                   onChange={setText('firstName')}
                 />
                 <TextInput
-                  label="Last name"
+                  label={words.basic.lastName}
                   value={view.lastName}
                   onChange={setText('lastName')}
                 />
                 <TextInput
-                  label="Email address"
+                  label={words.basic.email}
                   value={view.email}
                   onChange={setText('email')}
                 />
                 <HStack>
-                  <Button label="Save" variant="primary" />
+                  <Button label={words.save} variant="primary" />
                 </HStack>
               </VStack>
             </Grid>
 
             <Divider />
 
-            <Grid columns={{minWidth: 320}} gap={10}>
+            <Grid columns={{minWidth: rules.groupColumnMin}} gap={10}>
               <VStack gap={1}>
-                <Heading level={3}>Change password</Heading>
-                <Text type="supporting" color="secondary">
-                  Update your password to keep your account secure.
-                </Text>
+                <Heading level={3}>{words.password.title}</Heading>
+                <Text type="supporting" color="secondary">{words.password.detail}</Text>
               </VStack>
               <VStack gap={4}>
                 <TextInput
-                  label="Verify current password"
+                  label={words.password.current}
                   type="password"
                   value={view.currentPw}
                   onChange={setText('currentPw')}
                 />
                 <TextInput
-                  label="New password"
+                  label={words.password.new}
                   type="password"
                   value={view.newPw}
                   onChange={setText('newPw')}
                 />
                 <TextInput
-                  label="Confirm password"
+                  label={words.password.confirm}
                   type="password"
                   value={view.confirmPw}
                   onChange={setText('confirmPw')}
                 />
                 <HStack>
-                  <Button label="Save" variant="primary" />
+                  <Button label={words.save} variant="primary" />
                 </HStack>
               </VStack>
             </Grid>
 
             <Divider />
 
-            <Grid columns={{minWidth: 320}} gap={10}>
+            <Grid columns={{minWidth: rules.groupColumnMin}} gap={10}>
               <VStack gap={1}>
-                <Heading level={3}>Advanced settings</Heading>
-                <Text type="supporting" color="secondary">
-                  Configure detailed account preferences and security options.
-                </Text>
+                <Heading level={3}>{words.advanced.title}</Heading>
+                <Text type="supporting" color="secondary">{words.advanced.detail}</Text>
               </VStack>
               <VStack gap={5}>
                 <CheckboxInput
-                  label="Data Export Access"
-                  description="Allow export of personal data and backups."
+                  label={words.advanced.dataExport}
+                  description={words.advanced.dataExportDetail}
                   value={view.dataExport}
                   onChange={setToggle('dataExport')}
                 />
                 <CheckboxInput
-                  label="Allow Admin to Add Members"
-                  description="Admins can invite and manage members."
+                  label={words.advanced.adminMembers}
+                  description={words.advanced.adminMembersDetail}
                   value={view.adminMembers}
                   onChange={setToggle('adminMembers')}
                 />
                 <CheckboxInput
-                  label="Enable Two-Factor Authentication"
-                  description="Require 2FA for added account security."
+                  label={words.advanced.twoFactor}
+                  description={words.advanced.twoFactorDetail}
                   value={view.twoFactor}
                   onChange={setToggle('twoFactor')}
                 />
                 <HStack>
-                  <Button label="Save" variant="primary" />
+                  <Button label={words.save} variant="primary" />
                 </HStack>
               </VStack>
             </Grid>

@@ -184,6 +184,8 @@ export type CardView = {
   due: string;
   /** "Edited 2h ago · Due Jul 8", the two above in one line */
   meta: string;
+  /** `meta` as the separate text nodes the stock template draws ("Edited ", "2h ago", " · Due ", "Jul 8"). */
+  metaParts: string[];
   /** The card menu's "Move to ..." entries; `id` is the action to press. */
   moveTargets: { label: string; id: string }[];
 };
@@ -196,9 +198,21 @@ export type ColumnView = {
   emptyTitle: string;
   emptyDescription: string;
   emptyIcon: EmptyIcon;
+  /** Spoken on the column's colored dot: "To-do status". */
+  statusLabel: string;
   count: number;
   cards: CardView[];
 };
+
+/** The layout numbers both drawings read. */
+export type KanbanRules = {
+  /** Every board column's width in px; the board scrolls sideways when they do not fit. */
+  columnWidth: number;
+  /** The sprint selector's width in px (the most it takes). */
+  sprintWidth: number;
+};
+
+const RULES: KanbanRules = { columnWidth: 300, sprintWidth: 200 };
 
 /** The words the board's controls and spoken labels use; the web draws its own copies. */
 export type KanbanWords = {
@@ -239,6 +253,7 @@ const INERT = ["sort", "filter", "search", "addTask", "open", "assignToMe"];
 
 export type KanbanView = {
   words: KanbanWords;
+  rules: KanbanRules;
   /** Ids of the controls the core has no action for; hosts draw these disabled. */
   inert: string[];
   title: string;
@@ -301,6 +316,7 @@ export const kanban: TemplateModule<KanbanState, KanbanView> = {
   view(s) {
     return {
       words: WORDS,
+      rules: RULES,
       inert: INERT,
       title: "Sprint Board",
       total: s.items.length,
@@ -319,6 +335,7 @@ export const kanban: TemplateModule<KanbanState, KanbanView> = {
             edited: it.lastEdited,
             due: it.dueDate,
             meta: `Edited ${it.lastEdited} · Due ${it.dueDate}`,
+            metaParts: ["Edited ", it.lastEdited, " · Due ", it.dueDate],
             moveTargets: COLUMNS.filter((o) => o.id !== it.column).map((o) => ({ label: `Move to ${o.title}`, id: `tpl.kanban.move:${it.id}:${o.id}` })),
           }));
         return {
@@ -329,6 +346,7 @@ export const kanban: TemplateModule<KanbanState, KanbanView> = {
           emptyTitle: c.emptyTitle,
           emptyDescription: c.emptyDescription,
           emptyIcon: c.emptyIcon,
+          statusLabel: `${c.title} ${WORDS.status}`,
           count: cards.length,
           cards,
         };

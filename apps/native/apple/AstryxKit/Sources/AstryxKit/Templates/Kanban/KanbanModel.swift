@@ -5,6 +5,8 @@ import Foundation
 struct KanbanModel: Decodable, Equatable {
     /// The words of the board's controls and spoken labels.
     var words: Words
+    /// The layout numbers the core holds; the web reads the same ones.
+    var rules: Rules
     /// Ids of the controls the core has no action for ("sort", "addTask"...): drawn disabled.
     var inert: [String]
     var title: String
@@ -13,6 +15,13 @@ struct KanbanModel: Decodable, Equatable {
     var sprint: String
     var sprintOptions: [SprintOption]
     var columns: [Column]
+
+    struct Rules: Decodable, Equatable {
+        /// Every board column's width; the board scrolls sideways when they do not fit.
+        var columnWidth: CGFloat
+        /// The sprint selector's width (the most it takes).
+        var sprintWidth: CGFloat
+    }
 
     struct Words: Decodable, Equatable {
         var boardActions: String
@@ -81,6 +90,8 @@ struct KanbanModel: Decodable, Equatable {
         var due: String
         /// "Edited 2h ago · Due Jul 8", the two above in one line.
         var meta: String
+        /// `meta` in the separate pieces the web draws as text nodes; the native side reads `meta`.
+        var metaParts: [String]
         /// The card menu's "Move to ..." entries.
         var moveTargets: [MoveTarget]
     }
@@ -93,6 +104,8 @@ struct KanbanModel: Decodable, Equatable {
         var emptyTitle: String
         var emptyDescription: String
         var emptyIcon: EmptyIcon
+        /// Spoken on the column's colored dot ("To-do status").
+        var statusLabel: String
         var count: Int
         var cards: [Card]
     }

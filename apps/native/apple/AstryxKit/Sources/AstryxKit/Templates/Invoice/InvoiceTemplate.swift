@@ -130,10 +130,10 @@ struct InvoiceScreen: View {
         }
     }
 
-    /// How many 280-wide columns a grid of `contentWidth` holds with `gap` between them
-    /// (`repeat(auto-fill, minmax(280px, 1fr))`), at least one.
-    static func factColumns(contentWidth: CGFloat, gap: CGFloat) -> Int {
-        max(1, Int((contentWidth + gap) / (280 + gap)))
+    /// How many columns of at least `minWidth` (the core's `rules.factMinWidth`) a grid of
+    /// `contentWidth` holds with `gap` between them (`repeat(auto-fill, minmax(280px, 1fr))`), at least one.
+    static func factColumns(contentWidth: CGFloat, gap: CGFloat, minWidth: CGFloat) -> Int {
+        max(1, Int((contentWidth + gap) / (minWidth + gap)))
     }
 
     /// The invoice facts, label over value, in as many columns as fit.
@@ -141,7 +141,7 @@ struct InvoiceScreen: View {
         // The web's `MetadataList columns="multi"`: `repeat(auto-fill, minmax(280px, 1fr))` with a
         // 16 gap (one column at 358, two from 576, three from 872). One column at accessibility
         // sizes: two would break a long value inside a word.
-        let columns = typeSize.isAccessibilitySize ? 1 : Self.factColumns(contentWidth: width - 2 * pad, gap: ax.space(4))
+        let columns = typeSize.isAccessibilitySize ? 1 : Self.factColumns(contentWidth: width - 2 * pad, gap: ax.space(4), minWidth: model.rules.factMinWidth)
         let rows = stride(from: 0, to: model.details.count, by: columns).map { start in
             Array(model.details[start..<min(start + columns, model.details.count)])
         }
@@ -186,7 +186,7 @@ struct InvoiceScreen: View {
                 basisSwitch
                 if !isTable || usesSystemTable { sortAndFilter }
                 Spacer(minLength: ax.space(3))
-                if isStatic { searchBox.frame(width: 300) }
+                if isStatic { searchBox.frame(width: model.rules.searchWidth) }
             }
             VStack(alignment: .leading, spacing: ax.space(3)) {
                 basisSwitch
@@ -442,11 +442,11 @@ struct InvoiceScreen: View {
         let value = Text(total.value)
             .font(ax.font("font-size-base", 14, weight: weight).monospacedDigit())
             .foregroundStyle(ax.text)
-        // A right-aligned block at every width: the label beside a figure box 132 wide.
+        // A right-aligned block at every width: the label beside a figure box (`rules.figureWidth`) wide.
         return HStack(spacing: ax.space(6)) {
             Spacer(minLength: 0)
             label
-            value.frame(width: 132, alignment: .trailing)
+            value.frame(width: model.rules.figureWidth, alignment: .trailing)
         }
         .accessibilityElement(children: .combine)
     }

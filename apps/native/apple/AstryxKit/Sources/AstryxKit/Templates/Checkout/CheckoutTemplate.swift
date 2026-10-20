@@ -16,9 +16,6 @@ struct CheckoutTemplate: View {
     }
 }
 
-/// The Astryx page switches to its stacked form at 900 points of host width.
-private let checkoutNarrowWidth: CGFloat = 900
-
 /// The model's actions, with the template's id prefix the core's `reduce` expects.
 struct CheckoutSender {
     let send: AXSender
@@ -38,7 +35,9 @@ struct CheckoutScreen: View {
     /// The template owns its outer padding, as the stock page pads itself (24).
     private var pad: CGFloat { ax.space(6) }
     private var inner: CGFloat { max(width - 2 * pad, 0) }
-    private var narrow: Bool { inner <= checkoutNarrowWidth }
+    private var narrow: Bool { inner <= model.rules.narrowHostAtMost }
+    /// The form column's width: the whole page when stacked, else what the summary and the gap leave.
+    private var formWidth: CGFloat { narrow ? inner : max(inner - model.rules.summaryWidth - ax.space(6), 0) }
     private var actions: CheckoutSender { CheckoutSender(send: send) }
 
     var body: some View {
@@ -48,7 +47,7 @@ struct CheckoutScreen: View {
             if !model.isComplete { CheckoutActionBar(model: model, actions: actions) }
         }
         .padding(pad)
-        .frame(maxWidth: 1000 + 2 * pad, alignment: .topLeading)
+        .frame(maxWidth: model.rules.contentWidth + 2 * pad, alignment: .topLeading)
         .frame(maxWidth: .infinity, alignment: .top)
         .environment(\.axWidth, inner)
         .environment(\.cosWords, model.words.common)
@@ -103,7 +102,7 @@ struct CheckoutScreen: View {
             } else {
                 HStack(alignment: .top, spacing: ax.space(6)) {
                     formColumn.frame(maxWidth: .infinity, alignment: .topLeading)
-                    CheckoutSummary(model: model, narrow: false).frame(width: 360)
+                    CheckoutSummary(model: model, narrow: false).frame(width: model.rules.summaryWidth)
                 }
             }
         }
@@ -115,7 +114,7 @@ struct CheckoutScreen: View {
             if model.isComplete {
                 CheckoutConfirmation(model: model)
             } else {
-                CheckoutStepper(model: model, actions: actions)
+                CheckoutStepper(model: model, actions: actions, columnWidth: formWidth)
                 switch model.step {
                 case 0: CheckoutCartStep(model: model, actions: actions, focus: $focus)
                 case 1: CheckoutShippingStep(model: model, actions: actions, narrow: narrow, focus: $focus)

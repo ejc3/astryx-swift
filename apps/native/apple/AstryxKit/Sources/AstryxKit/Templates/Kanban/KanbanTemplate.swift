@@ -219,17 +219,17 @@ struct KanbanScreen: View {
         .frame(minHeight: 32 * min(ax.scale, 1.4))
         #if os(iOS)
         // On a phone it gives way before the toolbar's other controls do, from 200 down to 120.
-        .frame(minWidth: typeSize.isAccessibilitySize ? 200 : 120, idealWidth: typeSize.isAccessibilitySize ? 200 : 120, maxWidth: typeSize.isAccessibilitySize ? .infinity : 200, alignment: .leading)
+        .frame(minWidth: typeSize.isAccessibilitySize ? model.rules.sprintWidth : 120, idealWidth: typeSize.isAccessibilitySize ? model.rules.sprintWidth : 120, maxWidth: typeSize.isAccessibilitySize ? .infinity : model.rules.sprintWidth, alignment: .leading)
         #else
-        .frame(minWidth: 200, alignment: .leading)
+        .frame(minWidth: model.rules.sprintWidth, alignment: .leading)
         #endif
         .axTapTarget(keepLayout: true)
     }
 
     // MARK: Board
 
-    /// The web gives every column 300 points and scrolls the board sideways when they do not fit.
-    private let columnWidth: CGFloat = 300
+    /// The core gives every column one width (the web's too) and the board scrolls sideways when they do not fit.
+    private var columnWidth: CGFloat { model.rules.columnWidth }
 
     @ViewBuilder
     private var board: some View {
@@ -365,7 +365,7 @@ struct KanbanColumnView: View {
             Circle()
                 .fill(ax.tone(tone).solid)
                 .frame(width: 8, height: 8)
-                .accessibilityLabel("\(column.title) \(model.words.status)")
+                .accessibilityLabel(column.statusLabel)
             Text(column.title)
                 .font(ax.heading(4))
                 .foregroundStyle(ax.text)

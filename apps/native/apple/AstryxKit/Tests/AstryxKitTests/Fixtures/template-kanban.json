@@ -169,6 +169,10 @@
      "done": "Done",
      "movedTo": "Moved to"
     },
+    "rules": {
+     "columnWidth": 300,
+     "sprintWidth": 200
+    },
     "inert": [
      "sort",
      "filter",
@@ -203,6 +207,7 @@
       "emptyTitle": "To-do is empty",
       "emptyDescription": "Items pulled into this sprint appear here.",
       "emptyIcon": "inbox",
+      "statusLabel": "To-do status",
       "count": 2,
       "cards": [
        {
@@ -215,6 +220,12 @@
         "edited": "2h ago",
         "due": "Jul 8",
         "meta": "Edited 2h ago · Due Jul 8",
+        "metaParts": [
+         "Edited ",
+         "2h ago",
+         " · Due ",
+         "Jul 8"
+        ],
         "moveTargets": [
          {
           "label": "Move to In progress",
@@ -240,6 +251,12 @@
         "edited": "1d ago",
         "due": "Jul 11",
         "meta": "Edited 1d ago · Due Jul 11",
+        "metaParts": [
+         "Edited ",
+         "1d ago",
+         " · Due ",
+         "Jul 11"
+        ],
         "moveTargets": [
          {
           "label": "Move to In progress",
@@ -265,6 +282,7 @@
       "emptyTitle": "Nothing in progress",
       "emptyDescription": "Items being worked on appear here.",
       "emptyIcon": "arrow-path",
+      "statusLabel": "In progress status",
       "count": 2,
       "cards": [
        {
@@ -277,6 +295,12 @@
         "edited": "18m ago",
         "due": "Jul 3",
         "meta": "Edited 18m ago · Due Jul 3",
+        "metaParts": [
+         "Edited ",
+         "18m ago",
+         " · Due ",
+         "Jul 3"
+        ],
         "moveTargets": [
          {
           "label": "Move to To-do",
@@ -302,6 +326,12 @@
         "edited": "5m ago",
         "due": "Jul 4",
         "meta": "Edited 5m ago · Due Jul 4",
+        "metaParts": [
+         "Edited ",
+         "5m ago",
+         " · Due ",
+         "Jul 4"
+        ],
         "moveTargets": [
          {
           "label": "Move to To-do",
@@ -327,6 +357,7 @@
       "emptyTitle": "Nothing in review",
       "emptyDescription": "Items awaiting your review appear here.",
       "emptyIcon": "clipboard-check",
+      "statusLabel": "In review status",
       "count": 0,
       "cards": []
      },
@@ -338,6 +369,7 @@
       "emptyTitle": "Nothing done yet",
       "emptyDescription": "Completed items appear here.",
       "emptyIcon": "check-circle",
+      "statusLabel": "Done status",
       "count": 3,
       "cards": [
        {
@@ -350,6 +382,12 @@
         "edited": "Yesterday",
         "due": "Jul 1",
         "meta": "Edited Yesterday · Due Jul 1",
+        "metaParts": [
+         "Edited ",
+         "Yesterday",
+         " · Due ",
+         "Jul 1"
+        ],
         "moveTargets": [
          {
           "label": "Move to To-do",
@@ -375,6 +413,12 @@
         "edited": "3d ago",
         "due": "Jun 30",
         "meta": "Edited 3d ago · Due Jun 30",
+        "metaParts": [
+         "Edited ",
+         "3d ago",
+         " · Due ",
+         "Jun 30"
+        ],
         "moveTargets": [
          {
           "label": "Move to To-do",
@@ -400,6 +444,12 @@
         "edited": "4d ago",
         "due": "Jun 28",
         "meta": "Edited 4d ago · Due Jun 28",
+        "metaParts": [
+         "Edited ",
+         "4d ago",
+         " · Due ",
+         "Jun 28"
+        ],
         "moveTargets": [
          {
           "label": "Move to To-do",

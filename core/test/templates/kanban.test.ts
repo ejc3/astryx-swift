@@ -98,3 +98,13 @@ test("the view carries the board's words and lists the controls with no action a
   assert.deepEqual([v.words.addTask, v.words.sprint, v.words.workItemActions], ["Add task", "Sprint", "Work item actions"]);
   assert.deepEqual(v.inert, ["sort", "filter", "search", "addTask", "open", "assignToMe"]);
 });
+
+test("the column width and the sprint selector's width are the core's, and a column names its status dot", () => {
+  const v = view(start());
+  assert.deepEqual(v.rules, { columnWidth: 300, sprintWidth: 200 });
+  assert.deepEqual(v.columns.map((c) => c.statusLabel), ["To-do status", "In progress status", "In review status", "Done status"]);
+  for (const c of v.columns) for (const card of c.cards) {
+    assert.equal(card.meta, `Edited ${card.edited} · Due ${card.due}`);
+    assert.equal(card.metaParts.join(""), card.meta);
+  }
+});

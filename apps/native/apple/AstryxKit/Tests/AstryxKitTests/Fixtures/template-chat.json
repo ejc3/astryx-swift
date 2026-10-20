@@ -181,7 +181,20 @@
      },
      "added": "added",
      "removed": "removed",
-     "delivered": "Delivered"
+     "delivered": "Delivered",
+     "version": "Version",
+     "resizePanel": "Resize artifact panel",
+     "artifactActions": "Artifact actions"
+    },
+    "rules": {
+     "dialogAtMost": 767,
+     "panel": {
+      "initial": 640,
+      "min": 480,
+      "max": 960
+     },
+     "articleWidth": 720,
+     "cardWidth": 360
     },
     "items": [
      {
@@ -531,6 +544,7 @@
       "v2 (current)",
       "v1"
      ],
+     "versionTag": "v2",
      "panelOpen": true,
      "dialogOpen": false
     }

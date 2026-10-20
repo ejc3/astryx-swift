@@ -93,12 +93,35 @@ export type OrderView = {
   tabs: { value: string; label: string; more: boolean }[];
   /** "5 ordered items", the facts line's first fact. */
   itemsLabel: string;
+  /** `itemsLabel` as the separate text nodes the stock template draws ("5", " ordered items"): the web page draws these. */
+  itemsLabelParts: string[];
   /** Controls that do nothing in the stock template and stay inert here: a host draws them disabled. */
   inert: string[];
-  /** The words only the native drawing writes (the web page writes its own inline). */
+  /** The words both drawings write: the web page reads them where Astryx's stock markup has them inline. */
   words: OrderWords;
+  /** The layout numbers both drawings keep from Astryx's stock template. */
+  rules: OrderRules;
 };
 export type View = OrderView;
+
+/**
+ * Where the page goes narrow, and the sizes it keeps. The stock page asks the viewport
+ * (`max-width: 1024px`); a native drawing measures its own pane against `paneNarrowBelow`, so
+ * the two thresholds are different numbers for the same decision (the panel beside the page, or
+ * a dialog, and the header's buttons beside the facts, or below them). Each drawing compares its own width.
+ */
+export type OrderRules = {
+  /** The web page is narrow when the viewport is at most this wide, in CSS pixels. */
+  viewportNarrowAtMost: number;
+  /** A drawing that measures its own width is narrow below this, in points: the page and the panel cannot sit side by side. */
+  paneNarrowBelow: number;
+  /** The page's content is capped at this width. */
+  contentWidth: number;
+  /** The side panel's width. */
+  panelWidth: number;
+};
+
+const RULES: OrderRules = { viewportNarrowAtMost: 1024, paneNarrowBelow: 760, contentWidth: 1000, panelWidth: 320 };
 
 export type OrderWords = CommonWords & {
   allOrders: string;
@@ -234,8 +257,10 @@ export const order: TemplateModule<OrderState, OrderView> = {
     },
     tabs: TABS.map((value, i) => ({ value, label: TAB_LABELS[value], more: i >= 3 })),
     itemsLabel: `${PRODUCTS.length} ordered items`,
+    itemsLabelParts: [String(PRODUCTS.length), " ordered items"],
     // Refund moves money out and cannot be undone: if it is ever wired, it needs a destructive confirmation.
     inert: ["allOrders", "restock", "edit", "seeAll", "fulfill", "label", "refund", "invoice", "filters", "like", "reply"],
     words: WORDS,
+    rules: RULES,
   }),
 };

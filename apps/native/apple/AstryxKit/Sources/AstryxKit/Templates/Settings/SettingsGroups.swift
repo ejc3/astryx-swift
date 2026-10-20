@@ -111,26 +111,17 @@ private struct SettingsGroup<Fields: View>: View {
 }
 
 /// Search for a setting, in the window's toolbar (a Mac puts search there, and on an iPhone the
-/// navigation bar holds it). Typing filters the suggestions; choosing one (or typing a result's
-/// name in full) sends `set search <id>`; changing the text away from the chosen result sends
-/// `set search ""`. A picture with no window has no toolbar, so it draws none.
+/// navigation bar holds it). The text goes to the core (`set searchQuery`), which chooses the
+/// result the text spells and clears the choice otherwise; the suggestions are the core's
+/// `results`. A picture with no window has no toolbar, so it draws none.
 struct SettingsSearch: ViewModifier {
-    let items: [SettingsModel.SearchItem]
-    let selected: SettingsModel.SearchItem?
-    let words: SettingsModel.Words
-    let actions: SettingsSender
+    let model: SettingsModel
     @State private var query: String
     @Environment(\.axStatic) private var isStatic
 
-    init(items: [SettingsModel.SearchItem], selected: SettingsModel.SearchItem?, words: SettingsModel.Words, actions: SettingsSender) {
-        self.items = items; self.selected = selected; self.words = words; self.actions = actions
-        _query = State(initialValue: selected?.label ?? "")
-    }
-
-    private var matches: [SettingsModel.SearchItem] {
-        let needle = query.trimmingCharacters(in: .whitespaces).lowercased()
-        if needle.isEmpty || query == selected?.label { return items }
-        return items.filter { $0.label.lowercased().contains(needle) }
+    init(model: SettingsModel) {
+        self.model = model
+        _query = State(initialValue: model.searchQuery)
     }
 
     func body(content: Content) -> some View {
@@ -138,22 +129,13 @@ struct SettingsSearch: ViewModifier {
             content
         } else {
             content
-                .searchable(text: $query, prompt: Text(words.searchPlaceholder))
+                .searchable(text: $query, prompt: Text(model.words.searchPlaceholder))
                 .searchSuggestions {
-                    ForEach(matches, id: \.id) { item in
+                    ForEach(model.results, id: \.id) { item in
                         Text(item.label).searchCompletion(item.label)
                     }
                 }
-                .onChange(of: query) { _, new in
-                    if let item = items.first(where: { $0.label == new }) {
-                        if item.id != selected?.id { actions.set("search", .string(item.id)) }
-                    } else if selected != nil {
-                        actions.set("search", .string(""))
-                    }
-                }
-                .onChange(of: selected) { _, new in
-                    if let new, new.label != query { query = new.label }
-                }
+                .syncedText(id: "tpl.settings.searchQuery", value: model.searchQuery, text: $query)
         }
     }
 }

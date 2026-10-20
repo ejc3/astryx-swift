@@ -18,9 +18,6 @@ struct SettingsTemplate: View {
     }
 }
 
-/// Below this width (the page's own, inside its padding) the groups stack.
-let settingsNarrowWidth: CGFloat = 640
-
 /// The model's actions, with the template's id prefix the core's `reduce` expects.
 struct SettingsSender {
     let send: AXSender
@@ -37,7 +34,9 @@ struct SettingsScreen: View {
     /// The template owns its outer padding, as the web page's `LayoutContent padding={4}` does.
     private var pad: CGFloat { ax.space(4) }
     private var inner: CGFloat { max(width - 2 * pad, 0) }
-    private var narrow: Bool { inner < settingsNarrowWidth }
+    /// A group's explanation sits beside its fields when two columns of the core's minimum width
+    /// and the gap between them fit in the page's own width (inside its padding), as the web grid does.
+    private var columns: Bool { inner >= 2 * model.rules.groupColumnMin + ax.space(10) }
     private var actions: SettingsSender { SettingsSender(send: send) }
 
     var body: some View {
@@ -48,15 +47,15 @@ struct SettingsScreen: View {
                 SettingsSectionMenu(items: model.navItems, label: model.words.sections, actions: actions)
             }
             .frame(maxWidth: .infinity)
-            SettingsGroups(model: model, actions: actions, columns: !narrow && inner >= 680)
+            SettingsGroups(model: model, actions: actions, columns: columns)
                 .frame(maxWidth: .infinity, alignment: .topLeading)
         }
         .padding(pad)
-        .frame(maxWidth: 1440, alignment: .topLeading)
+        .frame(maxWidth: model.rules.contentMaxWidth, alignment: .topLeading)
         .frame(maxWidth: .infinity, alignment: .top)
         .environment(\.axWidth, inner)
         .environment(\.cosWords, model.words.common)
-        .modifier(SettingsSearch(items: model.searchItems, selected: model.search, words: model.words, actions: actions))
+        .modifier(SettingsSearch(model: model))
     }
 }
 
