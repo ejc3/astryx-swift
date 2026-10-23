@@ -13,17 +13,23 @@ import AppKit
 /// - Sign in: `<sync URL>/native/login` in `ASWebAuthenticationSession`. That path is behind
 ///   Cloudflare Access; once Access has signed the person in, the API redirects to
 ///   `astryxswift://signed-in#token=...`, and the token is read from the fragment.
-/// - The token is kept in the Keychain (this device only, after first unlock) and handed to the
-///   Hermes runtime (`auth`), which gives it to Zero. It never enters the core, a snapshot or a log.
-/// - Renewal: shortly before the token expires, the same flow again, not ephemeral, so the Access
-///   session's cookie lets it through without the person typing anything.
-/// - Sign out: the token is removed and sync stops; the device's own copy comes back.
+/// - The token, and the refresh token that comes with it, are kept in the Keychain (this device
+///   only, after first unlock); the token is handed to the Hermes runtime (`auth`), which gives it
+///   to Zero. Neither enters the core, a snapshot or a log.
+/// - Staying signed in: a sign-in lasts until sign-out (server/src/sessions.ts). Shortly before the
+///   hour-long token expires, and whenever the app comes back with it near its end, the refresh
+///   token is traded at `/api/token/refresh` for a new pair: no browser, no prompt. Only if the
+///   server ends the session (signed out elsewhere, or a copied token) does the person sign in again.
+/// - Sign out: the session is ended on the server, the tokens are removed and sync stops; the
+///   device's own copy comes back.
 @MainActor
 final class SignIn: NSObject, ASWebAuthenticationPresentationContextProviding {
     static let callbackScheme = "astryxswift"
     static let redirect = "astryxswift://signed-in"
     /// How long before the token's expiry it is renewed.
     private static let renewBefore: TimeInterval = 5 * 60
+    /// Waits between tries when the server cannot be reached (it is retried; the session stands).
+    private static let retryAfter: [TimeInterval] = [15, 60, 300, 900]
 
     /// Where sync is (zero-cache, and the API's /native/login on the same host); nil: sign-in is off.
     let syncURL: URL?
@@ -33,6 +39,11 @@ final class SignIn: NSObject, ASWebAuthenticationPresentationContextProviding {
     var dispatch: (String) -> Void = { _ in }
 
     private var token: String?
+    /// Trades for a new token at /api/token/refresh; nil with a server that keeps no sessions.
+    private var refreshToken: String?
+    /// The refresh under way: one at a time, because each one replaces the refresh token.
+    private var refreshing: Task<Void, Never>?
+    private var failedRefreshes = 0
     private var session: ASWebAuthenticationSession?
     private var renewal: Task<Void, Never>?
     /// The last request of the core's acted on.
@@ -48,7 +59,9 @@ final class SignIn: NSObject, ASWebAuthenticationPresentationContextProviding {
         syncURL = SignIn.configuredSyncURL()
         super.init()
         guard syncURL != nil else { return }
-        token = TokenStore.read()
+        let kept = TokenStore.read()
+        token = kept?.token
+        refreshToken = kept?.refresh
         #if os(iOS)
         let active = UIApplication.didBecomeActiveNotification
         #else
@@ -62,7 +75,8 @@ final class SignIn: NSObject, ASWebAuthenticationPresentationContextProviding {
         if let dev = SignIn.devToken(), let claims = Claims(token: dev) {
             launchIsSignIn = Claims(token: token ?? "")?.sub != claims.sub
             token = dev
-            TokenStore.write(dev)
+            refreshToken = SignIn.devRefresh()
+            TokenStore.write(.init(token: dev, refresh: refreshToken))
         }
         #endif
     }
@@ -108,6 +122,12 @@ final class SignIn: NSObject, ASWebAuthenticationPresentationContextProviding {
         }
         return nil
     }
+
+    /// `-AXDevRefresh <refresh token>` with `-AXDevToken`, to test staying signed in against a local stack.
+    private static func devRefresh() -> String? {
+        let value = UserDefaults.standard.string(forKey: "AXDevRefresh") ?? ""
+        return value.isEmpty ? nil : value
+    }
     #endif
 
     // MARK: The runtime
@@ -115,8 +135,20 @@ final class SignIn: NSObject, ASWebAuthenticationPresentationContextProviding {
     /// The runtime is up: a kept token starts sync (a relaunch while signed in, no upload).
     func connected() {
         guard let syncURL, let token else { return }
-        send(token: token, to: syncURL, firstSignIn: launchIsSignIn)
+        let firstSignIn = launchIsSignIn
         launchIsSignIn = false
+        // A kept token that has run out (the app was closed for a while): a new one first.
+        if let claims = Claims(token: token), claims.expires.timeIntervalSinceNow < SignIn.renewBefore, refreshToken != nil {
+            renew(then: { [weak self] fresh in self?.send(token: fresh ?? token, to: syncURL, firstSignIn: firstSignIn) })
+            return
+        }
+        send(token: token, to: syncURL, firstSignIn: firstSignIn)
+    }
+
+    /// The core's sync status: when the server refuses the token (it ran out while the app slept), renew it.
+    func observe(syncState: String?) {
+        guard syncState == "signed-out", token != nil, refreshToken != nil, refreshing == nil else { return }
+        renew()
     }
 
     /// A new app snapshot: the core may be asking to sign in or out.
@@ -181,17 +213,24 @@ final class SignIn: NSObject, ASWebAuthenticationPresentationContextProviding {
         }
         let before = token.flatMap { Claims(token: $0) }?.sub
         token = fresh
-        TokenStore.write(fresh)
+        refreshToken = SignIn.fragmentItem("refresh", in: callback)
+        failedRefreshes = 0
+        TokenStore.write(.init(token: fresh, refresh: refreshToken))
         // The same person renewing keeps their sync; anyone else is an actual sign-in (the device's work may be uploaded).
         send(token: fresh, to: syncURL, firstSignIn: !(renewing && before == claims.sub))
     }
 
     /// The token in `astryxswift://signed-in#token=...`; anything else is not a sign-in.
     static func token(from url: URL?) -> String? {
+        fragmentItem("token", in: url)
+    }
+
+    /// One item of the sign-in redirect's fragment (`token`, `refresh`); nil for any other URL.
+    static func fragmentItem(_ name: String, in url: URL?) -> String? {
         guard let url, url.scheme == callbackScheme, url.host == "signed-in", let fragment = url.fragment,
               let items = URLComponents(string: "?" + fragment)?.queryItems,
-              let token = items.first(where: { $0.name == "token" })?.value, !token.isEmpty else { return nil }
-        return token
+              let value = items.first(where: { $0.name == name })?.value, !value.isEmpty else { return nil }
+        return value
     }
 
     // MARK: Renewal
@@ -200,8 +239,8 @@ final class SignIn: NSObject, ASWebAuthenticationPresentationContextProviding {
         renewal?.cancel()
         guard let claims = Claims(token: token) else { return }
         let wait = claims.expires.timeIntervalSinceNow - SignIn.renewBefore
-        // Already expired: Zero says signed out, and the core offers "Sign in again".
-        guard wait > -SignIn.renewBefore else { return }
+        // Already expired with nothing to renew it: Zero says signed out, and the core offers "Sign in again".
+        guard wait > -SignIn.renewBefore || refreshToken != nil else { return }
         renewal = Task { [weak self] in
             if wait > 0 { try? await Task.sleep(for: .seconds(wait)) }
             guard !Task.isCancelled else { return }
@@ -209,10 +248,11 @@ final class SignIn: NSObject, ASWebAuthenticationPresentationContextProviding {
         }
     }
 
-    /// Renews while the app is in use; in the background it waits until the app is active again
-    /// (the core shows "Sign in again" if the token runs out meanwhile).
+    /// Renews the token: with the refresh token when there is one (no browser); otherwise, with a
+    /// server that keeps no sessions, the sign-in again while the app is in use.
     private func renewIfActive() {
         guard token != nil, session == nil else { return }
+        if refreshToken != nil { return renew() }
         #if os(iOS)
         guard UIApplication.shared.applicationState == .active else { return }
         #else
@@ -221,10 +261,62 @@ final class SignIn: NSObject, ASWebAuthenticationPresentationContextProviding {
         begin(renewing: true, quiet: true)
     }
 
+    /// Trades the refresh token for a new pair. On success the runtime gets the new token (Zero
+    /// takes it without reconnecting); if the server ends the session, the refresh token is
+    /// dropped and the person is asked to sign in again when the token runs out; if the server
+    /// cannot be reached, it is tried again later. `then` gets the new token, or nil.
+    private func renew(then: ((String?) -> Void)? = nil) {
+        guard let syncURL, let refresh = refreshToken, refreshing == nil else { then?(nil); return }
+        refreshing = Task { [weak self] in
+            let outcome = await SignIn.trade(refresh, at: syncURL)
+            guard let self else { return }
+            self.refreshing = nil
+            switch outcome {
+            case .renewed(let fresh, let next):
+                guard Claims(token: fresh)?.sub == self.token.flatMap({ Claims(token: $0) })?.sub || self.token == nil else { then?(nil); return }
+                self.token = fresh
+                self.refreshToken = next
+                self.failedRefreshes = 0
+                TokenStore.write(.init(token: fresh, refresh: next))
+                if let then { then(fresh) } else { self.send(token: fresh, to: syncURL, firstSignIn: false) }
+            case .ended:
+                self.refreshToken = nil
+                if let token = self.token { TokenStore.write(.init(token: token, refresh: nil)) }
+                then?(nil)
+            case .unreachable:
+                let wait = SignIn.retryAfter[min(self.failedRefreshes, SignIn.retryAfter.count - 1)]
+                self.failedRefreshes += 1
+                then?(nil)
+                self.renewal?.cancel()
+                self.renewal = Task { [weak self] in
+                    try? await Task.sleep(for: .seconds(wait))
+                    guard !Task.isCancelled else { return }
+                    self?.renew()
+                }
+            }
+        }
+    }
+
+    enum Trade { case renewed(String, String), ended, unreachable }
+
+    /// POST /api/token/refresh. 401 means the session has ended; anything else that fails is "try later".
+    private static func trade(_ refresh: String, at syncURL: URL) async -> Trade {
+        var request = URLRequest(url: syncURL.appendingPathComponent("api/token/refresh"), timeoutInterval: 20)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "content-type")
+        request.httpBody = try? JSONSerialization.data(withJSONObject: ["refresh": refresh])
+        guard let (data, response) = try? await URLSession.shared.data(for: request), let http = response as? HTTPURLResponse else { return .unreachable }
+        if http.statusCode == 401 { return .ended }
+        guard http.statusCode == 200, let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let token = object["token"] as? String, let next = object["refresh"] as? String, Claims(token: token) != nil else { return .unreachable }
+        return .renewed(token, next)
+    }
+
     /// The app became active: a token near its end is renewed now.
     func becameActive() {
-        guard let token, let claims = Claims(token: token), claims.expires.timeIntervalSinceNow < SignIn.renewBefore,
-              claims.expires.timeIntervalSinceNow > 0 else { return }
+        guard let token, let claims = Claims(token: token), claims.expires.timeIntervalSinceNow < SignIn.renewBefore else { return }
+        // A run-out token can still be renewed with the refresh token; without one, only before it runs out.
+        guard refreshToken != nil || claims.expires.timeIntervalSinceNow > 0 else { return }
         renewIfActive()
     }
 
@@ -233,9 +325,21 @@ final class SignIn: NSObject, ASWebAuthenticationPresentationContextProviding {
     private func signOut() {
         renewal?.cancel()
         renewal = nil
+        refreshing?.cancel()
+        refreshing = nil
         session?.cancel()
         session = nil
+        // End the session on the server too, so the refresh token is worth nothing anywhere. Best
+        // effort: signed out here whatever the network says.
+        if let syncURL, let refresh = refreshToken {
+            var request = URLRequest(url: syncURL.appendingPathComponent("api/token/revoke"), timeoutInterval: 20)
+            request.httpMethod = "POST"
+            request.setValue("application/json", forHTTPHeaderField: "content-type")
+            request.httpBody = try? JSONSerialization.data(withJSONObject: ["refresh": refresh])
+            URLSession.shared.dataTask(with: request).resume()
+        }
         token = nil
+        refreshToken = nil
         TokenStore.delete()
         authorize("null")
     }
@@ -306,18 +410,25 @@ enum TokenStore {
         return q.merging(extra) { $1 }
     }
 
-    static func read() -> String? {
+    /// The kept sign-in: the access token, and the refresh token when the server keeps sessions.
+    struct Kept: Codable {
+        var token: String
+        var refresh: String?
+    }
+
+    static func read() -> Kept? {
         guard isAvailable else { return nil }
         var result: CFTypeRef?
         let status = SecItemCopyMatching(query([kSecReturnData as String: true, kSecMatchLimit as String: kSecMatchLimitOne]) as CFDictionary, &result)
         guard status == errSecSuccess, let data = result as? Data else { return nil }
-        return String(data: data, encoding: .utf8)
+        if let kept = try? JSONDecoder().decode(Kept.self, from: data) { return kept }
+        // Kept by an earlier build: the token alone.
+        return String(data: data, encoding: .utf8).map { Kept(token: $0, refresh: nil) }
     }
 
     @discardableResult
-    static func write(_ token: String) -> Bool {
-        guard isAvailable else { return false }
-        let data = Data(token.utf8)
+    static func write(_ kept: Kept) -> Bool {
+        guard isAvailable, let data = try? JSONEncoder().encode(kept) else { return false }
         var status = SecItemUpdate(query() as CFDictionary, [kSecValueData as String: data] as CFDictionary)
         if status == errSecItemNotFound {
             status = SecItemAdd(query([kSecValueData as String: data, kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly]) as CFDictionary, nil)

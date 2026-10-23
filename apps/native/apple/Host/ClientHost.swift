@@ -54,7 +54,9 @@ final class ClientHost: NSObject, AXClientServices {
               let snapshot = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return }
         if let surface = snapshot["surface"] as? [String: Any], let template = surface["stockTemplate"] as? String { stock.show(template) }
         if let current = snapshot["current"] as? String { own.show(current) }
-        signIn.observe(request: (snapshot["account"] as? [String: Any])?["request"] as? [String: Any])
+        let account = snapshot["account"] as? [String: Any]
+        signIn.observe(request: account?["request"] as? [String: Any])
+        signIn.observe(syncState: (account?["status"] as? [String: Any])?["state"] as? String)
         play(snapshot["scenarios"] as? [String: Any])
     }
 

@@ -98,11 +98,19 @@ signing in (email one-time PIN, Google, GitHub), and nothing here stores a passw
   `ASWebAuthenticationSession`. That path is behind Access; after the Access sign-in the API
   redirects to `astryxswift://signed-in#token=...` (the token in the fragment, so it is never in a
   request line or a log) with a token it signed: an Ed25519 JWT whose subject is Access's stable
-  `sub`, one hour, renewed by repeating the flow silently while the Access session lasts. The API
-  redirects only to the app's own address (an allow-list), never to one a request names. The token
-  is kept in the Keychain and given to Zero as `auth`; `readToken(token).sub` is Zero's `userID`.
+  `sub`, valid for one hour, and with it a refresh token. The API redirects only to the app's own
+  address (an allow-list), never to one a request names. Both are kept in the Keychain; the token
+  is given to Zero as `auth`, and `readToken(token).sub` is Zero's `userID`.
+- **Staying signed in:** a sign-in lasts until the person signs out (`server/src/sessions.ts`).
+  Shortly before the token expires, and when the app comes back with it run out, the app trades
+  the refresh token at `/api/token/refresh` for a new token and a new refresh token, with no
+  browser and no prompt. Refresh tokens are random, stored only as a hash, rotated on every use,
+  and kept outside the schema zero-cache replicates. A replaced refresh token still works for two
+  minutes (an answer lost on the way); presented later, it means someone holds a copy, and the
+  session is ended. Signing out ends the session on the server (`/api/token/revoke`).
 - **Web page:** the same flow in a pop-up window (`/native/login?redirect=web`), which hands the
-  token to the page by `postMessage` addressed to the site's own origin (`WEB_ORIGIN`) only.
+  token and refresh token to the page by `postMessage` addressed to the site's own origin
+  (`WEB_ORIGIN`) only; the page keeps them in `localStorage` and renews the same way.
 - **The API** checks the token on `/api/zero/query` and `/api/zero/mutate` (zero-cache forwards it
   as `Authorization: Bearer`), and zero-cache's own API key (`X-Api-Key`, compared in constant
   time). A missing or expired token is a 401, which Zero shows as signed out until the app gives

@@ -321,10 +321,23 @@ async function main() {
 
   const login = await fetch(`${api}/native/login?redirect=${encodeURIComponent("astryxswift://signed-in")}`, { redirect: "manual" });
   const location = login.headers.get("location") ?? "";
-  const minted = await keys.verify(decodeURIComponent(location.split("#token=")[1] ?? ""), Math.floor(Date.now() / 1000));
+  const fragment = new URLSearchParams(location.split("#")[1] ?? "");
+  const minted = await keys.verify(fragment.get("token") ?? "", Math.floor(Date.now() / 1000));
   check(login.status === 302 && location.startsWith("astryxswift://signed-in#token=") && minted?.sub === "dev:dev@example.com", "/native/login redirects to the app's scheme with a token in the fragment, for the signed-in identity");
   const evil = await fetch(`${api}/native/login?redirect=${encodeURIComponent("https://attacker.example/")}`, { redirect: "manual" });
   check(evil.status === 400 && !evil.headers.get("location"), "/native/login refuses any other redirect");
+
+  // Staying signed in: the refresh token from sign-in, against the sessions kept in Postgres.
+  const tokenRoute = (path: string, refresh: unknown) => fetch(`${api}/api/token/${path}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ refresh }) });
+  const firstRefresh = fragment.get("refresh") ?? "";
+  check(/^rt1\./.test(firstRefresh), "/native/login also hands out a refresh token");
+  const traded = await tokenRoute("refresh", firstRefresh);
+  const pair = (await traded.json()) as { token?: string; refresh?: string };
+  check(traded.status === 200 && (await keys.verify(pair.token ?? "", Math.floor(Date.now() / 1000)))?.sub === "dev:dev@example.com" && pair.refresh !== firstRefresh, "a refresh token is traded for a new access token and a new refresh token");
+  const sessionRows = await sql`SELECT count(*)::int AS n FROM astryx_auth.session`;
+  const publicCopy = await sql`SELECT count(*)::int AS n FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'session'`;
+  check(sessionRows[0]!.n >= 1 && publicCopy[0]!.n === 0, "sessions are kept outside the replicated schema");
+  check((await tokenRoute("revoke", pair.refresh)).status === 204 && (await tokenRoute("refresh", pair.refresh)).status === 401, "signing out ends the session: its refresh token is refused");
 
   log("clients");
   const a = device(cache, tokA);

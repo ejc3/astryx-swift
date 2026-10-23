@@ -75,7 +75,7 @@ test("an Access JWT is checked against the team's keys, issuer and audience; a s
 
 // --- Routes ---------------------------------------------------------------------------------------
 
-const app = (over: Partial<AppDeps> = {}) => createApp({ auth: devAuth("dev@example.com"), authKind: "dev", keys, zero: null, webOrigin: null, now: () => NOW, ...over });
+const app = (over: Partial<AppDeps> = {}) => createApp({ auth: devAuth("dev@example.com"), authKind: "dev", keys, zero: null, sessions: null, webOrigin: null, now: () => NOW, ...over });
 const get = (a: ReturnType<typeof app>, path: string, init?: RequestInit) => a.request(`http://api.test${path}`, init);
 
 test("/healthz says whether sync and sign-in are on", async () => {
@@ -110,7 +110,7 @@ test("the web pop-up posts the token to the site's own origin only, and never pu
   const r = await get(app({ webOrigin: "https://app.example.com" }), "/native/login?redirect=web");
   assert.equal(r.status, 200);
   const html = await r.text();
-  assert.match(html, new RegExp(`window\\.opener\\.postMessage\\(\\{"type":"${WEB_MESSAGE}","token":"[^"]+"\\}, "https://app\\.example\\.com"\\)`));
+  assert.match(html, new RegExp(`window\\.opener\\.postMessage\\(\\{"type":"${WEB_MESSAGE}","token":"[^"]+","refresh":null\\}, "https://app\\.example\\.com"\\)`));
   assert.ok(!html.includes('"*"'));
   assert.match(r.headers.get("content-security-policy")!, /default-src 'none'; script-src 'nonce-[0-9a-f]+'/);
   assert.equal(r.headers.get("referrer-policy"), "no-referrer");
@@ -137,4 +137,96 @@ test("the server refuses to start with DEV_IDENTITY when NODE_ENV=production", a
   const r = spawnSync(process.execPath, [new URL("../src/main.ts", import.meta.url).pathname], { env: { PATH: process.env.PATH, PORT: "1", DEV_IDENTITY: "dev@example.com", NODE_ENV: "production" }, encoding: "utf8", timeout: 20_000 });
   assert.equal(r.status, 2);
   assert.match(r.stderr, /DEV_IDENTITY is refused in production/);
+});
+
+// --- Staying signed in (sessions.ts) ------------------------------------------------------------
+
+import { GRACE_SECONDS, memorySessions } from "../src/sessions.ts";
+
+const post = (a: ReturnType<typeof app>, path: string, body: unknown, headers: Record<string, string> = {}) =>
+  get(a, path, { method: "POST", headers: { "content-type": "application/json", ...headers }, body: JSON.stringify(body) });
+
+function signedIn() {
+  let now = NOW;
+  const sessions = memorySessions();
+  const a = createApp({ auth: devAuth("dev@example.com"), authKind: "dev", keys, zero: null, sessions, webOrigin: "https://web.example.com", now: () => now });
+  return { a, sessions, at: (t: number) => void (now = t) };
+}
+
+async function login(a: ReturnType<typeof app>) {
+  const r = await get(a, `/native/login?redirect=${encodeURIComponent(APP_REDIRECTS[0])}`);
+  const fragment = new URLSearchParams(new URL(r.headers.get("location")!).hash.slice(1));
+  return { token: fragment.get("token")!, refresh: fragment.get("refresh")! };
+}
+
+test("sign-in hands out a refresh token with the first access token, in the fragment", async () => {
+  const { a } = signedIn();
+  const { token, refresh } = await login(a);
+  assert.ok(await keys.verify(token, NOW));
+  assert.match(refresh, /^rt1\.[A-Za-z0-9_-]{22}\.[A-Za-z0-9_-]{43}$/);
+});
+
+test("a refresh token is traded for a new pair, long after the first token expired, again and again", async () => {
+  const { a, at } = signedIn();
+  let { refresh } = await login(a);
+  for (const days of [1, 30, 400]) {
+    const t = NOW + days * 86_400;
+    at(t);
+    const r = await post(a, "/api/token/refresh", { refresh });
+    assert.equal(r.status, 200);
+    const body = (await r.json()) as { token: string; refresh: string };
+    assert.equal((await keys.verify(body.token, t))?.email, "dev@example.com");
+    assert.notEqual(body.refresh, refresh);
+    refresh = body.refresh;
+  }
+});
+
+test("a replaced refresh token works only within the grace; after it, the session ends", async () => {
+  const { a, at } = signedIn();
+  const first = (await login(a)).refresh;
+  const second = ((await (await post(a, "/api/token/refresh", { refresh: first })).json()) as { refresh: string }).refresh;
+  // The answer was lost: the client tries the old one again, within the grace.
+  at(NOW + GRACE_SECONDS - 1);
+  const retried = await post(a, "/api/token/refresh", { refresh: first });
+  assert.equal(retried.status, 200);
+  const third = ((await retried.json()) as { refresh: string }).refresh;
+  // Long after: someone else holds a copy of an old token. The whole session ends.
+  at(NOW + 10 * GRACE_SECONDS);
+  assert.equal((await post(a, "/api/token/refresh", { refresh: second })).status, 401);
+  assert.equal((await post(a, "/api/token/refresh", { refresh: third })).status, 401, "the current one is refused too");
+});
+
+test("signing out ends the session; garbage and unknown tokens are refused", async () => {
+  const { a } = signedIn();
+  const { refresh } = await login(a);
+  assert.equal((await post(a, "/api/token/revoke", { refresh })).status, 204);
+  assert.equal((await post(a, "/api/token/refresh", { refresh })).status, 401);
+  for (const bad of ["", "rt1.x.y", 7, null, `rt1.${"A".repeat(22)}.${"B".repeat(43)}`]) {
+    assert.equal((await post(a, "/api/token/refresh", { refresh: bad })).status, 401, String(bad));
+  }
+  assert.equal((await post(a, "/api/token/revoke", { refresh: "nonsense" })).status, 204, "revoking is idempotent and says nothing");
+});
+
+test("a wrong secret for a real session refuses without ending it", async () => {
+  const { a } = signedIn();
+  const { refresh } = await login(a);
+  const [, id] = refresh.split(".");
+  assert.equal((await post(a, "/api/token/refresh", { refresh: `rt1.${id}.${"C".repeat(43)}` })).status, 401);
+  assert.equal((await post(a, "/api/token/refresh", { refresh })).status, 200);
+});
+
+test("only the web page's own origin may read the token routes' answers", async () => {
+  const { a } = signedIn();
+  const { refresh } = await login(a);
+  const ok = await post(a, "/api/token/refresh", { refresh }, { origin: "https://web.example.com" });
+  assert.equal(ok.headers.get("access-control-allow-origin"), "https://web.example.com");
+  const other = await post(a, "/api/token/refresh", { refresh: "x" }, { origin: "https://evil.example" });
+  assert.equal(other.headers.get("access-control-allow-origin"), null);
+});
+
+test("without sessions the token routes are off, and sign-in gives no refresh token", async () => {
+  const a = app();
+  assert.equal((await post(a, "/api/token/refresh", { refresh: "x" })).status, 503);
+  const r = await get(a, `/native/login?redirect=${encodeURIComponent(APP_REDIRECTS[0])}`);
+  assert.equal(new URLSearchParams(new URL(r.headers.get("location")!).hash.slice(1)).get("refresh"), null);
 });
