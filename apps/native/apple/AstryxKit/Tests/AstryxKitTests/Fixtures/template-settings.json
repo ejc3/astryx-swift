@@ -268,9 +268,7 @@
      "groupColumnMin": 320
     },
     "inert": [
-     "save.basic",
-     "save.password",
-     "save.advanced"
+     "save.password"
     ],
     "words": {
      "optional": "Optional",

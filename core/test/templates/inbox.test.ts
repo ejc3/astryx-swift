@@ -200,8 +200,8 @@ test("a reply starts clean; typed content makes the draft dirty", () => {
   assert.equal(view(run(fresh, set("subject", "Hi"))).compose.isDirty, true);
 });
 
-test("the controls with no action behind them are listed as inert", () => {
-  const v = view(start());
+test("the controls with no action behind them are listed as inert (stock: without saving on)", () => {
+  const v = inbox.view(start(), NOW, undefined, false);
   for (const id of ["refresh", "archive", "move", "delete", "send", "attach", "link", "image", "emoji"]) assert.ok(v.inert.includes(id), id);
   assert.ok(!v.inert.includes("reply"));
   assert.ok(!v.inert.includes("compose"));

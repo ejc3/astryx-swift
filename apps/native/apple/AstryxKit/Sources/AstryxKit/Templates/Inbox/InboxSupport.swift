@@ -150,6 +150,41 @@ struct InboxClippedChips: View {
 
 /// A square ghost icon control: 30 points on the Mac, 44 on iOS (the web's small icon button is 28).
 /// Disable it with `.disabled` where the core has no action behind it.
+/// An icon button that opens a menu of folders (Move to folder), drawn as `InboxIconButton` is.
+/// Each target's `id` is the action it presses.
+struct InboxIconMenu: View {
+    let symbol: String
+    let label: String
+    var help: String? = nil
+    let targets: [InboxModel.MoveTarget]
+    @Environment(\.ax) private var ax
+    @Environment(\.axSend) private var send
+    @State private var hovering = false
+
+    var body: some View {
+        let side = max(30 * min(ax.scale, 1.4), InboxTarget.side)
+        Menu {
+            ForEach(targets) { target in
+                Button(target.label) { send(.press(id: target.id)) }
+            }
+        } label: {
+            Image(systemName: symbol)
+                .font(.system(size: min(ax.fontSize("font-size-base", 14), 24), weight: .regular))
+                .foregroundStyle(ax.iconSecondary)
+                .frame(width: side, height: side)
+                .background(RoundedRectangle(cornerRadius: ax.radiusElement, style: .continuous).fill(hovering ? ax.overlayHover : .clear))
+                .contentShape(Rectangle())
+        }
+        .menuStyle(.button)
+        .menuIndicator(.hidden)
+        .buttonStyle(.plain)
+        .fixedSize()
+        .onHover { hovering = $0 }
+        .help(help ?? label)
+        .accessibilityLabel(label)
+    }
+}
+
 struct InboxIconButton: View {
     let symbol: String
     let label: String

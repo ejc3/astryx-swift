@@ -177,6 +177,13 @@
 
 /* ---- theme swatches in the nav ---- */
 .an-swatch-group { display: flex; flex-direction: column; gap: var(--spacing-2); padding: var(--spacing-3); }
+/* The account at the foot of the nav (Account.tsx). */
+.an-account { display: flex; flex-direction: column; align-items: flex-start; gap: var(--spacing-2); padding: var(--spacing-3); border-bottom: 1px solid var(--color-border); }
+.an-account-row { display: flex; align-items: center; gap: var(--spacing-2); width: 100%; min-width: 0; text-align: start; }
+.an-account-text { display: flex; flex-direction: column; min-width: 0; }
+.an-account-button { all: unset; box-sizing: border-box; display: flex; align-items: center; gap: var(--spacing-2); width: 100%; padding: var(--spacing-1) var(--spacing-2); border-radius: var(--radius-element); cursor: pointer; }
+.an-account-button:hover { background: var(--color-background-muted); }
+.an-account-button:focus-visible { outline: var(--focus-outline-width) var(--focus-outline-style) var(--focus-outline-color); outline-offset: 1px; }
 .an-swatches { display: flex; gap: var(--spacing-2); padding: 2px; }
 .an-swatch {
   all: unset;

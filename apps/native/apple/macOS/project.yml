@@ -14,6 +14,10 @@ settings:
     CODE_SIGN_STYLE: Manual
     DEVELOPMENT_TEAM: ""
     ENABLE_USER_SCRIPT_SANDBOXING: NO
+    # Where sync is (docs/SYNC.md): https://<sync host>, per configuration or on the xcodebuild
+    # command line (ASTRYX_SYNC_URL=...). Empty, sign-in is off and the app keeps everything on
+    # the device. A Debug build also takes -AXSyncURL (and http for a local stack on this machine).
+    ASTRYX_SYNC_URL: ""
 packages:
   AstryxKit:
     path: ../AstryxKit
@@ -43,6 +47,12 @@ targets:
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         ITSAppUsesNonExemptEncryption: false
+        # Sign-in comes back to astryxswift://signed-in, inside ASWebAuthenticationSession only
+        # (Host/SignIn.swift); the app ignores the address opened from anywhere else.
+        CFBundleURLTypes:
+          - CFBundleURLName: io.github.ejc3.astryxswift.sign-in
+            CFBundleURLSchemes: [astryxswift]
+        AstryxSyncURL: $(ASTRYX_SYNC_URL)
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: io.github.ejc3.astryxswift

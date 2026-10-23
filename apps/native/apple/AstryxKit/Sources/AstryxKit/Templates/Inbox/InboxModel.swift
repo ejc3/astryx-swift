@@ -21,10 +21,15 @@ struct InboxModel: Decodable, Equatable {
     var hasSelectedRows: Bool
     var selectionLabel: [String]
     var bulkActions: [BulkAction]
+    /// The folders the ticked rows can move to; each `id` is the action to press (saving on).
+    var bulkMoveTargets: [MoveTarget]
+    /// The question Delete asks before it deletes, while it is open (saving on).
+    var confirm: Confirm?
     /// What the person opened or closed: content, the same in every drawing.
     var choice: Choice
     var mode: Mode
-    /// Ids of the controls the core has no action for ("refresh", "archive", "send"...): drawn disabled.
+    /// Ids of the controls the core has no action for ("refresh", "attach"...). Saving on drops
+    /// "archive", "move", "delete" and "send" from the list: they work then.
     var inert: [String]
     /// The thread of every visible row; this drawing opens one of them by its own rule.
     var panes: [Pane]
@@ -134,6 +139,22 @@ struct InboxModel: Decodable, Equatable {
         var label: String
     }
 
+    /// A "Move to folder" entry: `id` is the action to press.
+    struct MoveTarget: Decodable, Equatable, Identifiable {
+        var label: String
+        var id: String
+    }
+
+    /// Delete's question: a destructive button and a cancel, each with the action it presses.
+    struct Confirm: Decodable, Equatable {
+        var title: String
+        var description: String
+        var actionLabel: String
+        var cancelLabel: String
+        var actionId: String
+        var cancelId: String
+    }
+
     struct Row: Decodable, Equatable, Identifiable {
         var id: String
         var sender: String
@@ -150,6 +171,8 @@ struct InboxModel: Decodable, Equatable {
         /// Hover and swipe actions of a wide row, and of a stacked row.
         var actionsWide: [RowAction]
         var actionsStacked: [RowAction]
+        /// The folders this thread can move to (all but its own).
+        var moveTargets: [MoveTarget]
     }
 
     struct Attachment: Decodable, Equatable, Identifiable {
@@ -182,6 +205,7 @@ struct InboxModel: Decodable, Equatable {
         /// Expanded message ids.
         var openMessages: [String]
         var actions: [RowAction]
+        var moveTargets: [MoveTarget]
     }
 
     struct Mode: Decodable, Equatable {
@@ -244,6 +268,8 @@ struct InboxModel: Decodable, Equatable {
         var suggestions: Suggestions
         /// Whether the draft holds typed content that cancelling would lose.
         var isDirty: Bool
+        /// Whether Send has something to do: someone to send to and a message (saving on).
+        var canSend: Bool
     }
 
     /// Whether the core has no action behind this control, so it is drawn disabled.

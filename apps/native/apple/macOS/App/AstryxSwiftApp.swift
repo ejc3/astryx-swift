@@ -23,6 +23,9 @@ struct AstryxSwiftApp: App {
         Window(Self.windowName, id: "main") {
             RootView(model: Self.host.model, web: AnyView(WebPane(bridge: Self.host.web)), webOwn: AnyView(OwnCorePane(bridge: Self.host.own)), stock: AnyView(StockPane(bridge: Self.host.stock)))
                 .frame(minWidth: 720, minHeight: 520)
+                // A sign-in comes back inside its ASWebAuthenticationSession (Host/SignIn.swift). The
+                // same address opened from anywhere else carries nothing the app takes.
+                .onOpenURL { _ in }
         }
         .defaultSize(width: 1500, height: 920)
         .windowResizability(.contentMinSize)

@@ -62,6 +62,20 @@ struct KanbanScreen: View {
         .frame(maxWidth: .infinity, alignment: .topLeading)
         // A card landing somewhere (dropped, or moved from its menu) is felt as a tap.
         .sensoryFeedback(.impact(weight: .medium), trigger: placement)
+        // The new task: an alert with a title field, the platform's way to ask for one line.
+        .alert(model.words.newTask, isPresented: Binding(get: { model.adding != nil }, set: { if !$0 { send(.press(id: kanbanAction("addTaskCancel"))) } })) {
+            TextField(model.words.taskTitle, text: Binding(get: { model.adding?.title ?? "" }, set: { send(.set(id: kanbanAction("newTitle"), value: .string($0))) }), prompt: Text(model.words.taskTitlePlaceholder))
+            Button(model.words.cancel, role: .cancel) { send(.press(id: kanbanAction("addTaskCancel"))) }
+            Button(model.words.create) { send(.press(id: kanbanAction("addTaskCreate"))) }
+                .disabled(!(model.adding?.canCreate ?? false))
+                .keyboardShortcut(.defaultAction)
+        }
+    }
+
+    /// Opens the new-task sheet; stock's Add task does nothing, and neither does this when the core says it is inert.
+    private func addTask() {
+        guard !model.isInert("addTask") else { return }
+        send(.press(id: kanbanAction("addTask")))
     }
 
     /// Which card sits in which column, in order: it changes when a card moves, however it moved.
@@ -90,8 +104,7 @@ struct KanbanScreen: View {
         }
         // A strong vertical rule between the sprint selector and the tools.
         let rule = Rectangle().fill(ax.borderStrong).frame(width: 1, height: 20 * min(ax.scale, 1.4)).accessibilityHidden(true)
-        let add = Button {
-        } label: {
+        let add = Button(action: addTask) {
             Label(model.words.addTask, systemImage: "plus")
                 .lineLimit(1)
                 .fixedSize()
@@ -100,8 +113,7 @@ struct KanbanScreen: View {
         
         // Where the words do not fit beside the sprint and the tools: the plus alone, still
         // named for VoiceOver and a tooltip by the core's word.
-        let addIcon = Button {
-        } label: {
+        let addIcon = Button(action: addTask) {
             Image(systemName: "plus")
                 .font(.system(size: ax.fontSize("font-size-lg", 17) * 0.95, weight: .semibold))
                 .foregroundStyle(ax.onAccent)
@@ -120,8 +132,7 @@ struct KanbanScreen: View {
             heading
             sprintPicker
             tools
-            Button {
-            } label: {
+            Button(action: addTask) {
                 Label(model.words.addTask, systemImage: "plus")
             }
             .buttonStyle(AXButtonStyle(variant: .primary, ax: ax, fills: true))

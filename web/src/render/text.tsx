@@ -59,7 +59,7 @@ export function TokenNode({ node }: { node: Of<"token"> }) {
   );
 }
 
-const DOT: Record<Tone, StatusDotProps["variant"]> = { neutral: "neutral", accent: "accent", success: "success", warning: "warning", danger: "error", info: "accent" };
+export const DOT: Record<Tone, StatusDotProps["variant"]> = { neutral: "neutral", accent: "accent", success: "success", warning: "warning", danger: "error", info: "accent" };
 
 export function StatusDotNode({ node }: { node: Of<"statusDot"> }) {
   return (

@@ -47,6 +47,41 @@ public struct ToastInfo: Decodable, Sendable {
     public let dismissLabel: String?
 }
 
+/// Signing in to sync (core/src/account.ts): who is signed in and the sync status, in the
+/// core's words. The host does the signing in when `request` changes; the views only draw this
+/// and send its buttons' ids.
+public struct AccountInfo: Decodable, Sendable, Equatable {
+    public struct Status: Decodable, Sendable, Equatable {
+        /// "connecting", "synced", "pending", "offline" or "signed-out".
+        public let state: String
+        public let text: String
+        public let tone: Tone
+        public let icon: Icon
+    }
+    public struct Request: Decodable, Sendable, Equatable {
+        /// "signIn" or "signOut".
+        public let kind: String
+        public let seq: Int
+    }
+    /// False: nothing of the account is drawn (sign-in is not configured).
+    public let available: Bool
+    /// "signed-out", "signing-in" or "signed-in".
+    public let state: String
+    public let label: String
+    public let title: String
+    public let detail: String
+    public let status: Status?
+    public let signIn: ButtonNode?
+    public let signOut: ButtonNode?
+    public let accessibilityLabel: String
+    public let request: Request?
+
+    public static func == (a: AccountInfo, b: AccountInfo) -> Bool {
+        a.available == b.available && a.state == b.state && a.title == b.title && a.detail == b.detail && a.status == b.status
+            && a.signIn?.id == b.signIn?.id && a.signIn?.label == b.signIn?.label && a.signOut?.id == b.signOut?.id && a.request == b.request
+    }
+}
+
 public struct DialogInfo: Decodable, Sendable {
     public let title: String
     public let text: String
@@ -90,9 +125,10 @@ public struct AppSnapshot: Decodable, Sendable {
     public let theme: ThemeChoice
     public let surface: SurfaceChoice?
     public let scenarios: ScenariosSnapshot?
+    public let account: AccountInfo?
 
     private enum CodingKeys: String, CodingKey {
-        case protocolVersion = "protocol", appName, nav, current, screen, toast, dialog, theme, surface, scenarios
+        case protocolVersion = "protocol", appName, nav, current, screen, toast, dialog, theme, surface, scenarios, account
     }
 }
 

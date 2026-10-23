@@ -54,6 +54,25 @@ final class TemplatesCheckoutOrderSettingsTests: XCTestCase {
                 replaced[key] = rows
             }
         }
+        // Saved data (docs/SYNC.md): the order's fulfilment, likes, replies and notes editor.
+        if template == "order" {
+            for key in ["statusVariant", "notesEditor"] where replaced[key] == nil { replaced[key] = current[key] }
+            if var rows = replaced["products"] as? [[String: Any]] {
+                for i in rows.indices {
+                    if rows[i]["id"] == nil { rows[i]["id"] = "p\(i)" }
+                    if rows[i]["fulfilled"] == nil { rows[i]["fulfilled"] = false }
+                }
+                replaced["products"] = rows
+            }
+            if var rows = replaced["activity"] as? [[String: Any]] {
+                for i in rows.indices {
+                    if rows[i]["id"] == nil { rows[i]["id"] = "a\(i)" }
+                    if rows[i]["liked"] == nil { rows[i]["liked"] = false }
+                    if rows[i]["replies"] == nil { rows[i]["replies"] = [Any]() }
+                }
+                replaced["activity"] = rows
+            }
+        }
         if var fraud = replaced["fraud"] as? [String: Any], fraud["riskValue"] == nil {
             fraud["riskValue"] = "15 percent"; replaced["fraud"] = fraud
         }
@@ -109,6 +128,19 @@ final class TemplatesCheckoutOrderSettingsTests: XCTestCase {
         XCTAssertEqual(order.tabs.filter(\.more).map(\.value), ["customer", "analysis"])
         XCTAssertTrue(order.isInert("refund"))
         XCTAssertFalse(order.isInert("nonsense"))
+        // With saving on, Fulfill item, Like and Reply work (docs/SYNC.md); what has no backend stays inert.
+        XCTAssertEqual(order.inert, ["allOrders", "restock", "edit", "seeAll", "label", "refund", "invoice", "filters"])
+        XCTAssertFalse(order.isInert("fulfill") || order.isInert("like") || order.isInert("reply"))
+        XCTAssertEqual([order.status, order.statusVariant], ["Unfulfilled", "warning"])
+        XCTAssertFalse(order.statusIsDone || order.allFulfilled)
+        XCTAssertEqual(order.products.map(\.id).first, "solstice-mug")
+        XCTAssertTrue(order.products.allSatisfy { !$0.fulfilled })
+        XCTAssertEqual(order.activity.map(\.id), ["a1", "a2", "a3", "a4"])
+        XCTAssertTrue(order.activity.allSatisfy { !$0.liked && $0.replies.isEmpty && $0.composer == nil })
+        XCTAssertEqual(order.notesEditor?.canSave, false)
+        XCTAssertEqual(order.notesEditor?.value, order.notes)
+        XCTAssertEqual([order.words.fulfilled, order.words.liked, order.words.send, order.words.cancel, order.words.you], ["Fulfilled", "Liked", "Send", "Cancel", "You"])
+        XCTAssertNil(checkout.refillLabel)
         XCTAssertEqual(order.words.panelTitle, "Order details")
         XCTAssertEqual(order.rules.viewportNarrowAtMost, 1024)
         XCTAssertEqual(order.rules.paneNarrowBelow, 760)
@@ -122,7 +154,10 @@ final class TemplatesCheckoutOrderSettingsTests: XCTestCase {
         XCTAssertEqual(settings.searchItems.count, 8)
         XCTAssertNil(settings.search)
         XCTAssertEqual(settings.username, "nicol43")
-        XCTAssertEqual(settings.inert, ["save.basic", "save.password", "save.advanced"])
+        // With saving on, the basic and advanced Saves work (Apple draws none); only the password's, which has no backend, is inert.
+        XCTAssertEqual(settings.inert, ["save.password"])
+        XCTAssertTrue(settings.isInert("save.password"))
+        XCTAssertFalse(settings.isInert("save.basic"))
         XCTAssertEqual(settings.words.password.currentPlaceholder, "Current password")
         XCTAssertEqual(settings.words.common.optional, "Optional")
         XCTAssertEqual(settings.words.title, "Settings")
@@ -170,6 +205,13 @@ final class TemplatesCheckoutOrderSettingsTests: XCTestCase {
             .decode(SettingsModel.self)
         XCTAssertEqual(search.search?.label, "Change password")
         XCTAssertTrue(search.twoFactor)
+        // Saved values show in the fields; only the password's Save is inert with saving on, all three in stock mode.
+        let saved = try variant("settings-saved").decode(SettingsModel.self)
+        XCTAssertEqual([saved.username, saved.firstName, saved.lastName, saved.email], ["ada", "Ada", "Lovelace", "ada@lovelace.example"])
+        XCTAssertTrue(saved.dataExport)
+        XCTAssertEqual(saved.inert, ["save.password"])
+        let stock = try variant("settings-stock").decode(SettingsModel.self)
+        XCTAssertEqual(stock.inert, ["save.basic", "save.password", "save.advanced"])
     }
 
     /// The action ids the drawings send are the ones each model's `reduce` accepts (listed in the
@@ -254,6 +296,80 @@ final class TemplatesCheckoutOrderSettingsTests: XCTestCase {
             .axTheme(theme, scheme: scheme, typeSize: .large)
             .environment(\.colorScheme, scheme)
             .environment(\.axStatic, true)
+    }
+
+    /// The order fixture's view with saved work laid over it, as the core draws it after Fulfill item, a like, a
+    /// reply and a draft in the notes box (core/test/templates/order.test.ts has the states themselves).
+    private func savedOrderView() throws -> String {
+        let fixture = try XCTUnwrap(JSONSerialization.jsonObject(with: Library.data("template-order")) as? [String: Any])
+        var view = try XCTUnwrap(((fixture["screen"] as? [String: Any])?["body"] as? [String: Any])?["view"] as? [String: Any])
+        view["status"] = "Partially fulfilled"
+        var products = try XCTUnwrap(view["products"] as? [[String: Any]])
+        products[0]["fulfilled"] = true
+        view["products"] = products
+        var activity = try XCTUnwrap(view["activity"] as? [[String: Any]])
+        activity[1]["liked"] = true
+        activity[1]["reactions"] = 4
+        activity[1]["reactionsLabel"] = "4 reactions"
+        activity[1]["replies"] = [["id": "dev-1", "user": "You", "text": "Wrapped and ready.", "time": "5m ago"]]
+        activity[3]["composer"] = ["value": "On its way", "canSend": true, "maxLength": 500]
+        view["activity"] = activity
+        view["notesEditor"] = ["value": "Wrap in kraft paper.", "canSave": true, "maxLength": 2000]
+        view["notes"] = "Customer is a repeat buyer."
+        return String(decoding: try JSONSerialization.data(withJSONObject: view), as: UTF8.self)
+    }
+
+    func testSavedOrderStateDecodes() throws {
+        let order = try templateView(app("order", view: savedOrderView())).decode(OrderModel.self)
+        XCTAssertEqual(order.status, "Partially fulfilled")
+        XCTAssertFalse(order.statusIsDone)
+        XCTAssertFalse(order.allFulfilled)
+        XCTAssertEqual(order.products.map(\.fulfilled), [true, false, false, false, false])
+        XCTAssertEqual(order.activity[1].liked, true)
+        XCTAssertEqual(order.activity[1].replies.map(\.text), ["Wrapped and ready."])
+        XCTAssertEqual(order.activity[1].replies.first?.user, order.words.you)
+        XCTAssertEqual(order.activity[3].composer?.canSend, true)
+        XCTAssertEqual(order.notesEditor?.canSave, true)
+        XCTAssertEqual(order.notesEditor?.maxLength, 2000)
+    }
+
+    /// After an order the cart is empty; with saving on it has a Refill cart button (docs/SYNC.md).
+    private func emptiedCartView() throws -> String {
+        let fixture = try XCTUnwrap(JSONSerialization.jsonObject(with: Library.data("template-checkout")) as? [String: Any])
+        var view = try XCTUnwrap(((fixture["screen"] as? [String: Any])?["body"] as? [String: Any])?["view"] as? [String: Any])
+        view["items"] = [Any]()
+        view["refillLabel"] = "Refill cart"
+        return String(decoding: try JSONSerialization.data(withJSONObject: view), as: UTF8.self)
+    }
+
+    func testEmptiedCartDecodesWithItsRefillButton() throws {
+        let checkout = try templateView(app("checkout", view: emptiedCartView())).decode(CheckoutModel.self)
+        XCTAssertEqual(checkout.refillLabel, "Refill cart")
+        XCTAssertTrue(checkout.items.isEmpty)
+    }
+
+    func testRendersEmptiedCart() throws {
+        guard let directory else { throw XCTSkip("AX_SHOTS is not set") }
+        let only = ProcessInfo.processInfo.environment["AX_ONLY"] ?? ""
+        guard only.isEmpty || "checkout-empty-cart".contains(only) || only == "checkout" else { return }
+        let astryx = try Library.theme("theme-astryx")
+        let snapshot = try app("checkout", view: emptiedCartView())
+        for (label, scheme) in [("light", ColorScheme.light), ("dark", .dark)] {
+            try png(phone(snapshot, astryx, scheme), width: 393, height: nil).write(to: directory.appendingPathComponent("checkout-empty-cart.astryx.phone.\(label).png"))
+        }
+    }
+
+    /// The saved states drawn: the order with a fulfilled item, a like, a reply, an open reply box and notes being edited.
+    func testRendersSavedOrderState() throws {
+        guard let directory else { throw XCTSkip("AX_SHOTS is not set") }
+        let only = ProcessInfo.processInfo.environment["AX_ONLY"] ?? ""
+        guard only.isEmpty || "order-saved".contains(only) || only == "order" else { return }
+        let astryx = try Library.theme("theme-astryx")
+        let snapshot = try app("order", view: savedOrderView())
+        for (label, scheme) in [("light", ColorScheme.light), ("dark", .dark)] {
+            try png(phone(snapshot, astryx, scheme), width: 393, height: nil).write(to: directory.appendingPathComponent("order-saved.astryx.phone.\(label).png"))
+            try png(macTall(snapshot, astryx, scheme), width: 1039, height: nil).write(to: directory.appendingPathComponent("order-saved.astryx.mactall.\(label).png"))
+        }
     }
 
     func testRendersEveryTemplate() throws {
@@ -357,5 +473,13 @@ private let variantViews: [String: String] = [
 """#,
     "settings-search": #"""
 {"navItems":[{"label":"Profile","isSelected":false},{"label":"Account","isSelected":true},{"label":"Members","isSelected":false},{"label":"Billing","isSelected":false},{"label":"Invoices","isSelected":false},{"label":"API","isSelected":false}],"searchItems":[{"id":"1","label":"Username"},{"id":"2","label":"First name"},{"id":"3","label":"Last name"},{"id":"4","label":"Email address"},{"id":"5","label":"Change password"},{"id":"6","label":"Data Export Access"},{"id":"7","label":"Allow Admin to Add Members"},{"id":"8","label":"Two-Factor Authentication"}],"search":{"id":"5","label":"Change password"},"username":"nicol43","firstName":"Stephanie","lastName":"Nicol","email":"stephanie_nicol@mail.com","currentPw":"password123","newPw":"password123","confirmPw":"password123","dataExport":false,"adminMembers":false,"twoFactor":true}
+"""#,
+    /// With saving on, as the core draws it after Save (docs/SYNC.md): the saved values in the fields, and only the password's Save drawn.
+    "settings-saved": #"""
+{"navItems":[{"label":"Profile","isSelected":true},{"label":"Account","isSelected":false},{"label":"Members","isSelected":false},{"label":"Billing","isSelected":false},{"label":"Invoices","isSelected":false},{"label":"API","isSelected":false}],"searchItems":[{"id":"1","label":"Username"},{"id":"2","label":"First name"},{"id":"3","label":"Last name"},{"id":"4","label":"Email address"},{"id":"5","label":"Change password"},{"id":"6","label":"Data Export Access"},{"id":"7","label":"Allow Admin to Add Members"},{"id":"8","label":"Two-Factor Authentication"}],"search":null,"username":"ada","firstName":"Ada","lastName":"Lovelace","email":"ada@lovelace.example","currentPw":"password123","newPw":"password123","confirmPw":"password123","dataExport":true,"adminMembers":false,"twoFactor":true}
+"""#,
+    /// Stock Astryx's behaviour only (no saving): all three Saves drawn, enabled, doing nothing.
+    "settings-stock": #"""
+{"navItems":[{"label":"Profile","isSelected":true},{"label":"Account","isSelected":false},{"label":"Members","isSelected":false},{"label":"Billing","isSelected":false},{"label":"Invoices","isSelected":false},{"label":"API","isSelected":false}],"searchItems":[{"id":"1","label":"Username"},{"id":"2","label":"First name"},{"id":"3","label":"Last name"},{"id":"4","label":"Email address"},{"id":"5","label":"Change password"},{"id":"6","label":"Data Export Access"},{"id":"7","label":"Allow Admin to Add Members"},{"id":"8","label":"Two-Factor Authentication"}],"search":null,"username":"nicol43","firstName":"Stephanie","lastName":"Nicol","email":"stephanie_nicol@mail.com","currentPw":"password123","newPw":"password123","confirmPw":"password123","dataExport":false,"adminMembers":false,"twoFactor":false,"inert":["save.basic","save.password","save.advanced"]}
 """#,
 ]

@@ -125,7 +125,8 @@ private struct SurfaceCommandItems: View {
     }
 }
 
-/// The Mac's Settings window (⌘,): the theme, chosen from the core's list.
+/// The Mac's Settings window (⌘,): the theme, chosen from the core's list, and the account when
+/// sign-in is configured.
 public struct AstryxSettingsView: View {
     @ObservedObject private var model: AppModel
 
@@ -142,6 +143,9 @@ public struct AstryxSettingsView: View {
                 )) {
                     ForEach(theme.options, id: \.value) { Text($0.label).tag($0.value) }
                 }
+            }
+            if let account = model.app?.account, account.available {
+                AccountSettingsSection(account: account) { model.perform($0) }
             }
         }
         .formStyle(.grouped)

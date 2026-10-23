@@ -167,7 +167,13 @@
      "assignToMe": "Assign to me",
      "status": "status",
      "done": "Done",
-     "movedTo": "Moved to"
+     "movedTo": "Moved to",
+     "newTask": "New task",
+     "taskTitle": "Title",
+     "taskTitlePlaceholder": "What needs doing?",
+     "create": "Create",
+     "cancel": "Cancel",
+     "noDueDate": "No due date"
     },
     "rules": {
      "columnWidth": 300,
@@ -177,7 +183,6 @@
      "sort",
      "filter",
      "search",
-     "addTask",
      "open",
      "assignToMe"
     ],
@@ -198,6 +203,7 @@
       "label": "Sprint 001"
      }
     ],
+    "adding": null,
     "columns": [
      {
       "id": "todo",

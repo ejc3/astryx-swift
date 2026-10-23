@@ -1,0 +1,11 @@
+# The build context is the repository root; send only what the image copies.
+*
+!package.json
+!package-lock.json
+!core/package.json
+!core/src
+!sync/package.json
+!sync/src
+!server/package.json
+!server/src
+!web/package.json

@@ -1,4 +1,4 @@
-// The refactor's test: each refactored template (index.html?screen=t.<id>&bare=1, on the
+// The refactor's test: each refactored template (index.html?screen=t.<id>&bare=1&stock=1, on the
 // core) against its stock copy (stock.html?template=<astryx name>, on its own React state),
 // screenshot for screenshot, in Chromium and WebKit, light and dark, desktop and phone.
 // Every pixel must match. Diffs go to web/parity/ (git-ignored).
@@ -122,7 +122,7 @@ for (const [engine, type] of ENGINES) {
     const steps = await stepsFor(t.id);
     for (const size of SIZES) for (const scheme of SCHEMES) {
       const stockShots = await shots(browser, `${base}stock.html?template=${encodeURIComponent(t.astryx)}`, size, scheme, steps, problems);
-      const ourShots = await shots(browser, `${base}?screen=t.${t.id}&bare=1`, size, scheme, steps, problems);
+      const ourShots = await shots(browser, `${base}?screen=t.${t.id}&bare=1&stock=1`, size, scheme, steps, problems);
       for (let i = 0; i < Math.max(stockShots.length, ourShots.length); i++) {
         const stock = stockShots[i]?.png, ours = ourShots[i]?.png;
         const name = `${t.id}-${engine}-${size.name}-${scheme}-${i}-${(stockShots[i] ?? ourShots[i]).name.replace(/[^a-z0-9]+/gi, "_")}`;

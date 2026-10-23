@@ -13,6 +13,10 @@
  *            put the card in the column at that index, counted among the cards that
  *            remain in the column once the card itself is taken out
  */
+import { ago, civilOf, minuteOf, type Now } from "../../format.ts";
+import { overlay, type Doc, type Row } from "../../sync/doc.ts";
+import { between, isOrderKey, spread } from "../../sync/order.ts";
+import { KANBAN_PRIORITIES, MAX_TITLE } from "../../sync/areas/kanban.ts";
 import type { TemplateModule } from "../types.ts";
 
 export type ColumnId = "todo" | "in-progress" | "in-review" | "done";
@@ -29,9 +33,14 @@ type WorkItem = {
   priority: Priority;
   title: string;
   description: string;
+  /** The sample's "2h ago"; a card the person changed has `editedAt` instead. */
   lastEdited: string;
+  /** The sample's "Jul 8"; a card the person made has none. */
   dueDate: string;
 };
+
+/** A card as drawn: a sample card or a saved one, with its place in its column. */
+type Card = WorkItem & { order: string; editedAt?: number };
 
 type ColumnMeta = {
   id: ColumnId;
@@ -167,11 +176,60 @@ const INITIAL_ITEMS: readonly WorkItem[] = [
   },
 ];
 
+/**
+ * The board's view state. The cards are saved data (docs/SYNC.md): the sample cards with the
+ * person's saved rows (`kanban_card`) laid over them, ordered in each column by `order`.
+ */
 export type KanbanState = {
-  /** Every card, in board order: a column lists its cards in this order. */
-  items: WorkItem[];
   sprint: string;
+  /** The new-task sheet, while it is open: the title being typed and the column it goes in. */
+  adding: { title: string; column: ColumnId } | null;
 };
+
+/** The sample cards' order keys: evenly spread, in the stock template's board order. */
+const SAMPLE: readonly Card[] = (() => {
+  const keys = spread(INITIAL_ITEMS.length);
+  return INITIAL_ITEMS.map((it, i) => ({ ...it, order: keys[i]! }));
+})();
+
+const isPriority = (v: unknown): v is Priority => typeof v === "string" && (KANBAN_PRIORITIES as readonly string[]).includes(v);
+
+/** A saved row for a card the person made; a row missing what a card needs is not drawn. */
+function newCard(row: Row): Card | null {
+  const { id, column, order, title, ref, priority, editedAt } = row;
+  if (typeof column !== "string" || !isColumn(column) || typeof order !== "string" || !isOrderKey(order) || typeof title !== "string" || typeof ref !== "string" || !isPriority(priority)) return null;
+  return { id, column, order, title, ref, priority, description: typeof row.description === "string" ? row.description : "", lastEdited: "", dueDate: "", ...(typeof editedAt === "number" ? { editedAt } : {}) };
+}
+
+/** Every card on the board, each column's in order (ties by id, so every device draws the same). */
+function cards(doc: Doc | undefined): Card[] {
+  const all = overlay(SAMPLE, doc?.kanban_card ?? {}, newCard).filter((c) => isColumn(c.column) && isOrderKey(c.order));
+  return all.sort((a, b) => (a.order < b.order ? -1 : a.order > b.order ? 1 : a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+}
+
+/** The order key for a card put at `index` among `column`'s other cards. */
+function orderAt(all: readonly Card[], id: string, column: ColumnId, index: number): string {
+  const others = all.filter((c) => c.column === column && c.id !== id);
+  const before = index > 0 ? (others[Math.min(index, others.length) - 1]?.order ?? null) : null;
+  const after = others[index]?.order ?? null;
+  // Equal neighbours (two devices made the same key) leave no room between them: go after both.
+  return before !== null && after !== null && before >= after ? between(after, null) : between(before, after);
+}
+
+/** "Task 4822": the next number after every card's. */
+function nextRef(all: readonly Card[]): string {
+  const top = Math.max(0, ...all.map((c) => Number(/^Task (\d+)$/.exec(c.ref)?.[1] ?? 0)));
+  return `Task ${top + 1}`;
+}
+
+/** "Edited 2h ago": the sample's words, or the time since the person last changed the card. */
+function editedWords(c: Card, now: Now, extras: boolean): string {
+  // Stock does not touch a card's "Edited" words when it moves; nor does the core without extras.
+  if (c.editedAt === undefined || !extras) return c.lastEdited;
+  const minutes = Math.max(0, Math.floor((now.epochMs - c.editedAt) / 60_000));
+  const when = ago(minutes, civilOf(now), minuteOf(now));
+  return when === "Now" ? "just now" : /^\d+[mh]$/.test(when) ? `${when} ago` : when;
+}
 
 export type CardView = {
   id: string;
@@ -231,6 +289,14 @@ export type KanbanWords = {
   done: string;
   /** Tells a VoiceOver user that a drop landed ("Moved to Done"); the column's title follows. */
   movedTo: string;
+  /** The new-task sheet. */
+  newTask: string;
+  taskTitle: string;
+  taskTitlePlaceholder: string;
+  create: string;
+  cancel: string;
+  /** A card the person made has no due date. */
+  noDueDate: string;
 };
 
 const WORDS: KanbanWords = {
@@ -246,10 +312,18 @@ const WORDS: KanbanWords = {
   status: "status",
   done: "Done",
   movedTo: "Moved to",
+  newTask: "New task",
+  taskTitle: "Title",
+  taskTitlePlaceholder: "What needs doing?",
+  create: "Create",
+  cancel: "Cancel",
+  noDueDate: "No due date",
 };
 
 /** Ids of the controls with no action behind them (a host draws them disabled). */
 const INERT = ["sort", "filter", "search", "addTask", "open", "assignToMe"];
+/** With saving on, "Add task" works (docs/SYNC.md). */
+const INERT_WITH_EXTRAS = INERT.filter((id) => id !== "addTask");
 
 export type KanbanView = {
   words: KanbanWords;
@@ -262,82 +336,105 @@ export type KanbanView = {
   sprint: string;
   sprintOptions: { value: string; label: string }[];
   columns: ColumnView[];
+  /** The new-task sheet, while it is open. `canCreate` is false until the title has a letter in it. */
+  adding: { title: string; column: ColumnId; canCreate: boolean; maxLength: number } | null;
 };
 export type View = KanbanView;
 
 const isColumn = (id: string): id is ColumnId => COLUMNS.some((c) => c.id === id);
 
-function moveItem(s: KanbanState, id: string, to: ColumnId): KanbanState {
-  const at = s.items.find((it) => it.id === id);
-  if (!at || at.column === to) return s;
-  return { ...s, items: s.items.map((it) => (it.id === id ? { ...it, column: to } : it)) };
-}
-
-/** Put the card at `index` of the column, counted among the column's other cards. */
-function dropItem(s: KanbanState, id: string, to: ColumnId, index: number): KanbanState {
-  const moved = s.items.find((it) => it.id === id);
-  if (!moved) return s;
-  const rest = s.items.filter((it) => it.id !== id);
-  const updated: WorkItem = { ...moved, column: to };
-  const anchor = rest.filter((it) => it.column === to)[index];
-  const at = anchor ? rest.indexOf(anchor) : rest.length;
-  const items = [...rest.slice(0, at), updated, ...rest.slice(at)];
-  return { ...s, items };
-}
-
 export const kanban: TemplateModule<KanbanState, KanbanView> = {
   id: "kanban",
   astryx: "kanban-board",
   title: "Kanban board",
-  initial: () => ({ items: INITIAL_ITEMS.map((it) => ({ ...it })), sprint: "003" }),
-  reduce(s, action) {
+  initial: () => ({ sprint: "003", adding: null }),
+  reduce(s, action, now, io) {
     const colon = action.id.indexOf(":");
     const key = colon < 0 ? action.id : action.id.slice(0, colon);
     const arg = colon < 0 ? "" : action.id.slice(colon + 1);
+    const all = () => cards(io?.doc);
+    const place = (id: string, column: ColumnId, index: number): KanbanState => {
+      const board = all();
+      const card = board.find((c) => c.id === id);
+      if (!card || !io) return s;
+      const others = board.filter((c) => c.column === column && c.id !== id);
+      const at = Math.min(index, others.length);
+      // Dropped where it already is: same column, same place among the others.
+      if (card.column === column && board.filter((c) => c.column === column).indexOf(card) === at) return s;
+      io.save("kanban.place", { id, column, order: orderAt(board, id, column, at), at: now.epochMs });
+      return s;
+    };
     if (action.type === "press") {
-      if (key !== "move") return s;
-      const cut = arg.indexOf(":");
-      const column = arg.slice(cut + 1);
-      return cut < 0 || !isColumn(column) ? s : moveItem(s, arg.slice(0, cut), column);
+      if (key === "move") {
+        const cut = arg.indexOf(":");
+        const column = arg.slice(cut + 1);
+        const id = arg.slice(0, cut);
+        const card = all().find((c) => c.id === id);
+        if (cut < 0 || !isColumn(column) || !card || card.column === column || !io) return s;
+        // As stock does: the card keeps its place in the board's order and changes column.
+        io.save("kanban.place", { id, column, order: card.order, at: now.epochMs });
+        return s;
+      }
+      if (!io?.extras) return s;
+      if (key === "addTask") return s.adding ? s : { ...s, adding: { title: "", column: "todo" } };
+      if (key === "addTaskCancel") return s.adding ? { ...s, adding: null } : s;
+      if (key === "addTaskCreate") {
+        const title = s.adding?.title.trim() ?? "";
+        if (!s.adding || title === "") return s;
+        const column = s.adding.column;
+        const id = io.mint();
+        const order = orderAt(all(), id, column, 0);
+        io.save("kanban.add", { id, column, order, title: title.slice(0, MAX_TITLE), ref: nextRef(all()), priority: "medium", at: now.epochMs });
+        return { ...s, adding: null };
+      }
+      return s;
     }
     if (key === "sprint") {
       const value = String(action.value);
       return SPRINTS.some((o) => o.value === value) && value !== s.sprint ? { ...s, sprint: value } : s;
     }
+    if (key === "newTitle") return s.adding && io?.extras ? { ...s, adding: { ...s.adding, title: String(action.value).slice(0, MAX_TITLE) } } : s;
     if (key === "drop") {
       const where = String(action.value);
       const cut = where.lastIndexOf(":");
       const column = where.slice(0, Math.max(cut, 0));
       const n = cut < 0 || where.slice(cut + 1) === "" ? NaN : Number(where.slice(cut + 1));
-      return isColumn(column) && Number.isInteger(n) && n >= 0 ? dropItem(s, arg, column, n) : s;
+      return isColumn(column) && Number.isInteger(n) && n >= 0 ? place(arg, column, n) : s;
     }
     return s;
   },
-  view(s) {
+  view(s, now, doc, extras = true) {
+    const all = cards(doc);
     return {
       words: WORDS,
       rules: RULES,
-      inert: INERT,
+      inert: extras ? INERT_WITH_EXTRAS : INERT,
       title: "Sprint Board",
-      total: s.items.length,
+      total: all.length,
       sprint: s.sprint,
       sprintOptions: SPRINTS.map((o) => ({ ...o })),
+      adding: s.adding ? { ...s.adding, canCreate: s.adding.title.trim() !== "", maxLength: MAX_TITLE } : null,
       columns: COLUMNS.map((c) => {
-        const cards = s.items
+        const cards = all
           .filter((it) => it.column === c.id)
-          .map((it): CardView => ({
-            id: it.id,
-            ref: it.ref,
-            priorityLabel: PRIORITY_META[it.priority].label,
-            priorityVariant: PRIORITY_META[it.priority].variant,
-            title: it.title,
-            description: it.description,
-            edited: it.lastEdited,
-            due: it.dueDate,
-            meta: `Edited ${it.lastEdited} · Due ${it.dueDate}`,
-            metaParts: ["Edited ", it.lastEdited, " · Due ", it.dueDate],
-            moveTargets: COLUMNS.filter((o) => o.id !== it.column).map((o) => ({ label: `Move to ${o.title}`, id: `tpl.kanban.move:${it.id}:${o.id}` })),
-          }));
+          .map((it): CardView => {
+            const edited = editedWords(it, now, extras);
+            const due = it.dueDate === "" ? WORDS.noDueDate : it.dueDate;
+            const dueParts = it.dueDate === "" ? [" · ", WORDS.noDueDate] : [" · Due ", it.dueDate];
+            return {
+              id: it.id,
+              ref: it.ref,
+              priorityLabel: PRIORITY_META[it.priority].label,
+              priorityVariant: PRIORITY_META[it.priority].variant,
+              title: it.title,
+              description: it.description,
+              edited,
+              due,
+              meta: `Edited ${edited}${dueParts.join("")}`,
+              metaParts: ["Edited ", edited, ...dueParts],
+              moveTargets: COLUMNS.filter((o) => o.id !== it.column).map((o) => ({ label: `Move to ${o.title}`, id: `tpl.kanban.move:${it.id}:${o.id}` })),
+            };
+          });
         return {
           id: c.id,
           title: c.title,

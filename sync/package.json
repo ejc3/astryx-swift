@@ -1,0 +1,26 @@
+{
+  "name": "@astryx-native/sync",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./client": "./src/client.ts",
+    "./host": "./src/host.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "node --test --test-reporter=spec \"test/**/*.test.ts\"",
+    "e2e": "node scripts/e2e-sync.ts"
+  },
+  "dependencies": {
+    "@astryx-native/core": "0.1.0",
+    "@rocicorp/zero": "1.11.0",
+    "zod": "4.2.1"
+  },
+  "devDependencies": {
+    "@types/node": "22.19.1",
+    "postgres": "3.4.9",
+    "typescript": "5.9.3"
+  }
+}

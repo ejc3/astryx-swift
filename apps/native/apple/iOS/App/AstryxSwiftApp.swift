@@ -18,6 +18,9 @@ struct AstryxSwiftApp: App {
         // One scene (the Info.plist says so): every drawing's web view has one superview.
         WindowGroup {
             RootView(model: Self.host.model, web: AnyView(WebPane(bridge: Self.host.web)), webOwn: AnyView(OwnCorePane(bridge: Self.host.own)), stock: AnyView(StockPane(bridge: Self.host.stock)))
+                // A sign-in comes back inside its ASWebAuthenticationSession (Host/SignIn.swift). The
+                // same address opened from anywhere else carries nothing the app takes.
+                .onOpenURL { _ in }
         }
         .commands {
             AstryxCommands(model: Self.host.model)

@@ -229,6 +229,7 @@
       "quantityLabel": "Quantity of Cereal Bowl"
      }
     ],
+    "refillLabel": null,
     "summary": {
      "itemCount": "4 items",
      "trigger": "Order summary · $332.64",
@@ -344,7 +345,8 @@
       "promoPlaceholder": "WELCOME10",
       "apply": "Apply",
       "quantity": "Quantity",
-      "each": "each"
+      "each": "each",
+      "refill": "Refill cart"
      },
      "shipping": {
       "heading": "Where should it go?",

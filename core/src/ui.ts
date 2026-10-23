@@ -10,6 +10,7 @@
  * PROTOCOL when a field changes meaning.
  */
 
+import type { AccountEvent, AccountSnapshot } from "./account.ts";
 import type { ScenariosSnapshot } from "./scenarios.ts";
 
 export const PROTOCOL = 1;
@@ -183,6 +184,8 @@ export type AppSnapshot = {
   };
   /** The shipped scenarios and the one playing (core/src/scenarios.ts). */
   scenarios: ScenariosSnapshot;
+  /** Signing in to sync (core/src/account.ts): drawn in the sidebar when `available`. */
+  account: AccountSnapshot;
 };
 
 export const SURFACES = ["native", "web", "webOwn", "stock", "compare", "all"] as const;
@@ -203,4 +206,10 @@ export type Action =
   | { type: "press"; id: string }
   | { type: "set"; id: string; value: string | number | boolean }
   | { type: "dismissToast" }
-  | { type: "tick" };
+  | { type: "tick" }
+  /** A sync source's copy of one saved table (Zero's live query); it replaces the core's copy. */
+  | { type: "rows"; table: string; rows: unknown[] }
+  /** The whole saved doc from the host, replacing the core's (signing out: the device's own copy again). Checked, never trusted. */
+  | { type: "doc"; doc: unknown }
+  /** The host's word on signing in and sync (core/src/account.ts). */
+  | ({ type: "account" } & AccountEvent);

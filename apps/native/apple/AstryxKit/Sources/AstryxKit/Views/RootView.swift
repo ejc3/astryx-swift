@@ -479,6 +479,14 @@ struct SidebarView: View {
         }
         .listStyle(.sidebar)
         .modifier(SidebarBackground())
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            // Signing in to sync, when this app can (the core says so).
+            if let account = app.account, account.available {
+                // Over the list's last rows when it scrolls: the system's bar material, as a toolbar has.
+                AccountFooter(account: account)
+                    .background(.bar)
+            }
+        }
         .navigationTitle(app.appName)
     }
 }

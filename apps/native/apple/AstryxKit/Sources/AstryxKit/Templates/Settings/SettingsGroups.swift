@@ -32,9 +32,24 @@ struct SettingsGroups: View {
         }
     }
 
-    /// Save does nothing in the stock page, which draws it enabled; so do we.
-    private func save() -> some View {
-        COSButton(label: model.words.save, variant: .primary) {}
+    /// The fields that are saved; the password fields never are.
+    private static let saved = ["username", "firstName", "lastName", "email"]
+
+    /// A group's Save. The stock page draws three that do nothing, enabled, and so do we while the
+    /// core lists them in `inert` (stock behaviour only, and the password group's: there is no
+    /// authentication backend to change a password in). Where saving works the platform's way
+    /// applies (HIG: settings take effect as they are made, with no Save button): a checkbox
+    /// commits when it is set, and a text field commits when editing ends.
+    @ViewBuilder private func save(_ control: String) -> some View {
+        if model.isInert(control) {
+            COSButton(label: model.words.save, variant: .primary) {}
+        }
+    }
+
+    /// A checkbox: set it, then commit it at once when saving works.
+    private func toggle(_ field: String, _ on: Bool) {
+        actions.set(field, .bool(on))
+        if !model.isInert("save.advanced") { actions.press("commit:" + field) }
     }
 
     var body: some View {
@@ -45,28 +60,34 @@ struct SettingsGroups: View {
                 field("firstName", w.basic.firstName, model.firstName, content: .givenName)
                 field("lastName", w.basic.lastName, model.lastName, content: .familyName)
                 field("email", w.basic.email, model.email, content: .email)
-                save()
+                save("save.basic")
             }
             AXDivider()
             SettingsGroup(title: w.password.title, detail: w.password.detail, columns: columns) {
                 field("currentPw", w.password.current, model.currentPw, placeholder: w.password.currentPlaceholder, content: .password, secure: true)
                 field("newPw", w.password.new, model.newPw, placeholder: w.password.newPlaceholder, content: .newPassword, secure: true)
                 field("confirmPw", w.password.confirm, model.confirmPw, placeholder: w.password.confirmPlaceholder, content: .newPassword, secure: true)
-                save()
+                save("save.password")
             }
             AXDivider()
             SettingsGroup(title: w.advanced.title, detail: w.advanced.detail, columns: columns, spacing: ax.space(5)) {
                 COSCheckbox(label: w.advanced.dataExport, description: w.advanced.dataExportDetail, isOn: model.dataExport) {
-                    actions.set("dataExport", .bool($0))
+                    toggle("dataExport", $0)
                 }
                 COSCheckbox(label: w.advanced.adminMembers, description: w.advanced.adminMembersDetail, isOn: model.adminMembers) {
-                    actions.set("adminMembers", .bool($0))
+                    toggle("adminMembers", $0)
                 }
                 COSCheckbox(label: w.advanced.twoFactor, description: w.advanced.twoFactorDetail, isOn: model.twoFactor) {
-                    actions.set("twoFactor", .bool($0))
+                    toggle("twoFactor", $0)
                 }
-                save()
+                save("save.advanced")
             }
+        }
+        // A text field commits when editing ends: Return, or focus moving to another field or away.
+        // The core has every keystroke already (each was a `set`), so this only asks it to save.
+        .onChange(of: focus) { old, new in
+            guard let old, old != new, Self.saved.contains(old), !model.isInert("save.basic") else { return }
+            actions.press("commit:" + old)
         }
     }
 }

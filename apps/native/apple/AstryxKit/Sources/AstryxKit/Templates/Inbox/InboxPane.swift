@@ -34,7 +34,13 @@ struct InboxPaneView: View {
     private var threadActions: some View {
         HStack(spacing: ax.hair) {
             ForEach(pane.actions) { action in
-                InboxIconButton(symbol: inboxSymbol(action.id), label: action.ariaLabel, help: action.label)
+                if action.id == "move" && !model.isInert("move") {
+                    InboxIconMenu(symbol: inboxSymbol(action.id), label: action.ariaLabel, help: action.label, targets: pane.moveTargets)
+                } else {
+                    InboxIconButton(symbol: inboxSymbol(action.id), label: action.ariaLabel, help: action.label) {
+                        inboxPerform(action.id, row: pane.id, send: send, inert: model.inert)
+                    }
+                }
             }
         }
     }

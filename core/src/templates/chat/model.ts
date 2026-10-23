@@ -8,8 +8,15 @@
  * one; the host measures its width and says which) and nothing else. Message text, tool
  * calls, code and the document are the core's; times go out as ISO instants plus a label
  * ("10:15 AM") so a native host can use either.
+ *
+ * With saving on (docs/SYNC.md) Send works: the message is saved (`chat.send`: minted id, epoch ms,
+ * text, composer mode) and drawn after the sample conversation, in time order, and the draft
+ * empties. Nobody replies. Without it (the parity harness) Send drops the message, as stock does.
+ * Copy, Share, versions, mention and attach stay inert.
  */
-import { clock } from "../../format.ts";
+import { clock, minuteOf, type Now } from "../../format.ts";
+import type { Doc, Row } from "../../sync/doc.ts";
+import { CHAT_MODES, MAX_MESSAGE } from "../../sync/areas/chat.ts";
 import type { TemplateModule } from "../types.ts";
 
 export type ComposerMode = "ask" | "edit";
@@ -445,12 +452,31 @@ const VERSIONS = ["v2 (current)", "v1"];
 
 const isMode = (v: unknown): v is ComposerMode => v === "ask" || v === "edit";
 
+/** The messages the person sent, oldest first (ties by id, so every device draws the same). Malformed rows are not drawn. */
+function sent(doc: Doc | undefined): { id: string; text: string; sentAt: number }[] {
+  const out: { id: string; text: string; sentAt: number }[] = [];
+  for (const row of Object.values(doc?.chat_message ?? {}) as Row[]) {
+    const { id, text, sentAt, mode } = row;
+    if (row.deleted || typeof text !== "string" || text.trim() === "" || text.length > MAX_MESSAGE || typeof sentAt !== "number" || !Number.isFinite(sentAt)) continue;
+    if (mode !== undefined && mode !== null && !(CHAT_MODES as readonly string[]).includes(String(mode))) continue;
+    out.push({ id, text, sentAt });
+  }
+  return out.sort((a, b) => a.sentAt - b.sentAt || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+}
+
+/** A sent message as the conversation draws one of the person's own: one delivered bubble with its time. */
+function sentItem(m: { id: string; text: string; sentAt: number }, now: Now): ChatItem {
+  const local = m.sentAt + now.utcOffsetMinutes * 60_000;
+  const time = { at: new Date(local).toISOString().slice(0, 19), label: clock(minuteOf({ epochMs: m.sentAt, utcOffsetMinutes: now.utcOffsetMinutes })) };
+  return { kind: "message", id: m.id, sender: "user", files: [], parts: [{ kind: "bubble", time, status: "delivered", content: { kind: "text", text: m.text } }] };
+}
+
 export const chat: TemplateModule<ChatState, ChatView> = {
   id: "chat",
   astryx: "ai-chat",
   title: "AI chat",
   initial: () => ({ mode: "ask", draft: "", panelOpen: true, dialogOpen: false }),
-  reduce: (s, action) => {
+  reduce: (s, action, now, io) => {
     if (action.type === "set") {
       switch (action.id) {
         case "mode": return isMode(action.value) && action.value !== s.mode ? { ...s, mode: action.value } : s;
@@ -466,9 +492,13 @@ export const chat: TemplateModule<ChatState, ChatView> = {
       }
     }
     switch (action.id) {
-      // The composer submits; the sample conversation sends nowhere and nobody replies, so
-      // the message is dropped (the composer empties its own draft with a `set`).
-      case "send": return s;
+      // The composer submits. Stock sends nowhere and nobody replies, so the message is dropped
+      // (the composer empties its own draft with a `set`). With saving on, the message is kept.
+      case "send": {
+        if (!io?.extras || s.draft.trim() === "") return s;
+        io.save("chat.send", { id: io.mint(), text: s.draft.slice(0, MAX_MESSAGE), mode: s.mode, at: now.epochMs });
+        return { ...s, draft: "" };
+      }
       // "Open the document": the host measures its width and says which surface to use.
       case "openArtifact:panel": return s.panelOpen ? s : { ...s, panelOpen: true };
       case "openArtifact:dialog": return s.dialogOpen ? s : { ...s, dialogOpen: true };
@@ -476,11 +506,11 @@ export const chat: TemplateModule<ChatState, ChatView> = {
       default: return s;
     }
   },
-  view: (s) => ({
+  view: (s, now, doc, extras = true) => ({
     inert: ["mention", "attach", "versions"],
     words: WORDS,
     rules: RULES,
-    items: ITEMS,
+    items: extras ? [...ITEMS, ...sent(doc).map((m) => sentItem(m, now))] : ITEMS,
     composer: {
       draft: s.draft,
       placeholder: s.mode === "ask" ? "Ask anything..." : "Describe your edit...",

@@ -38,16 +38,66 @@ function standalone(): Client {
   // Any id: the core keeps it only if it names a screen (a demo or a "t.<template>").
   const screen = params.get("screen");
   const theme = THEME_INPUTS.find((t) => t.id === params.get("theme"))?.id;
+  // `?stock=1`: behave exactly as stock Astryx (the parity and scenario harnesses), save nothing.
+  const extras = params.get("stock") !== "1";
+  const doc = extras ? storedDoc() : undefined;
   const client = createClient(
     () => ({ epochMs: Date.now(), utcOffsetMinutes: -new Date().getTimezoneOffset() }),
-    { ...(screen ? { screen: screen as ScreenId } : {}), ...(theme ? { theme } : {}) },
+    { ...(screen ? { screen: screen as ScreenId } : {}), ...(theme ? { theme } : {}), extras, ...(extras ? { doc, seed: deviceSeed(), signIn: SYNC_URL !== "" } : {}) },
   );
+  // Signed out, the saved doc lives in this browser (docs/SYNC.md); a failed write keeps the page working.
+  const keepDoc = (json: string) => { try { localStorage.setItem(DOC_KEY, json); } catch { /* storage full or blocked */ } };
+  if (extras && SYNC_URL === "") client.onSave((_mutations, saved) => keepDoc(JSON.stringify(saved)));
+  // With a sync server, sign-in (and Zero) load on their own; until they have, changes are kept as above.
+  if (extras && SYNC_URL !== "") {
+    const interim = client.onSave((_mutations, saved) => keepDoc(JSON.stringify(saved)));
+    void import("./sync.ts").then(({ startWebSync }) => {
+      interim();
+      startWebSync({ client, syncURL: SYNC_URL, deviceDoc: storedDoc() ?? doc, writeDeviceDoc: keepDoc, onApp: (l) => { appWatchers.add(l); l(cache.app); } });
+    });
+  }
   // Times like "12m" are words the core wrote at the last action; a minute's tick rewrites them.
   setInterval(() => client.dispatch({ type: "tick" }), 60_000);
   // The native app shows this page on its own core as a fourth drawing ("Web, own core") and
   // keeps it on the same screen as the others; nothing else of its state is shared.
   window.__astryxOwn = { navigate: (screen) => client.dispatch({ type: "navigate", screen: screen as ScreenId }) };
   return { ...client, dispatch: (action) => { const log = (window as unknown as { __astryxRecord?: unknown }).__astryxRecord; if (Array.isArray(log)) log.push(action); client.dispatch(action); } }; // scripts/record-scenarios.mjs sets window.__astryxRecord to collect actions
+}
+
+const DOC_KEY = "astryx.doc.v1";
+
+/**
+ * The sync server, when this build has one (VITE_ASTRYX_SYNC_URL, https://<sync host>); empty by
+ * default, and then sign-in is off and the page keeps everything in this browser. Read at build
+ * time, so a build without one carries none of the sync code.
+ */
+const SYNC_URL: string = (import.meta.env.VITE_ASTRYX_SYNC_URL as string | undefined)?.replace(/\/+$/, "") ?? "";
+/** Hears each app snapshot (the page's own sync watches the account's requests). */
+const appWatchers = new Set<(app: AppSnapshot | null) => void>();
+const SEED_KEY = "astryx.seed.v1";
+
+/** The saved doc this browser kept, or nothing; the core checks whatever it gets. */
+function storedDoc(): unknown {
+  try {
+    const text = localStorage.getItem(DOC_KEY);
+    return text === null ? undefined : (JSON.parse(text) as unknown);
+  } catch {
+    return undefined;
+  }
+}
+
+/** A random id seed for this browser, made once: new records are "<seed>-<n>". */
+function deviceSeed(): string {
+  const fresh = () => Array.from(crypto.getRandomValues(new Uint8Array(9)), (b) => b.toString(36).padStart(2, "0")).join("");
+  try {
+    const kept = localStorage.getItem(SEED_KEY);
+    if (kept !== null && /^[a-z0-9]{8,40}$/.test(kept)) return kept;
+    const made = fresh();
+    localStorage.setItem(SEED_KEY, made);
+    return made;
+  } catch {
+    return fresh();
+  }
 }
 
 declare global {
@@ -72,6 +122,8 @@ function hosted(host: HostPort): Client {
   return {
     getSnapshot: (store) => snapshots[store],
     dispatch: (action) => host.postMessage({ type: "dispatch", action }),
+    // The app's core saves its own data; the page only draws it.
+    onSave: () => () => false,
     subscribe(listener) {
       listeners.add(listener);
       return () => void listeners.delete(listener);
@@ -89,8 +141,10 @@ const cache: { app: AppSnapshot | null; theme: ThemeSnapshot | null } = {
 };
 const listeners = new Set<() => void>();
 client.subscribe((store: StoreName) => {
-  if (store === "app") cache.app = client.getSnapshot("app") as AppSnapshot | null;
-  else cache.theme = client.getSnapshot("theme") as ThemeSnapshot | null;
+  if (store === "app") {
+    cache.app = client.getSnapshot("app") as AppSnapshot | null;
+    for (const w of appWatchers) w(cache.app);
+  } else cache.theme = client.getSnapshot("theme") as ThemeSnapshot | null;
   for (const l of listeners) l();
 });
 

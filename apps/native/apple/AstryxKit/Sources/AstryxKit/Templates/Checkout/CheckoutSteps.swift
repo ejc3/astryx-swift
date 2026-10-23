@@ -80,6 +80,9 @@ struct CheckoutCartStep: View {
                     }
                 }
             }
+            if let refill = model.refillLabel {
+                COSButton(label: refill, variant: .secondary) { actions.press("refill") }
+            }
             if let error = model.errors["items"] {
                 COSStatus(tone: .danger, message: error)
             }

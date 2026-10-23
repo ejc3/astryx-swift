@@ -15,6 +15,16 @@ struct KanbanModel: Decodable, Equatable {
     var sprint: String
     var sprintOptions: [SprintOption]
     var columns: [Column]
+    /// The new-task sheet, while it is open (docs/SYNC.md); nil otherwise.
+    var adding: Adding?
+
+    struct Adding: Decodable, Equatable {
+        var title: String
+        var column: String
+        /// False until the title has a letter in it.
+        var canCreate: Bool
+        var maxLength: Int
+    }
 
     struct Rules: Decodable, Equatable {
         /// Every board column's width; the board scrolls sideways when they do not fit.
@@ -39,6 +49,12 @@ struct KanbanModel: Decodable, Equatable {
         var done: String
         /// Announced when a card lands in a column; the column's title follows.
         var movedTo: String
+        /// The new-task sheet's words.
+        var newTask: String
+        var taskTitle: String
+        var taskTitlePlaceholder: String
+        var create: String
+        var cancel: String
     }
 
     func isInert(_ id: String) -> Bool { inert.contains(id) }

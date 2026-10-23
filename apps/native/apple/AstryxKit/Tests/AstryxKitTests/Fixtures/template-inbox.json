@@ -165,6 +165,15 @@
      "overflowMark": "+",
      "unreadStatus": "Unread",
      "unreadSuffix": " unread",
+     "noSubject": "(No subject)",
+     "you": "You",
+     "confirm": {
+      "cancel": "Cancel",
+      "delete": "Delete",
+      "title": "Delete this conversation?",
+      "titleMany": "Delete these conversations?",
+      "undone": "This cannot be undone."
+     },
      "hasAttachments": "Has attachments",
      "selected": "selected",
      "notSelected": "not selected",
@@ -342,6 +351,20 @@
         "label": "Delete",
         "ariaLabel": "Delete — Checkout returns 502 for EU customers"
        }
+      ],
+      "moveTargets": [
+       {
+        "label": "Inbox",
+        "id": "tpl.inbox.move:c-01:inbox"
+       },
+       {
+        "label": "Waiting",
+        "id": "tpl.inbox.move:c-01:waiting"
+       },
+       {
+        "label": "Resolved",
+        "id": "tpl.inbox.move:c-01:resolved"
+       }
       ]
      },
      {
@@ -417,6 +440,20 @@
         "label": "Delete",
         "ariaLabel": "Delete — SSO metadata rotation — need new certificate"
        }
+      ],
+      "moveTargets": [
+       {
+        "label": "Escalations",
+        "id": "tpl.inbox.move:c-02:escalations"
+       },
+       {
+        "label": "Waiting",
+        "id": "tpl.inbox.move:c-02:waiting"
+       },
+       {
+        "label": "Resolved",
+        "id": "tpl.inbox.move:c-02:resolved"
+       }
       ]
      },
      {
@@ -488,6 +525,20 @@
         "id": "delete",
         "label": "Delete",
         "ariaLabel": "Delete — Re: Bulk export finished but the file is empty"
+       }
+      ],
+      "moveTargets": [
+       {
+        "label": "Inbox",
+        "id": "tpl.inbox.move:c-03:inbox"
+       },
+       {
+        "label": "Escalations",
+        "id": "tpl.inbox.move:c-03:escalations"
+       },
+       {
+        "label": "Waiting",
+        "id": "tpl.inbox.move:c-03:waiting"
        }
       ]
      },
@@ -565,6 +616,20 @@
         "label": "Delete",
         "ariaLabel": "Delete — Webhook retries stopped after the 3rd attempt"
        }
+      ],
+      "moveTargets": [
+       {
+        "label": "Escalations",
+        "id": "tpl.inbox.move:c-04:escalations"
+       },
+       {
+        "label": "Waiting",
+        "id": "tpl.inbox.move:c-04:waiting"
+       },
+       {
+        "label": "Resolved",
+        "id": "tpl.inbox.move:c-04:resolved"
+       }
       ]
      },
      {
@@ -641,6 +706,20 @@
         "label": "Delete",
         "ariaLabel": "Delete — Homepage refresh — three directions for your review"
        }
+      ],
+      "moveTargets": [
+       {
+        "label": "Inbox",
+        "id": "tpl.inbox.move:c-05:inbox"
+       },
+       {
+        "label": "Escalations",
+        "id": "tpl.inbox.move:c-05:escalations"
+       },
+       {
+        "label": "Resolved",
+        "id": "tpl.inbox.move:c-05:resolved"
+       }
       ]
      },
      {
@@ -716,6 +795,20 @@
         "label": "Delete",
         "ariaLabel": "Delete — Seat count says 145 but we only provisioned 120"
        }
+      ],
+      "moveTargets": [
+       {
+        "label": "Inbox",
+        "id": "tpl.inbox.move:c-06:inbox"
+       },
+       {
+        "label": "Escalations",
+        "id": "tpl.inbox.move:c-06:escalations"
+       },
+       {
+        "label": "Resolved",
+        "id": "tpl.inbox.move:c-06:resolved"
+       }
       ]
      },
      {
@@ -787,6 +880,20 @@
         "id": "delete",
         "label": "Delete",
         "ariaLabel": "Delete — Docs: the rate-limit page contradicts the API response header"
+       }
+      ],
+      "moveTargets": [
+       {
+        "label": "Escalations",
+        "id": "tpl.inbox.move:c-07:escalations"
+       },
+       {
+        "label": "Waiting",
+        "id": "tpl.inbox.move:c-07:waiting"
+       },
+       {
+        "label": "Resolved",
+        "id": "tpl.inbox.move:c-07:resolved"
        }
       ]
      },
@@ -860,6 +967,20 @@
         "label": "Delete",
         "ariaLabel": "Delete — Re: Scheduled maintenance window confirmation"
        }
+      ],
+      "moveTargets": [
+       {
+        "label": "Inbox",
+        "id": "tpl.inbox.move:c-08:inbox"
+       },
+       {
+        "label": "Escalations",
+        "id": "tpl.inbox.move:c-08:escalations"
+       },
+       {
+        "label": "Waiting",
+        "id": "tpl.inbox.move:c-08:waiting"
+       }
       ]
      },
      {
@@ -932,6 +1053,20 @@
         "label": "Delete",
         "ariaLabel": "Delete — Feature request: per-workspace retention policy"
        }
+      ],
+      "moveTargets": [
+       {
+        "label": "Escalations",
+        "id": "tpl.inbox.move:c-09:escalations"
+       },
+       {
+        "label": "Waiting",
+        "id": "tpl.inbox.move:c-09:waiting"
+       },
+       {
+        "label": "Resolved",
+        "id": "tpl.inbox.move:c-09:resolved"
+       }
       ]
      }
     ],
@@ -958,6 +1093,25 @@
       "label": "Delete"
      }
     ],
+    "bulkMoveTargets": [
+     {
+      "label": "Inbox",
+      "id": "tpl.inbox.moveSelected:inbox"
+     },
+     {
+      "label": "Escalations",
+      "id": "tpl.inbox.moveSelected:escalations"
+     },
+     {
+      "label": "Waiting",
+      "id": "tpl.inbox.moveSelected:waiting"
+     },
+     {
+      "label": "Resolved",
+      "id": "tpl.inbox.moveSelected:resolved"
+     }
+    ],
+    "confirm": null,
     "openId": "c-01",
     "mode": {
      "isSingleSurface": false,
@@ -1026,6 +1180,20 @@
         "id": "delete",
         "label": "Delete",
         "ariaLabel": "Delete — Checkout returns 502 for EU customers"
+       }
+      ],
+      "moveTargets": [
+       {
+        "label": "Inbox",
+        "id": "tpl.inbox.move:c-01:inbox"
+       },
+       {
+        "label": "Waiting",
+        "id": "tpl.inbox.move:c-01:waiting"
+       },
+       {
+        "label": "Resolved",
+        "id": "tpl.inbox.move:c-01:resolved"
        }
       ],
       "messages": [
@@ -1112,6 +1280,20 @@
         "ariaLabel": "Delete — SSO metadata rotation — need new certificate"
        }
       ],
+      "moveTargets": [
+       {
+        "label": "Escalations",
+        "id": "tpl.inbox.move:c-02:escalations"
+       },
+       {
+        "label": "Waiting",
+        "id": "tpl.inbox.move:c-02:waiting"
+       },
+       {
+        "label": "Resolved",
+        "id": "tpl.inbox.move:c-02:resolved"
+       }
+      ],
       "messages": [
        {
         "id": "c-02",
@@ -1153,6 +1335,20 @@
         "id": "delete",
         "label": "Delete",
         "ariaLabel": "Delete — Re: Bulk export finished but the file is empty"
+       }
+      ],
+      "moveTargets": [
+       {
+        "label": "Inbox",
+        "id": "tpl.inbox.move:c-03:inbox"
+       },
+       {
+        "label": "Escalations",
+        "id": "tpl.inbox.move:c-03:escalations"
+       },
+       {
+        "label": "Waiting",
+        "id": "tpl.inbox.move:c-03:waiting"
        }
       ],
       "messages": [
@@ -1226,6 +1422,20 @@
         "ariaLabel": "Delete — Webhook retries stopped after the 3rd attempt"
        }
       ],
+      "moveTargets": [
+       {
+        "label": "Escalations",
+        "id": "tpl.inbox.move:c-04:escalations"
+       },
+       {
+        "label": "Waiting",
+        "id": "tpl.inbox.move:c-04:waiting"
+       },
+       {
+        "label": "Resolved",
+        "id": "tpl.inbox.move:c-04:resolved"
+       }
+      ],
       "messages": [
        {
         "id": "c-04",
@@ -1271,6 +1481,20 @@
         "id": "delete",
         "label": "Delete",
         "ariaLabel": "Delete — Homepage refresh — three directions for your review"
+       }
+      ],
+      "moveTargets": [
+       {
+        "label": "Inbox",
+        "id": "tpl.inbox.move:c-05:inbox"
+       },
+       {
+        "label": "Escalations",
+        "id": "tpl.inbox.move:c-05:escalations"
+       },
+       {
+        "label": "Resolved",
+        "id": "tpl.inbox.move:c-05:resolved"
        }
       ],
       "messages": [
@@ -1406,6 +1630,20 @@
         "ariaLabel": "Delete — Seat count says 145 but we only provisioned 120"
        }
       ],
+      "moveTargets": [
+       {
+        "label": "Inbox",
+        "id": "tpl.inbox.move:c-06:inbox"
+       },
+       {
+        "label": "Escalations",
+        "id": "tpl.inbox.move:c-06:escalations"
+       },
+       {
+        "label": "Resolved",
+        "id": "tpl.inbox.move:c-06:resolved"
+       }
+      ],
       "messages": [
        {
         "id": "c-06",
@@ -1447,6 +1685,20 @@
         "id": "delete",
         "label": "Delete",
         "ariaLabel": "Delete — Docs: the rate-limit page contradicts the API response header"
+       }
+      ],
+      "moveTargets": [
+       {
+        "label": "Escalations",
+        "id": "tpl.inbox.move:c-07:escalations"
+       },
+       {
+        "label": "Waiting",
+        "id": "tpl.inbox.move:c-07:waiting"
+       },
+       {
+        "label": "Resolved",
+        "id": "tpl.inbox.move:c-07:resolved"
        }
       ],
       "messages": [
@@ -1492,6 +1744,20 @@
         "ariaLabel": "Delete — Re: Scheduled maintenance window confirmation"
        }
       ],
+      "moveTargets": [
+       {
+        "label": "Inbox",
+        "id": "tpl.inbox.move:c-08:inbox"
+       },
+       {
+        "label": "Escalations",
+        "id": "tpl.inbox.move:c-08:escalations"
+       },
+       {
+        "label": "Waiting",
+        "id": "tpl.inbox.move:c-08:waiting"
+       }
+      ],
       "messages": [
        {
         "id": "c-08",
@@ -1535,6 +1801,20 @@
         "ariaLabel": "Delete — Feature request: per-workspace retention policy"
        }
       ],
+      "moveTargets": [
+       {
+        "label": "Escalations",
+        "id": "tpl.inbox.move:c-09:escalations"
+       },
+       {
+        "label": "Waiting",
+        "id": "tpl.inbox.move:c-09:waiting"
+       },
+       {
+        "label": "Resolved",
+        "id": "tpl.inbox.move:c-09:resolved"
+       }
+      ],
       "messages": [
        {
         "id": "c-09",
@@ -1554,10 +1834,6 @@
     ],
     "inert": [
      "refresh",
-     "archive",
-     "move",
-     "delete",
-     "send",
      "attach",
      "link",
      "image",
@@ -1593,6 +1869,20 @@
        "id": "delete",
        "label": "Delete",
        "ariaLabel": "Delete — Checkout returns 502 for EU customers"
+      }
+     ],
+     "moveTargets": [
+      {
+       "label": "Inbox",
+       "id": "tpl.inbox.move:c-01:inbox"
+      },
+      {
+       "label": "Waiting",
+       "id": "tpl.inbox.move:c-01:waiting"
+      },
+      {
+       "label": "Resolved",
+       "id": "tpl.inbox.move:c-01:resolved"
       }
      ],
      "messages": [
@@ -1817,7 +2107,8 @@
        }
       ]
      },
-     "isDirty": false
+     "isDirty": false,
+     "canSend": false
     }
    }
   }

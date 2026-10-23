@@ -6,6 +6,8 @@ import SwiftUI
 /// Actions (ids as the core's `reduce` takes them, with the `tpl.chat.` prefix):
 /// - composer text: `set` `tpl.chat.draft` (a string, as you type)
 /// - Return or the send button: `press` `tpl.chat.send`, then `set` `tpl.chat.draft` ""
+///   (stock sends nowhere; with saving on the core keeps the message and draws it after the sample
+///   conversation, in the same item shape as the sample's own messages, so nothing here changes)
 /// - the Ask / Edit menu: `set` `tpl.chat.mode` ("ask" or "edit")
 /// - the artifact card: `press` `tpl.chat.openArtifact:panel` on a wide screen, `...:dialog`
 ///   on a narrow one (the core says where, `rules.dialogAtMost`, to both drawings)

@@ -107,6 +107,21 @@ struct InboxScreen: View {
                 .frame(minWidth: 560, minHeight: 520)
                 #endif
         }
+        // Delete asks first (saving on): a confirmation dialog with a destructive button, as the HIG has it.
+        .confirmationDialog(
+            model.confirm?.title ?? "",
+            isPresented: Binding(
+                get: { model.confirm != nil },
+                set: { if !$0, let confirm = model.confirm { send(.press(id: confirm.cancelId)) } }
+            ),
+            titleVisibility: .visible,
+            presenting: model.confirm
+        ) { confirm in
+            Button(confirm.actionLabel, role: .destructive) { send(.press(id: confirm.actionId)) }
+            Button(confirm.cancelLabel, role: .cancel) { send(.press(id: confirm.cancelId)) }
+        } message: { confirm in
+            Text(confirm.description)
+        }
     }
 
     // MARK: Masthead

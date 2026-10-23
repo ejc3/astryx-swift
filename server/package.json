@@ -1,0 +1,25 @@
+{
+  "name": "@astryx-native/server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node src/main.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "node --test --test-reporter=spec \"test/**/*.test.ts\"",
+    "key": "node scripts/signing-key.ts"
+  },
+  "dependencies": {
+    "@astryx-native/core": "0.1.0",
+    "@astryx-native/sync": "0.1.0",
+    "@hono/node-server": "1.19.5",
+    "@rocicorp/zero": "1.11.0",
+    "hono": "4.9.9",
+    "jose": "6.2.13",
+    "postgres": "3.4.9"
+  },
+  "devDependencies": {
+    "@types/node": "22.19.1",
+    "typescript": "5.9.3"
+  }
+}

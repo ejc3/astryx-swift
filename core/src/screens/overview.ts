@@ -3,6 +3,7 @@ import { ACTIVITY, ORDERS, PEOPLE, WEEKLY_REVENUE, person } from "../sample.ts";
 import { checks, type State } from "../state.ts";
 import type { Node, Screen, Tone } from "../ui.ts";
 import { badge, button, card, grid, h, text, v, wrap } from "./nodes.ts";
+import { messagesOf, tasksOf } from "./saved.ts";
 
 const PLANS = [
   { value: "solo", label: "Solo", description: "One seat, every component." },
@@ -58,9 +59,10 @@ export function dashboard(s: State): Screen {
   const last = weeks[weeks.length - 1]!, prev = weeks[weeks.length - 2]!;
   const max = Math.max(...weeks);
   const change = (last - prev) / prev;
-  const unread = s.inbox.messages.filter((m) => !m.read && !m.archived).length;
-  const open = s.tasks.tasks.filter((t) => t.column !== "done").length;
-  const done = s.tasks.tasks.length - open;
+  const unread = messagesOf(s.doc).filter((m) => !m.read && !m.archived).length;
+  const allTasks = tasksOf(s.doc);
+  const open = allTasks.filter((t) => t.column !== "done").length;
+  const done = allTasks.length - open;
   const statusTone: Record<string, Tone> = { Paid: "success", Pending: "warning", Refunded: "neutral" };
   const body = v("lg",
     grid(220,

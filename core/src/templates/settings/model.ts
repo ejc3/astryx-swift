@@ -19,9 +19,36 @@
  *
  * The password fields start with the stock sample text, so the web copy matches stock. A host
  * draws the core's value (it does not hold a state of its own for them).
+ *
+ * Saved data (docs/SYNC.md), with extras on. The username, first and last name, email and the
+ * three checkboxes are saved as `settings.set` rows, keyed `account.<field>`. What the inputs show
+ * is the DRAFT (view state, `drafts`, the last thing set) if there is one, else the saved value,
+ * else the stock sample: so after a reload, or on another device, the fields show what was saved.
+ * Passwords are never saved: they are drafts only, and nothing reads them back.
+ *
+ *   press  save.basic | save.advanced   commit the section's changed fields (the web page's Save)
+ *   press  commit:<field>               commit one field (Apple platforms, see below)
+ *   press  save.password                inert: there is no authentication backend to change a
+ *                                       password in, so it does nothing and the view lists it in `inert`
+ *
+ * Committing writes one `settings.set` per field whose draft differs from the saved (or sample)
+ * value, then drops those drafts so the field shows the saved row. A field whose draft the
+ * setting refuses (too long) keeps its draft and is not written.
+ *
+ * Apple platforms (HIG: a settings window has no Save button; a change applies as it is made):
+ * the host draws no Save for a group whose save is not in `inert`. A checkbox commits at once:
+ * the host sends `set <toggle>` and then `press commit:<toggle>`. A text field commits when
+ * editing ends (Return, or focus moving on): the host sends `press commit:<field>` after the
+ * last `set` it already sent. The core is the same for every host; only the trigger differs.
+ *
+ * Without extras (stock Astryx's behaviour only, the parity harness) nothing is saved and every
+ * Save and `commit` does nothing, as stock's Save buttons do; the drafts are then just the
+ * fields' values.
  */
-import type { TemplateModule } from "../types.ts";
+import type { TemplateIO, TemplateModule } from "../types.ts";
 import { COMMON_WORDS, type CommonWords } from "../checkout/words.ts";
+import type { Doc } from "../../sync/doc.ts";
+import { SETTINGS } from "../../sync/areas/settings.ts";
 
 const NAV_ITEMS = ["Profile", "Account", "Members", "Billing", "Invoices", "API"] as const;
 
@@ -50,6 +77,18 @@ const SEARCH_ITEMS: readonly SearchItem[] = [
 const TEXT_FIELDS = ["username", "firstName", "lastName", "email", "currentPw", "newPw", "confirmPw"] as const;
 const TOGGLES = ["dataExport", "adminMembers", "twoFactor"] as const;
 
+/** The fields each Save commits. The password section has no saved fields. */
+const SECTION_FIELDS: Record<string, readonly string[]> = {
+  "save.basic": ["username", "firstName", "lastName", "email"],
+  "save.advanced": TOGGLES,
+};
+const SAVED_FIELDS: readonly string[] = [...SECTION_FIELDS["save.basic"]!, ...TOGGLES];
+const settingKey = (field: string) => `account.${field}`;
+
+/** Stock's three Save buttons do nothing; with extras the password's still does nothing (no auth backend to change one in). */
+const INERT_STOCK = ["save.basic", "save.password", "save.advanced"];
+const INERT_WITH_EXTRAS = ["save.password"];
+
 export type SettingsState = {
   activeNav: string;
   username: string;
@@ -66,6 +105,8 @@ export type SettingsState = {
   search: string | null;
   /** The text in a drawing's own search box. */
   searchQuery: string;
+  /** The last value set for a field, until it is saved (or set back to what is saved): view state, never synced. */
+  drafts: Record<string, string | boolean>;
 };
 
 export type SettingsView = {
@@ -170,6 +211,40 @@ function results(s: SettingsState): SearchItem[] {
   return chosen && s.searchQuery === chosen.label ? SEARCH_ITEMS.map((item) => ({ ...item })) : searchSettings(SEARCH_ITEMS, s.searchQuery);
 }
 
+type Value = string | boolean;
+
+/** A field's saved value, when the doc holds one the setting accepts (a malformed row is ignored). */
+function savedOf(doc: Doc | undefined, field: string): Value | undefined {
+  if (!doc || !SAVED_FIELDS.includes(field)) return undefined;
+  const key = settingKey(field);
+  const value = doc.settings_value[key]?.value;
+  return (typeof value === "string" || typeof value === "boolean") && SETTINGS[key]!(value) ? value : undefined;
+}
+
+/** What a field shows: its draft, else the saved value, else the stock sample. */
+const shownBy = (s: SettingsState, doc: Doc | undefined) => (field: string): Value =>
+  s.drafts[field] ?? savedOf(doc, field) ?? (s as unknown as Record<string, Value>)[field]!;
+
+/** Sets a field's draft; a value equal to what the field would otherwise show clears the draft. */
+function draft(s: SettingsState, io: TemplateIO | undefined, field: string, value: Value): SettingsState {
+  const base = shownBy({ ...s, drafts: {} }, io?.extras ? io.doc : undefined)(field);
+  const others = Object.fromEntries(Object.entries(s.drafts).filter(([k]) => k !== field));
+  const drafts = value === base ? others : { ...others, [field]: value };
+  const same = Object.keys(drafts).length === Object.keys(s.drafts).length && Object.keys(drafts).every((k) => drafts[k] === s.drafts[k]);
+  return same ? s : { ...s, drafts };
+}
+
+/** Saves the drafts of `fields` as `settings.set` rows and drops them; a draft the setting refuses stays. */
+function commit(s: SettingsState, io: TemplateIO, fields: readonly string[]): SettingsState {
+  const saved = fields.filter((field) => {
+    const value = s.drafts[field];
+    if (value === undefined || !SAVED_FIELDS.includes(field) || !SETTINGS[settingKey(field)]!(value)) return false;
+    io.save("settings.set", { key: settingKey(field), value });
+    return true;
+  });
+  return saved.length === 0 ? s : { ...s, drafts: Object.fromEntries(Object.entries(s.drafts).filter(([k]) => !saved.includes(k))) };
+}
+
 export const settings: TemplateModule<SettingsState, SettingsView> = {
   id: "settings",
   astryx: "settings",
@@ -188,18 +263,22 @@ export const settings: TemplateModule<SettingsState, SettingsView> = {
     twoFactor: false,
     search: null,
     searchQuery: "",
+    drafts: {},
   }),
-  reduce(s, action) {
+  reduce(s, action, _now, io) {
     if (action.type === "press") {
       if (action.id.startsWith("nav:")) {
         const label = action.id.slice(4);
         return (NAV_ITEMS as readonly string[]).includes(label) ? { ...s, activeNav: label } : s;
       }
-      return s;
+      if (!io?.extras) return s;
+      if (action.id.startsWith("commit:")) return commit(s, io, [action.id.slice(7)]);
+      const fields = SECTION_FIELDS[action.id];
+      return fields ? commit(s, io, fields) : s;
     }
     const { id, value } = action;
-    if ((TEXT_FIELDS as readonly string[]).includes(id)) return { ...s, [id]: String(value) };
-    if ((TOGGLES as readonly string[]).includes(id)) return { ...s, [id]: value === true };
+    if ((TEXT_FIELDS as readonly string[]).includes(id)) return draft(s, io, id, String(value));
+    if ((TOGGLES as readonly string[]).includes(id)) return draft(s, io, id, value === true);
     if (id === "search") {
       const found = SEARCH_ITEMS.find((item) => item.id === String(value));
       return { ...s, search: found ? found.id : null, searchQuery: found ? found.label : "" };
@@ -211,24 +290,27 @@ export const settings: TemplateModule<SettingsState, SettingsView> = {
     }
     return s;
   },
-  view: (s) => ({
-    navItems: NAV_ITEMS.map((label) => ({ label, isSelected: s.activeNav === label })),
-    searchItems: SEARCH_ITEMS.map((item) => ({ ...item })),
-    search: SEARCH_ITEMS.find((item) => item.id === s.search) ?? null,
-    searchQuery: s.searchQuery,
-    results: results(s),
-    username: s.username,
-    firstName: s.firstName,
-    lastName: s.lastName,
-    email: s.email,
-    currentPw: s.currentPw,
-    newPw: s.newPw,
-    confirmPw: s.confirmPw,
-    dataExport: s.dataExport,
-    adminMembers: s.adminMembers,
-    twoFactor: s.twoFactor,
-    rules: RULES,
-    inert: ["save.basic", "save.password", "save.advanced"],
-    words: WORDS,
-  }),
+  view: (s, _now, doc, extras = true) => {
+    const shown = shownBy(s, extras ? doc : undefined);
+    return {
+      navItems: NAV_ITEMS.map((label) => ({ label, isSelected: s.activeNav === label })),
+      searchItems: SEARCH_ITEMS.map((item) => ({ ...item })),
+      search: SEARCH_ITEMS.find((item) => item.id === s.search) ?? null,
+      searchQuery: s.searchQuery,
+      results: results(s),
+      username: shown("username") as string,
+      firstName: shown("firstName") as string,
+      lastName: shown("lastName") as string,
+      email: shown("email") as string,
+      currentPw: shown("currentPw") as string,
+      newPw: shown("newPw") as string,
+      confirmPw: shown("confirmPw") as string,
+      dataExport: shown("dataExport") as boolean,
+      adminMembers: shown("adminMembers") as boolean,
+      twoFactor: shown("twoFactor") as boolean,
+      rules: RULES,
+      inert: extras ? INERT_WITH_EXTRAS : INERT_STOCK,
+      words: WORDS,
+    };
+  },
 };
