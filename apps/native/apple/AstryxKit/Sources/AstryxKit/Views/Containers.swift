@@ -208,7 +208,7 @@ struct AXSection: View {
         VStack(alignment: .leading, spacing: ax.space(2)) {
             VStack(alignment: .leading, spacing: ax.hair) {
                 Text(node.title)
-                    .font(ax.heading(4))
+                    .font(ax.heading(node.level ?? 4))
                     .foregroundStyle(ax.text)
                     .accessibilityAddTraits(.isHeader)
                 if let description = node.description {

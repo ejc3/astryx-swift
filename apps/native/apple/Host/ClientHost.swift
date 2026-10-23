@@ -181,6 +181,14 @@ final class ClientHost: NSObject, AXClientServices {
                 if let scenario = UserDefaults.standard.string(forKey: "AXScenario") {
                     self.call("dispatch", "{\"type\":\"press\",\"id\":\"scenario.start:\(scenario)\"}")
                 }
+                #if DEBUG
+                // `-AXPress how.select:axclient` (Debug builds, captures): one press as the app starts.
+                if let id = UserDefaults.standard.string(forKey: "AXPress"),
+                   let data = try? JSONSerialization.data(withJSONObject: ["type": "press", "id": id]),
+                   let json = String(data: data, encoding: .utf8) {
+                    self.call("dispatch", json)
+                }
+                #endif
             }
         }
     }

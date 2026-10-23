@@ -1,0 +1,2355 @@
+{
+ "protocol": 1,
+ "appName": "Astryx Swift",
+ "nav": [
+  {
+   "id": "architecture",
+   "label": "How it works",
+   "icon": "diagram",
+   "section": "About this spike",
+   "accessibilityLabel": "How it works, About this spike"
+  },
+  {
+   "id": "story",
+   "label": "How this was built",
+   "icon": "history",
+   "section": "About this spike",
+   "accessibilityLabel": "How this was built, About this spike"
+  },
+  {
+   "id": "t.showcase",
+   "label": "Theme showcase",
+   "icon": "sparkle",
+   "section": "Astryx templates",
+   "accessibilityLabel": "Theme showcase, Astryx templates"
+  },
+  {
+   "id": "t.dashboard",
+   "label": "Dashboard",
+   "icon": "chart",
+   "section": "Astryx templates",
+   "accessibilityLabel": "Dashboard, Astryx templates"
+  },
+  {
+   "id": "t.inbox",
+   "label": "Inbox",
+   "icon": "inbox",
+   "section": "Astryx templates",
+   "accessibilityLabel": "Inbox, Astryx templates"
+  },
+  {
+   "id": "t.kanban",
+   "label": "Kanban board",
+   "icon": "check",
+   "section": "Astryx templates",
+   "accessibilityLabel": "Kanban board, Astryx templates"
+  },
+  {
+   "id": "t.invoice",
+   "label": "Invoice",
+   "icon": "card",
+   "section": "Astryx templates",
+   "accessibilityLabel": "Invoice, Astryx templates"
+  },
+  {
+   "id": "t.calendar",
+   "label": "Calendar",
+   "icon": "calendar",
+   "section": "Astryx templates",
+   "accessibilityLabel": "Calendar, Astryx templates"
+  },
+  {
+   "id": "t.chat",
+   "label": "AI chat",
+   "icon": "chat",
+   "section": "Astryx templates",
+   "accessibilityLabel": "AI chat, Astryx templates"
+  },
+  {
+   "id": "t.checkout",
+   "label": "Checkout",
+   "icon": "cart",
+   "section": "Astryx templates",
+   "accessibilityLabel": "Checkout, Astryx templates"
+  },
+  {
+   "id": "t.order",
+   "label": "Order detail",
+   "icon": "truck",
+   "section": "Astryx templates",
+   "accessibilityLabel": "Order detail, Astryx templates"
+  },
+  {
+   "id": "t.settings",
+   "label": "Settings",
+   "icon": "gear",
+   "section": "Astryx templates",
+   "accessibilityLabel": "Settings, Astryx templates"
+  },
+  {
+   "id": "overview",
+   "label": "Components",
+   "icon": "grid",
+   "section": "More demos",
+   "accessibilityLabel": "Components, More demos"
+  },
+  {
+   "id": "dashboard",
+   "label": "Dashboard",
+   "icon": "chart",
+   "section": "More demos",
+   "accessibilityLabel": "Dashboard, More demos"
+  },
+  {
+   "id": "inbox",
+   "label": "Inbox",
+   "icon": "inbox",
+   "badge": "3",
+   "section": "More demos",
+   "accessibilityLabel": "Inbox, More demos"
+  },
+  {
+   "id": "tasks",
+   "label": "Tasks",
+   "icon": "check",
+   "badge": "7",
+   "section": "More demos",
+   "accessibilityLabel": "Tasks, More demos"
+  },
+  {
+   "id": "people",
+   "label": "People",
+   "icon": "people",
+   "section": "More demos",
+   "accessibilityLabel": "People, More demos"
+  },
+  {
+   "id": "calendar",
+   "label": "Calendar",
+   "icon": "calendar",
+   "section": "More demos",
+   "accessibilityLabel": "Calendar, More demos"
+  },
+  {
+   "id": "chat",
+   "label": "Messages",
+   "icon": "chat",
+   "section": "More demos",
+   "accessibilityLabel": "Messages, More demos"
+  },
+  {
+   "id": "checkout",
+   "label": "Checkout",
+   "icon": "cart",
+   "section": "More demos",
+   "accessibilityLabel": "Checkout, More demos"
+  },
+  {
+   "id": "profile",
+   "label": "Profile",
+   "icon": "person",
+   "section": "More demos",
+   "accessibilityLabel": "Profile, More demos"
+  },
+  {
+   "id": "settings",
+   "label": "Settings",
+   "icon": "gear",
+   "section": "More demos",
+   "accessibilityLabel": "Settings, More demos"
+  }
+ ],
+ "current": "architecture",
+ "screen": {
+  "id": "architecture",
+  "title": "How it works",
+  "subtitle": "The core, its hosts, its checks",
+  "toolbar": [],
+  "body": {
+   "kind": "diagram",
+   "label": "How Astryx Swift works",
+   "note": "Boxes marked Shared are the code every platform runs: the core and sync, 24% of the hand-written code, and all of the logic.",
+   "hint": "AXClient: 7 connections. Select it again, or Close, to see everything.",
+   "hintMac": "AXClient: 7 connections. Select it again, or press Escape, to see everything.",
+   "narrowBelow": 700,
+   "singleBelow": 320,
+   "singleWhenTextIsLarge": true,
+   "wide": {
+    "columns": 5,
+    "rows": 9,
+    "gap": {
+     "x": 32,
+     "y": 24
+    },
+    "pad": 8,
+    "labels": true,
+    "margin": {
+     "top": 42,
+     "left": 26,
+     "right": 26
+    }
+   },
+   "narrow": {
+    "columns": 2,
+    "rows": 18,
+    "gap": {
+     "x": 32,
+     "y": 28
+    },
+    "pad": 8,
+    "labels": true,
+    "margin": {
+     "top": 8,
+     "left": 34.8,
+     "right": 38
+    }
+   },
+   "single": {
+    "columns": 1,
+    "rows": 28,
+    "gap": {
+     "x": 0,
+     "y": 24
+    },
+    "pad": 8,
+    "labels": false,
+    "margin": {
+     "top": 8,
+     "left": 26,
+     "right": 38
+    }
+   },
+   "legendLabel": "Lines",
+   "legend": [
+    {
+     "style": "data",
+     "label": "Data: snapshots, rows"
+    },
+    {
+     "style": "control",
+     "label": "Control: actions, calls"
+    },
+    {
+     "style": "sync",
+     "label": "Sync"
+    },
+    {
+     "style": "build",
+     "label": "Build and test"
+    }
+   ],
+   "sharedTag": "Shared",
+   "sharedLegend": "every platform runs it (24% of the code)",
+   "groups": [
+    {
+     "id": "astryx",
+     "title": "Astryx",
+     "wide": {
+      "col": 0,
+      "row": 0,
+      "cols": 1,
+      "rows": 6
+     },
+     "narrow": {
+      "col": 0,
+      "row": 0,
+      "cols": 2,
+      "rows": 2
+     },
+     "single": {
+      "col": 0,
+      "row": 0,
+      "cols": 1,
+      "rows": 3
+     }
+    },
+    {
+     "id": "core",
+     "title": "Headless core",
+     "wide": {
+      "col": 1,
+      "row": 0,
+      "cols": 1,
+      "rows": 6
+     },
+     "narrow": {
+      "col": 0,
+      "row": 2,
+      "cols": 2,
+      "rows": 3
+     },
+     "single": {
+      "col": 0,
+      "row": 3,
+      "cols": 1,
+      "rows": 5
+     }
+    },
+    {
+     "id": "app",
+     "title": "Apple app",
+     "wide": {
+      "col": 2,
+      "row": 0,
+      "cols": 1,
+      "rows": 6
+     },
+     "narrow": {
+      "col": 0,
+      "row": 5,
+      "cols": 2,
+      "rows": 3
+     },
+     "single": {
+      "col": 0,
+      "row": 8,
+      "cols": 1,
+      "rows": 4
+     }
+    },
+    {
+     "id": "drawings",
+     "title": "Drawings",
+     "wide": {
+      "col": 3,
+      "row": 0,
+      "cols": 1,
+      "rows": 6
+     },
+     "narrow": {
+      "col": 0,
+      "row": 8,
+      "cols": 2,
+      "rows": 3
+     },
+     "single": {
+      "col": 0,
+      "row": 12,
+      "cols": 1,
+      "rows": 5
+     }
+    },
+    {
+     "id": "proof",
+     "title": "Proof",
+     "wide": {
+      "col": 4,
+      "row": 0,
+      "cols": 1,
+      "rows": 6
+     },
+     "narrow": {
+      "col": 0,
+      "row": 11,
+      "cols": 2,
+      "rows": 3
+     },
+     "single": {
+      "col": 0,
+      "row": 17,
+      "cols": 1,
+      "rows": 4
+     }
+    },
+    {
+     "id": "sync",
+     "title": "Data and sync",
+     "wide": {
+      "col": 0,
+      "row": 6,
+      "cols": 5,
+      "rows": 3
+     },
+     "narrow": {
+      "col": 0,
+      "row": 14,
+      "cols": 2,
+      "rows": 4
+     },
+     "single": {
+      "col": 0,
+      "row": 21,
+      "cols": 1,
+      "rows": 7
+     }
+    }
+   ],
+   "boxes": [
+    {
+     "id": "cli",
+     "title": "Astryx CLI",
+     "detail": "@astryxdesign/cli",
+     "group": "astryx",
+     "shared": false,
+     "wide": {
+      "col": 0,
+      "row": 1,
+      "cols": 1,
+      "rows": 1
+     },
+     "narrow": {
+      "col": 1,
+      "row": 1,
+      "cols": 1,
+      "rows": 1
+     },
+     "single": {
+      "col": 0,
+      "row": 1,
+      "cols": 1,
+      "rows": 1
+     },
+     "state": "dimmed",
+     "selectId": "how.select:cli",
+     "accessibilityLabel": "Astryx CLI, Astryx. @astryxdesign/cli",
+     "accessibilityValue": ""
+    },
+    {
+     "id": "components",
+     "title": "Astryx components",
+     "detail": "@astryxdesign/core",
+     "group": "astryx",
+     "shared": false,
+     "wide": {
+      "col": 0,
+      "row": 5,
+      "cols": 1,
+      "rows": 1
+     },
+     "narrow": {
+      "col": 0,
+      "row": 1,
+      "cols": 1,
+      "rows": 1
+     },
+     "single": {
+      "col": 0,
+      "row": 2,
+      "cols": 1,
+      "rows": 1
+     },
+     "state": "dimmed",
+     "selectId": "how.select:components",
+     "accessibilityLabel": "Astryx components, Astryx. @astryxdesign/core",
+     "accessibilityValue": ""
+    },
+    {
+     "id": "templates",
+     "title": "Templates",
+     "detail": "initial · reduce · view",
+     "group": "core",
+     "shared": true,
+     "wide": {
+      "col": 1,
+      "row": 1,
+      "cols": 1,
+      "rows": 1
+     },
+     "narrow": {
+      "col": 1,
+      "row": 3,
+      "cols": 1,
+      "rows": 1
+     },
+     "single": {
+      "col": 0,
+      "row": 4,
+      "cols": 1,
+      "rows": 1
+     },
+     "state": "linked",
+     "selectId": "how.select:templates",
+     "accessibilityLabel": "Templates, Headless core, shared by every platform. initial, reduce, view",
+     "accessibilityValue": "Connected to AXClient"
+    },
+    {
+     "id": "view",
+     "title": "View model",
+     "detail": "Words, rules, results",
+     "group": "core",
+     "shared": true,
+     "wide": {
+      "col": 1,
+      "row": 2,
+      "cols": 1,
+      "rows": 1
+     },
+     "narrow": {
+      "col": 1,
+      "row": 4,
+      "cols": 1,
+      "rows": 1
+     },
+     "single": {
+      "col": 0,
+      "row": 5,
+      "cols": 1,
+      "rows": 1
+     },
+     "state": "linked",
+     "selectId": "how.select:view",
+     "accessibilityLabel": "View model, Headless core, shared by every platform. Words, rules, results",
+     "accessibilityValue": "Connected to AXClient"
+    },
+    {
+     "id": "tokens",
+     "title": "Theme tokens",
+     "detail": "Resolved, light and dark",
+     "group": "core",
+     "shared": true,
+     "wide": {
+      "col": 1,
+      "row": 3,
+      "cols": 1,
+      "rows": 1
+     },
+     "narrow": {
+      "col": 0,
+      "row": 3,
+      "cols": 1,
+      "rows": 1
+     },
+     "single": {
+      "col": 0,
+      "row": 6,
+      "cols": 1,
+      "rows": 1
+     },
+     "state": "linked",
+     "selectId": "how.select:tokens",
+     "accessibilityLabel": "Theme tokens, Headless core, shared by every platform. Resolved, light and dark",
+     "accessibilityValue": "Connected to AXClient"
+    },
+    {
+     "id": "saved",
+     "title": "Saved data",
+     "detail": "Doc, mutations by area",
+     "group": "core",
+     "shared": true,
+     "wide": {
+      "col": 1,
+      "row": 4,
+      "cols": 1,
+      "rows": 1
+     },
+     "narrow": {
+      "col": 0,
+      "row": 4,
+      "cols": 1,
+      "rows": 1
+     },
+     "single": {
+      "col": 0,
+      "row": 7,
+      "cols": 1,
+      "rows": 1
+     },
+     "state": "dimmed",
+     "selectId": "how.select:saved",
+     "accessibilityLabel": "Saved data, Headless core, shared by every platform. Doc, mutations by area",
+     "accessibilityValue": ""
+    },
+    {
+     "id": "hermes",
+     "title": "Hermes",
+     "detail": "Headless React Native",
+     "group": "app",
+     "shared": false,
+     "wide": {
+      "col": 2,
+      "row": 1,
+      "cols": 1,
+      "rows": 1
+     },
+     "narrow": {
+      "col": 0,
+      "row": 6,
+      "cols": 1,
+      "rows": 1
+     },
+     "single": {
+      "col": 0,
+      "row": 9,
+      "cols": 1,
+      "rows": 1
+     },
+     "state": "dimmed",
+     "selectId": "how.select:hermes",
+     "accessibilityLabel": "Hermes, Apple app. Headless React Native",
+     "accessibilityValue": ""
+    },
+    {
+     "id": "axclient",
+     "title": "AXClient",
+     "detail": "The TurboModule bridge",
+     "group": "app",
+     "shared": false,
+     "wide": {
+      "col": 2,
+      "row": 2,
+      "cols": 1,
+      "rows": 1
+     },
+     "narrow": {
+      "col": 1,
+      "row": 6,
+      "cols": 1,
+      "rows": 1
+     },
+     "single": {
+      "col": 0,
+      "row": 10,
+      "cols": 1,
+      "rows": 1
+     },
+     "state": "selected",
+     "selectId": "how.select:axclient",
+     "accessibilityLabel": "AXClient, Apple app. The TurboModule bridge",
+     "accessibilityValue": ""
+    },
+    {
+     "id": "webviews",
+     "title": "WKWebView panes",
+     "detail": "Served by astryx://",
+     "group": "app",
+     "shared": false,
+     "wide": {
+      "col": 2,
+      "row": 3,
+      "cols": 1,
+      "rows": 1
+     },
+     "narrow": {
+      "col": 0,
+      "row": 7,
+      "cols": 1,
+      "rows": 1
+     },
+     "single": {
+      "col": 0,
+      "row": 11,
+      "cols": 1,
+      "rows": 1
+     },
+     "state": "linked",
+     "selectId": "how.select:webviews",
+     "accessibilityLabel": "WKWebView panes, Apple app. Served by astryx://",
+     "accessibilityValue": "Connected to AXClient"
+    },
+    {
+     "id": "swiftui",
+     "title": "AstryxKit",
+     "detail": "SwiftUI: Mac, iPhone",
+     "group": "drawings",
+     "shared": false,
+     "wide": {
+      "col": 3,
+      "row": 2,
+      "cols": 1,
+      "rows": 1
+     },
+     "narrow": {
+      "col": 1,
+      "row": 10,
+      "cols": 1,
+      "rows": 1
+     },
+     "single": {
+      "col": 0,
+      "row": 14,
+      "cols": 1,
+      "rows": 1
+     },
+     "state": "linked",
+     "selectId": "how.select:swiftui",
+     "accessibilityLabel": "AstryxKit, Drawings. SwiftUI: Mac, iPhone",
+     "accessibilityValue": "Connected to AXClient"
+    },
+    {
+     "id": "jsx",
+     "title": "Web on Hermes",
+     "detail": "Astryx JSX, app's core",
+     "group": "drawings",
+     "shared": false,
+     "wide": {
+      "col": 3,
+      "row": 3,
+      "cols": 1,
+      "rows": 1
+     },
+     "narrow": {
+      "col": 0,
+      "row": 9,
+      "cols": 1,
+      "rows": 1
+     },
+     "single": {
+      "col": 0,
+      "row": 15,
+      "cols": 1,
+      "rows": 1
+     },
+     "state": "dimmed",
+     "selectId": "how.select:jsx",
+     "accessibilityLabel": "Web on Hermes, Drawings. Astryx JSX, app's core",
+     "accessibilityValue": ""
+    },
+    {
+     "id": "own",
+     "title": "Web, own core",
+     "detail": "Same code, own core",
+     "group": "drawings",
+     "shared": false,
+     "wide": {
+      "col": 3,
+      "row": 4,
+      "cols": 1,
+      "rows": 1
+     },
+     "narrow": {
+      "col": 0,
+      "row": 10,
+      "cols": 1,
+      "rows": 1
+     },
+     "single": {
+      "col": 0,
+      "row": 16,
+      "cols": 1,
+      "rows": 1
+     },
+     "state": "dimmed",
+     "selectId": "how.select:own",
+     "accessibilityLabel": "Web, own core, Drawings. Same code, own core",
+     "accessibilityValue": ""
+    },
+    {
+     "id": "stock",
+     "title": "Stock Astryx",
+     "detail": "Reference, own state",
+     "group": "drawings",
+     "shared": false,
+     "wide": {
+      "col": 3,
+      "row": 1,
+      "cols": 1,
+      "rows": 1
+     },
+     "narrow": {
+      "col": 1,
+      "row": 9,
+      "cols": 1,
+      "rows": 1
+     },
+     "single": {
+      "col": 0,
+      "row": 13,
+      "cols": 1,
+      "rows": 1
+     },
+     "state": "dimmed",
+     "selectId": "how.select:stock",
+     "accessibilityLabel": "Stock Astryx, Drawings. Reference, own state",
+     "accessibilityValue": ""
+    },
+    {
+     "id": "fixtures",
+     "title": "Swift fixtures",
+     "detail": "Snapshots, decoded",
+     "group": "proof",
+     "shared": false,
+     "wide": {
+      "col": 4,
+      "row": 2,
+      "cols": 1,
+      "rows": 1
+     },
+     "narrow": {
+      "col": 1,
+      "row": 12,
+      "cols": 1,
+      "rows": 1
+     },
+     "single": {
+      "col": 0,
+      "row": 18,
+      "cols": 1,
+      "rows": 1
+     },
+     "state": "dimmed",
+     "selectId": "how.select:fixtures",
+     "accessibilityLabel": "Swift fixtures, Proof. Snapshots, decoded",
+     "accessibilityValue": ""
+    },
+    {
+     "id": "replay",
+     "title": "Scenario replay",
+     "detail": "Recorded, both sides",
+     "group": "proof",
+     "shared": false,
+     "wide": {
+      "col": 4,
+      "row": 3,
+      "cols": 1,
+      "rows": 1
+     },
+     "narrow": {
+      "col": 0,
+      "row": 12,
+      "cols": 1,
+      "rows": 1
+     },
+     "single": {
+      "col": 0,
+      "row": 19,
+      "cols": 1,
+      "rows": 1
+     },
+     "state": "dimmed",
+     "selectId": "how.select:replay",
+     "accessibilityLabel": "Scenario replay, Proof. Recorded, both sides",
+     "accessibilityValue": ""
+    },
+    {
+     "id": "parity",
+     "title": "Parity",
+     "detail": "1216 of 1216 identical",
+     "group": "proof",
+     "shared": false,
+     "wide": {
+      "col": 4,
+      "row": 4,
+      "cols": 1,
+      "rows": 1
+     },
+     "narrow": {
+      "col": 1,
+      "row": 13,
+      "cols": 1,
+      "rows": 1
+     },
+     "single": {
+      "col": 0,
+      "row": 20,
+      "cols": 1,
+      "rows": 1
+     },
+     "state": "dimmed",
+     "selectId": "how.select:parity",
+     "accessibilityLabel": "Parity, Proof. 1216 of 1216 identical",
+     "accessibilityValue": ""
+    },
+    {
+     "id": "device",
+     "title": "Device copy",
+     "detail": "The doc, signed out",
+     "group": "sync",
+     "shared": false,
+     "wide": {
+      "col": 0,
+      "row": 7,
+      "cols": 1,
+      "rows": 1
+     },
+     "narrow": {
+      "col": 1,
+      "row": 15,
+      "cols": 1,
+      "rows": 1
+     },
+     "single": {
+      "col": 0,
+      "row": 22,
+      "cols": 1,
+      "rows": 1
+     },
+     "state": "dimmed",
+     "selectId": "how.select:device",
+     "accessibilityLabel": "Device copy, Data and sync. The doc, signed out",
+     "accessibilityValue": ""
+    },
+    {
+     "id": "zero",
+     "title": "Zero client",
+     "detail": "op-sqlite or IndexedDB",
+     "group": "sync",
+     "shared": true,
+     "wide": {
+      "col": 1,
+      "row": 7,
+      "cols": 1,
+      "rows": 1
+     },
+     "narrow": {
+      "col": 0,
+      "row": 15,
+      "cols": 1,
+      "rows": 1
+     },
+     "single": {
+      "col": 0,
+      "row": 23,
+      "cols": 1,
+      "rows": 1
+     },
+     "state": "dimmed",
+     "selectId": "how.select:zero",
+     "accessibilityLabel": "Zero client, Data and sync, shared by every platform. op-sqlite or IndexedDB",
+     "accessibilityValue": ""
+    },
+    {
+     "id": "cache",
+     "title": "zero-cache",
+     "detail": "Replicates Postgres",
+     "group": "sync",
+     "shared": false,
+     "wide": {
+      "col": 3,
+      "row": 7,
+      "cols": 1,
+      "rows": 1
+     },
+     "narrow": {
+      "col": 0,
+      "row": 16,
+      "cols": 1,
+      "rows": 1
+     },
+     "single": {
+      "col": 0,
+      "row": 24,
+      "cols": 1,
+      "rows": 1
+     },
+     "state": "dimmed",
+     "selectId": "how.select:cache",
+     "accessibilityLabel": "zero-cache, Data and sync. Replicates Postgres",
+     "accessibilityValue": ""
+    },
+    {
+     "id": "api",
+     "title": "API",
+     "detail": "Runs core mutations",
+     "group": "sync",
+     "shared": false,
+     "wide": {
+      "col": 2,
+      "row": 8,
+      "cols": 1,
+      "rows": 1
+     },
+     "narrow": {
+      "col": 1,
+      "row": 16,
+      "cols": 1,
+      "rows": 1
+     },
+     "single": {
+      "col": 0,
+      "row": 25,
+      "cols": 1,
+      "rows": 1
+     },
+     "state": "dimmed",
+     "selectId": "how.select:api",
+     "accessibilityLabel": "API, Data and sync. Runs core mutations",
+     "accessibilityValue": ""
+    },
+    {
+     "id": "postgres",
+     "title": "Postgres",
+     "detail": "The source of truth",
+     "group": "sync",
+     "shared": false,
+     "wide": {
+      "col": 4,
+      "row": 8,
+      "cols": 1,
+      "rows": 1
+     },
+     "narrow": {
+      "col": 0,
+      "row": 17,
+      "cols": 1,
+      "rows": 1
+     },
+     "single": {
+      "col": 0,
+      "row": 26,
+      "cols": 1,
+      "rows": 1
+     },
+     "state": "dimmed",
+     "selectId": "how.select:postgres",
+     "accessibilityLabel": "Postgres, Data and sync. The source of truth",
+     "accessibilityValue": ""
+    },
+    {
+     "id": "access",
+     "title": "Cloudflare Access",
+     "detail": "Signs people in",
+     "group": "sync",
+     "shared": false,
+     "wide": {
+      "col": 0,
+      "row": 8,
+      "cols": 1,
+      "rows": 1
+     },
+     "narrow": {
+      "col": 1,
+      "row": 17,
+      "cols": 1,
+      "rows": 1
+     },
+     "single": {
+      "col": 0,
+      "row": 27,
+      "cols": 1,
+      "rows": 1
+     },
+     "state": "dimmed",
+     "selectId": "how.select:access",
+     "accessibilityLabel": "Cloudflare Access, Data and sync. Signs people in",
+     "accessibilityValue": ""
+    }
+   ],
+   "edges": [
+    {
+     "id": "hermes-core",
+     "from": "hermes",
+     "to": "core",
+     "label": "runs the core and sync",
+     "style": "control",
+     "toGroup": true,
+     "direction": "forward",
+     "wide": {
+      "from": "top",
+      "to": "top",
+      "fromAt": 0.85,
+      "toAt": 0.6,
+      "outside": true,
+      "lane": 2
+     },
+     "narrow": {
+      "from": "top",
+      "to": "bottom",
+      "fromAt": 0.85
+     },
+     "single": {
+      "from": "top",
+      "to": "bottom",
+      "fromAt": 0.85
+     },
+     "drawn": {
+      "wide": true,
+      "narrow": false,
+      "single": false
+     },
+     "state": "dimmed",
+     "showLabel": false
+    },
+    {
+     "id": "cli-templates",
+     "from": "cli",
+     "to": "templates",
+     "label": "refactored",
+     "style": "build",
+     "toGroup": false,
+     "direction": "forward",
+     "wide": {
+      "from": "top",
+      "to": "top",
+      "fromAt": 0.95,
+      "toAt": 0.5,
+      "lane": 1
+     },
+     "narrow": {
+      "from": "bottom",
+      "to": "top",
+      "fromAt": 0.92,
+      "toAt": 0.92
+     },
+     "single": {
+      "from": "right",
+      "to": "right",
+      "lane": 1,
+      "fromAt": 0.55,
+      "toAt": 0.1
+     },
+     "drawn": {
+      "wide": true,
+      "narrow": true,
+      "single": false
+     },
+     "state": "dimmed",
+     "showLabel": false
+    },
+    {
+     "id": "cli-stock",
+     "from": "cli",
+     "to": "stock",
+     "label": "generated",
+     "style": "build",
+     "toGroup": false,
+     "direction": "forward",
+     "wide": {
+      "from": "top",
+      "to": "top",
+      "fromAt": 0.8,
+      "toAt": 0.85,
+      "outside": true,
+      "lane": 3
+     },
+     "narrow": {
+      "from": "left",
+      "to": "left",
+      "lane": 1.7333333333333334,
+      "fromAt": 0.65,
+      "toAt": 0.2
+     },
+     "single": {
+      "from": "left",
+      "to": "left",
+      "lane": 1,
+      "fromAt": 0.55,
+      "toAt": 0.1
+     },
+     "drawn": {
+      "wide": true,
+      "narrow": false,
+      "single": false
+     },
+     "state": "dimmed",
+     "showLabel": false
+    },
+    {
+     "id": "components-drawings",
+     "from": "components",
+     "to": "drawings",
+     "label": "components",
+     "style": "build",
+     "toGroup": true,
+     "direction": "forward",
+     "wide": {
+      "from": "right",
+      "to": "left",
+      "fromAt": 0.5
+     },
+     "narrow": {
+      "from": "left",
+      "to": "left",
+      "lane": 1,
+      "fromAt": 0.55
+     },
+     "single": {
+      "from": "left",
+      "to": "left",
+      "lane": 1,
+      "fromAt": 0.55
+     },
+     "drawn": {
+      "wide": true,
+      "narrow": false,
+      "single": false
+     },
+     "state": "dimmed",
+     "showLabel": false
+    },
+    {
+     "id": "components-tokens",
+     "from": "components",
+     "to": "tokens",
+     "label": "resolved",
+     "style": "build",
+     "toGroup": false,
+     "direction": "forward",
+     "wide": {
+      "from": "top",
+      "to": "left",
+      "fromAt": 0.85,
+      "toAt": 0.6
+     },
+     "narrow": {
+      "from": "bottom",
+      "to": "top",
+      "fromAt": 0.92,
+      "toAt": 0.92
+     },
+     "single": {
+      "from": "right",
+      "to": "right",
+      "lane": 1,
+      "fromAt": 0.55,
+      "toAt": 0.1
+     },
+     "drawn": {
+      "wide": true,
+      "narrow": true,
+      "single": false
+     },
+     "state": "dimmed",
+     "showLabel": false
+    },
+    {
+     "id": "view-axclient",
+     "from": "view",
+     "to": "axclient",
+     "label": "snapshot JSON",
+     "style": "data",
+     "toGroup": false,
+     "direction": "forward",
+     "wide": {
+      "from": "right",
+      "to": "left",
+      "fromAt": 0.5
+     },
+     "narrow": {
+      "from": "bottom",
+      "to": "top",
+      "fromAt": 0.92,
+      "toAt": 0.92
+     },
+     "single": {
+      "from": "left",
+      "to": "left",
+      "lane": 1,
+      "toAt": 0.1,
+      "fromAt": 0.55
+     },
+     "drawn": {
+      "wide": true,
+      "narrow": true,
+      "single": true
+     },
+     "state": "highlighted",
+     "showLabel": true
+    },
+    {
+     "id": "axclient-templates",
+     "from": "axclient",
+     "to": "templates",
+     "label": "action JSON",
+     "style": "control",
+     "toGroup": false,
+     "direction": "forward",
+     "wide": {
+      "from": "left",
+      "to": "right",
+      "fromAt": 0.15,
+      "toAt": 0.75,
+      "bend": 0.6
+     },
+     "narrow": {
+      "from": "left",
+      "to": "left",
+      "lane": 1.7333333333333334,
+      "fromAt": 0.2,
+      "toAt": 0.65
+     },
+     "single": {
+      "from": "right",
+      "to": "right",
+      "lane": 2,
+      "fromAt": 0.1,
+      "toAt": 0.55
+     },
+     "drawn": {
+      "wide": true,
+      "narrow": true,
+      "single": true
+     },
+     "state": "highlighted",
+     "showLabel": true
+    },
+    {
+     "id": "saved-zero",
+     "from": "saved",
+     "to": "zero",
+     "label": "mutations · rows",
+     "style": "sync",
+     "toGroup": false,
+     "direction": "both",
+     "wide": {
+      "from": "bottom",
+      "to": "top",
+      "fromAt": 0.8
+     },
+     "narrow": {
+      "from": "left",
+      "to": "left",
+      "lane": 1,
+      "fromAt": 0.55,
+      "toAt": 0.1
+     },
+     "single": {
+      "from": "left",
+      "to": "left",
+      "lane": 1,
+      "fromAt": 0.55,
+      "toAt": 0.1
+     },
+     "drawn": {
+      "wide": true,
+      "narrow": false,
+      "single": false
+     },
+     "state": "dimmed",
+     "showLabel": false
+    },
+    {
+     "id": "zero-cache",
+     "from": "zero",
+     "to": "cache",
+     "label": "WebSocket",
+     "style": "sync",
+     "toGroup": false,
+     "direction": "both",
+     "wide": {
+      "from": "right",
+      "to": "left",
+      "fromAt": 0.35
+     },
+     "narrow": {
+      "from": "bottom",
+      "to": "top",
+      "fromAt": 0.92,
+      "toAt": 0.92
+     },
+     "single": {
+      "from": "bottom",
+      "to": "top",
+      "fromAt": 0.92,
+      "toAt": 0.92
+     },
+     "drawn": {
+      "wide": true,
+      "narrow": true,
+      "single": true
+     },
+     "state": "dimmed",
+     "showLabel": false
+    },
+    {
+     "id": "postgres-cache",
+     "from": "postgres",
+     "to": "cache",
+     "label": "replication",
+     "style": "sync",
+     "toGroup": false,
+     "direction": "forward",
+     "wide": {
+      "from": "top",
+      "to": "right",
+      "fromAt": 0.5,
+      "toAt": 0.6
+     },
+     "narrow": {
+      "from": "top",
+      "to": "bottom",
+      "fromAt": 0.92,
+      "toAt": 0.92
+     },
+     "single": {
+      "from": "right",
+      "to": "right",
+      "lane": 1,
+      "fromAt": 0.1,
+      "toAt": 0.55
+     },
+     "drawn": {
+      "wide": true,
+      "narrow": true,
+      "single": false
+     },
+     "state": "dimmed",
+     "showLabel": false
+    },
+    {
+     "id": "templates-view",
+     "from": "templates",
+     "to": "view",
+     "label": "view()",
+     "style": "data",
+     "toGroup": false,
+     "direction": "forward",
+     "wide": {
+      "from": "bottom",
+      "to": "top"
+     },
+     "narrow": {
+      "from": "bottom",
+      "to": "top",
+      "fromAt": 0.92,
+      "toAt": 0.92
+     },
+     "single": {
+      "from": "bottom",
+      "to": "top",
+      "fromAt": 0.92,
+      "toAt": 0.92
+     },
+     "drawn": {
+      "wide": true,
+      "narrow": true,
+      "single": true
+     },
+     "state": "dimmed",
+     "showLabel": false
+    },
+    {
+     "id": "templates-saved",
+     "from": "templates",
+     "to": "saved",
+     "label": "mutations",
+     "style": "control",
+     "toGroup": false,
+     "direction": "forward",
+     "wide": {
+      "from": "left",
+      "to": "left",
+      "fromAt": 0.75,
+      "toAt": 0.3
+     },
+     "narrow": {
+      "from": "left",
+      "to": "right",
+      "bend": 0.65,
+      "fromAt": 0.65,
+      "toAt": 0.1
+     },
+     "single": {
+      "from": "right",
+      "to": "right",
+      "lane": 1,
+      "fromAt": 0.55,
+      "toAt": 0.1
+     },
+     "drawn": {
+      "wide": true,
+      "narrow": false,
+      "single": false
+     },
+     "state": "dimmed",
+     "showLabel": false
+    },
+    {
+     "id": "tokens-axclient",
+     "from": "tokens",
+     "to": "axclient",
+     "label": "theme JSON",
+     "style": "data",
+     "toGroup": false,
+     "direction": "forward",
+     "wide": {
+      "from": "right",
+      "to": "left",
+      "fromAt": 0.5,
+      "toAt": 0.85,
+      "bend": 0.4
+     },
+     "narrow": {
+      "from": "right",
+      "to": "left",
+      "bend": 0.65,
+      "toAt": 0.35,
+      "fromAt": 0.55
+     },
+     "single": {
+      "from": "right",
+      "to": "right",
+      "lane": 1,
+      "toAt": 0.25,
+      "fromAt": 0.55
+     },
+     "drawn": {
+      "wide": true,
+      "narrow": true,
+      "single": true
+     },
+     "state": "highlighted",
+     "showLabel": true
+    },
+    {
+     "id": "axclient-swiftui",
+     "from": "axclient",
+     "to": "swiftui",
+     "label": "snapshot JSON",
+     "style": "data",
+     "toGroup": false,
+     "direction": "forward",
+     "wide": {
+      "from": "right",
+      "to": "left",
+      "fromAt": 0.35
+     },
+     "narrow": {
+      "from": "left",
+      "to": "left",
+      "lane": 0.9333333333333332,
+      "fromAt": 0.8,
+      "toAt": 0.2
+     },
+     "single": {
+      "from": "right",
+      "to": "right",
+      "lane": 1,
+      "fromAt": 0.55,
+      "toAt": 0.1
+     },
+     "drawn": {
+      "wide": true,
+      "narrow": true,
+      "single": true
+     },
+     "state": "highlighted",
+     "showLabel": true
+    },
+    {
+     "id": "swiftui-axclient",
+     "from": "swiftui",
+     "to": "axclient",
+     "label": "action JSON",
+     "style": "control",
+     "toGroup": false,
+     "direction": "forward",
+     "wide": {
+      "from": "left",
+      "to": "right",
+      "fromAt": 0.7
+     },
+     "narrow": {
+      "from": "right",
+      "to": "right",
+      "lane": 2,
+      "toAt": 0.8,
+      "fromAt": 0.2
+     },
+     "single": {
+      "from": "left",
+      "to": "left",
+      "lane": 1,
+      "fromAt": 0.1,
+      "toAt": 0.55
+     },
+     "drawn": {
+      "wide": true,
+      "narrow": true,
+      "single": true
+     },
+     "state": "highlighted",
+     "showLabel": false
+    },
+    {
+     "id": "axclient-webviews",
+     "from": "axclient",
+     "to": "webviews",
+     "label": "snapshot JSON",
+     "style": "data",
+     "toGroup": false,
+     "direction": "forward",
+     "wide": {
+      "from": "bottom",
+      "to": "top",
+      "fromAt": 0.3
+     },
+     "narrow": {
+      "from": "left",
+      "to": "right",
+      "bend": 0.65,
+      "fromAt": 0.65,
+      "toAt": 0.1
+     },
+     "single": {
+      "from": "bottom",
+      "to": "top",
+      "fromAt": 0.92,
+      "toAt": 0.92
+     },
+     "drawn": {
+      "wide": true,
+      "narrow": true,
+      "single": true
+     },
+     "state": "highlighted",
+     "showLabel": true
+    },
+    {
+     "id": "webviews-axclient",
+     "from": "webviews",
+     "to": "axclient",
+     "label": "action JSON",
+     "style": "control",
+     "toGroup": false,
+     "direction": "forward",
+     "wide": {
+      "from": "top",
+      "to": "bottom",
+      "fromAt": 0.7
+     },
+     "narrow": {
+      "from": "right",
+      "to": "right",
+      "lane": 1,
+      "fromAt": 0.25,
+      "toAt": 0.65
+     },
+     "single": {
+      "from": "top",
+      "to": "bottom",
+      "fromAt": 0.75,
+      "toAt": 0.75
+     },
+     "drawn": {
+      "wide": true,
+      "narrow": true,
+      "single": true
+     },
+     "state": "highlighted",
+     "showLabel": false
+    },
+    {
+     "id": "webviews-jsx",
+     "from": "webviews",
+     "to": "jsx",
+     "label": "receive()",
+     "style": "data",
+     "toGroup": false,
+     "direction": "forward",
+     "wide": {
+      "from": "right",
+      "to": "left",
+      "fromAt": 0.25
+     },
+     "narrow": {
+      "from": "bottom",
+      "to": "top",
+      "fromAt": 0.75,
+      "toAt": 0.75
+     },
+     "single": {
+      "from": "left",
+      "to": "left",
+      "lane": 1,
+      "fromAt": 0.55,
+      "toAt": 0.1
+     },
+     "drawn": {
+      "wide": true,
+      "narrow": true,
+      "single": false
+     },
+     "state": "dimmed",
+     "showLabel": false
+    },
+    {
+     "id": "jsx-webviews",
+     "from": "jsx",
+     "to": "webviews",
+     "label": "postMessage",
+     "style": "control",
+     "toGroup": false,
+     "direction": "forward",
+     "wide": {
+      "from": "left",
+      "to": "right",
+      "fromAt": 0.5
+     },
+     "narrow": {
+      "from": "top",
+      "to": "bottom",
+      "fromAt": 0.92,
+      "toAt": 0.92
+     },
+     "single": {
+      "from": "right",
+      "to": "right",
+      "lane": 1,
+      "fromAt": 0.1,
+      "toAt": 0.55
+     },
+     "drawn": {
+      "wide": true,
+      "narrow": true,
+      "single": false
+     },
+     "state": "dimmed",
+     "showLabel": false
+    },
+    {
+     "id": "webviews-own",
+     "from": "webviews",
+     "to": "own",
+     "label": "screen only",
+     "style": "data",
+     "toGroup": false,
+     "direction": "forward",
+     "wide": {
+      "from": "right",
+      "to": "left",
+      "fromAt": 0.8,
+      "bend": 0.5
+     },
+     "narrow": {
+      "from": "left",
+      "to": "left",
+      "lane": 1,
+      "fromAt": 0.55,
+      "toAt": 0.1
+     },
+     "single": {
+      "from": "right",
+      "to": "right",
+      "lane": 2,
+      "fromAt": 0.7,
+      "toAt": 0.1
+     },
+     "drawn": {
+      "wide": true,
+      "narrow": false,
+      "single": false
+     },
+     "state": "dimmed",
+     "showLabel": false
+    },
+    {
+     "id": "webviews-stock",
+     "from": "webviews",
+     "to": "stock",
+     "label": "template name",
+     "style": "data",
+     "toGroup": false,
+     "direction": "forward",
+     "wide": {
+      "from": "right",
+      "to": "left",
+      "fromAt": 0.95,
+      "toAt": 0.5,
+      "bend": 0.25
+     },
+     "narrow": {
+      "from": "right",
+      "to": "left",
+      "bend": 0.35,
+      "fromAt": 0.55,
+      "toAt": 0.2
+     },
+     "single": {
+      "from": "bottom",
+      "to": "top",
+      "fromAt": 0.92,
+      "toAt": 0.92
+     },
+     "drawn": {
+      "wide": true,
+      "narrow": false,
+      "single": true
+     },
+     "state": "dimmed",
+     "showLabel": false
+    },
+    {
+     "id": "fixtures-swiftui",
+     "from": "fixtures",
+     "to": "swiftui",
+     "label": "decoded",
+     "style": "build",
+     "toGroup": false,
+     "direction": "forward",
+     "wide": {
+      "from": "left",
+      "to": "right",
+      "fromAt": 0.3
+     },
+     "narrow": {
+      "from": "top",
+      "to": "bottom",
+      "fromAt": 0.92,
+      "toAt": 0.92
+     },
+     "single": {
+      "from": "right",
+      "to": "right",
+      "lane": 1,
+      "fromAt": 0.1,
+      "toAt": 0.55
+     },
+     "drawn": {
+      "wide": true,
+      "narrow": true,
+      "single": false
+     },
+     "state": "dimmed",
+     "showLabel": false
+    },
+    {
+     "id": "replay-swiftui",
+     "from": "replay",
+     "to": "swiftui",
+     "label": "drives",
+     "style": "control",
+     "toGroup": false,
+     "direction": "forward",
+     "wide": {
+      "from": "left",
+      "to": "right",
+      "fromAt": 0.25,
+      "toAt": 0.85,
+      "bend": 0.5
+     },
+     "narrow": {
+      "from": "right",
+      "to": "left",
+      "bend": 0.35,
+      "fromAt": 0.1,
+      "toAt": 0.65
+     },
+     "single": {
+      "from": "left",
+      "to": "left",
+      "lane": 1,
+      "fromAt": 0.1,
+      "toAt": 0.55
+     },
+     "drawn": {
+      "wide": true,
+      "narrow": false,
+      "single": false
+     },
+     "state": "dimmed",
+     "showLabel": false
+    },
+    {
+     "id": "replay-jsx",
+     "from": "replay",
+     "to": "jsx",
+     "label": "drives",
+     "style": "control",
+     "toGroup": false,
+     "direction": "forward",
+     "wide": {
+      "from": "left",
+      "to": "right",
+      "fromAt": 0.6
+     },
+     "narrow": {
+      "from": "left",
+      "to": "left",
+      "lane": 1,
+      "fromAt": 0.1,
+      "toAt": 0.55
+     },
+     "single": {
+      "from": "right",
+      "to": "right",
+      "lane": 1,
+      "fromAt": 0.1,
+      "toAt": 0.55
+     },
+     "drawn": {
+      "wide": true,
+      "narrow": false,
+      "single": false
+     },
+     "state": "dimmed",
+     "showLabel": false
+    },
+    {
+     "id": "parity-own",
+     "from": "parity",
+     "to": "own",
+     "label": "compares",
+     "style": "build",
+     "toGroup": false,
+     "direction": "forward",
+     "wide": {
+      "from": "left",
+      "to": "right",
+      "fromAt": 0.5
+     },
+     "narrow": {
+      "from": "left",
+      "to": "right",
+      "bend": 0.65,
+      "fromAt": 0.2,
+      "toAt": 0.55
+     },
+     "single": {
+      "from": "right",
+      "to": "right",
+      "lane": 1,
+      "fromAt": 0.1,
+      "toAt": 0.55
+     },
+     "drawn": {
+      "wide": true,
+      "narrow": false,
+      "single": false
+     },
+     "state": "dimmed",
+     "showLabel": false
+    },
+    {
+     "id": "parity-stock",
+     "from": "parity",
+     "to": "stock",
+     "label": "compares",
+     "style": "build",
+     "toGroup": false,
+     "direction": "forward",
+     "wide": {
+      "from": "right",
+      "to": "right",
+      "fromAt": 0.5,
+      "toAt": 0.5,
+      "lane": 1
+     },
+     "narrow": {
+      "from": "right",
+      "to": "right",
+      "lane": 1,
+      "fromAt": 0.2,
+      "toAt": 0.65
+     },
+     "single": {
+      "from": "left",
+      "to": "left",
+      "lane": 1,
+      "fromAt": 0.1,
+      "toAt": 0.55
+     },
+     "drawn": {
+      "wide": true,
+      "narrow": false,
+      "single": false
+     },
+     "state": "dimmed",
+     "showLabel": false
+    },
+    {
+     "id": "saved-device",
+     "from": "saved",
+     "to": "device",
+     "label": "signed out",
+     "style": "data",
+     "toGroup": false,
+     "direction": "forward",
+     "wide": {
+      "from": "bottom",
+      "to": "top",
+      "fromAt": 0.1,
+      "toAt": 0.6,
+      "bend": 0.92
+     },
+     "narrow": {
+      "from": "right",
+      "to": "left",
+      "bend": 0.35,
+      "fromAt": 0.55,
+      "toAt": 0.2
+     },
+     "single": {
+      "from": "right",
+      "to": "right",
+      "lane": 1,
+      "fromAt": 0.55,
+      "toAt": 0.1
+     },
+     "drawn": {
+      "wide": true,
+      "narrow": false,
+      "single": false
+     },
+     "state": "dimmed",
+     "showLabel": false
+    },
+    {
+     "id": "cache-api",
+     "from": "cache",
+     "to": "api",
+     "label": "query · mutate",
+     "style": "control",
+     "toGroup": false,
+     "direction": "forward",
+     "wide": {
+      "from": "bottom",
+      "to": "right",
+      "fromAt": 0.35,
+      "toAt": 0.3
+     },
+     "narrow": {
+      "from": "right",
+      "to": "left",
+      "fromAt": 0.5,
+      "toAt": 0.5
+     },
+     "single": {
+      "from": "bottom",
+      "to": "top",
+      "fromAt": 0.92,
+      "toAt": 0.92
+     },
+     "drawn": {
+      "wide": true,
+      "narrow": true,
+      "single": true
+     },
+     "state": "dimmed",
+     "showLabel": false
+    },
+    {
+     "id": "api-postgres",
+     "from": "api",
+     "to": "postgres",
+     "label": "same mutations",
+     "style": "data",
+     "toGroup": false,
+     "direction": "forward",
+     "wide": {
+      "from": "right",
+      "to": "left",
+      "fromAt": 0.7
+     },
+     "narrow": {
+      "from": "left",
+      "to": "right",
+      "bend": 0.65,
+      "fromAt": 0.65,
+      "toAt": 0.1
+     },
+     "single": {
+      "from": "bottom",
+      "to": "top",
+      "fromAt": 0.92,
+      "toAt": 0.92
+     },
+     "drawn": {
+      "wide": true,
+      "narrow": false,
+      "single": true
+     },
+     "state": "dimmed",
+     "showLabel": false
+    },
+    {
+     "id": "access-api",
+     "from": "access",
+     "to": "api",
+     "label": "identity",
+     "style": "control",
+     "toGroup": false,
+     "direction": "forward",
+     "wide": {
+      "from": "right",
+      "to": "left",
+      "fromAt": 0.55
+     },
+     "narrow": {
+      "from": "top",
+      "to": "bottom",
+      "fromAt": 0.92,
+      "toAt": 0.92
+     },
+     "single": {
+      "from": "right",
+      "to": "right",
+      "lane": 1,
+      "fromAt": 0.1,
+      "toAt": 0.55
+     },
+     "drawn": {
+      "wide": true,
+      "narrow": true,
+      "single": false
+     },
+     "state": "dimmed",
+     "showLabel": false
+    },
+    {
+     "id": "api-zero",
+     "from": "api",
+     "to": "zero",
+     "label": "token",
+     "style": "control",
+     "toGroup": false,
+     "direction": "forward",
+     "wide": {
+      "from": "top",
+      "to": "right",
+      "fromAt": 0.3,
+      "toAt": 0.7
+     },
+     "narrow": {
+      "from": "left",
+      "to": "right",
+      "bend": 0.65,
+      "fromAt": 0.2,
+      "toAt": 0.55
+     },
+     "single": {
+      "from": "right",
+      "to": "right",
+      "lane": 1,
+      "fromAt": 0.1,
+      "toAt": 0.55
+     },
+     "drawn": {
+      "wide": true,
+      "narrow": false,
+      "single": false
+     },
+     "state": "dimmed",
+     "showLabel": false
+    }
+   ],
+   "selected": "axclient",
+   "panel": {
+    "id": "axclient",
+    "title": "AXClient",
+    "detail": "The TurboModule bridge",
+    "group": "Apple app",
+    "about": "One native module. JavaScript calls connected, changed (a store's snapshot JSON), answered and start (the first screen and saved doc); the host calls in with onCall events (getSnapshot, dispatch with action JSON, auth), answered by id.",
+    "filesLabel": "Files",
+    "files": [
+     "apps/native/js/specs/NativeAXClient.ts",
+     "apps/native/apple/Host/AXClientModule.mm",
+     "apps/native/apple/Host/ClientHost.swift"
+    ],
+    "factsLabel": "In numbers",
+    "facts": [
+     {
+      "label": "Methods",
+      "value": "connected, changed, answered, start"
+     },
+     {
+      "label": "Event",
+      "value": "onCall (getSnapshot, dispatch, auth)"
+     },
+     {
+      "label": "Stores",
+      "value": "app, theme, doc"
+     }
+    ],
+    "linksLabel": "Connections",
+    "links": [
+     {
+      "text": "From View model: snapshot JSON",
+      "selectId": "how.select:view"
+     },
+     {
+      "text": "To Templates: action JSON",
+      "selectId": "how.select:templates"
+     },
+     {
+      "text": "From Theme tokens: theme JSON",
+      "selectId": "how.select:tokens"
+     },
+     {
+      "text": "To AstryxKit: snapshot JSON",
+      "selectId": "how.select:swiftui"
+     },
+     {
+      "text": "From AstryxKit: action JSON",
+      "selectId": "how.select:swiftui"
+     },
+     {
+      "text": "To WKWebView panes: snapshot JSON",
+      "selectId": "how.select:webviews"
+     },
+     {
+      "text": "From WKWebView panes: action JSON",
+      "selectId": "how.select:webviews"
+     }
+    ],
+    "closeId": "how.close",
+    "closeLabel": "Close"
+   },
+   "inspector": {
+    "label": "Inspector",
+    "emptyTitle": "No Selection",
+    "emptyText": "Select a box to see what it is, its files and what it connects to."
+   }
+  }
+ },
+ "toast": null,
+ "dialog": null,
+ "theme": {
+  "id": "astryx",
+  "label": "Theme",
+  "setId": "settings.theme",
+  "options": [
+   {
+    "value": "astryx",
+    "label": "Astryx"
+   },
+   {
+    "value": "ocean",
+    "label": "Ocean"
+   },
+   {
+    "value": "ember",
+    "label": "Ember"
+   },
+   {
+    "value": "grape",
+    "label": "Grape"
+   }
+  ]
+ },
+ "scenarios": {
+  "label": "Scenarios",
+  "list": [
+   {
+    "id": "showcase",
+    "title": "Store: pay, ask the chat, manage inventory",
+    "template": "Theme showcase",
+    "steps": "14 steps"
+   },
+   {
+    "id": "dashboard",
+    "title": "Dashboard: chart, views and tables",
+    "template": "Dashboard",
+    "steps": "10 steps"
+   },
+   {
+    "id": "inbox",
+    "title": "Inbox: triage and reply",
+    "template": "Inbox",
+    "steps": "27 steps"
+   },
+   {
+    "id": "kanban",
+    "title": "Board: sprints and moving cards",
+    "template": "Kanban board",
+    "steps": "10 steps"
+   },
+   {
+    "id": "invoice",
+    "title": "Invoice: search, sort and filter lines",
+    "template": "Invoice",
+    "steps": "17 steps"
+   },
+   {
+    "id": "calendar",
+    "title": "Calendar: pick days and page months",
+    "template": "Calendar",
+    "steps": "9 steps"
+   },
+   {
+    "id": "chat",
+    "title": "Chat: ask, edit and open the document",
+    "template": "AI chat",
+    "steps": "13 steps"
+   },
+   {
+    "id": "checkout",
+    "title": "Checkout: from cart to paying",
+    "template": "Checkout",
+    "steps": "16 steps"
+   },
+   {
+    "id": "order",
+    "title": "Order: tabs, menus and panels",
+    "template": "Order detail",
+    "steps": "14 steps"
+   },
+   {
+    "id": "settings",
+    "title": "Settings: edit a profile and search",
+    "template": "Settings",
+    "steps": "12 steps"
+   }
+  ],
+  "drivers": [
+   {
+    "value": "native",
+    "label": "Drive from native",
+    "description": "Each step taps the SwiftUI side; the web drawings follow"
+   },
+   {
+    "value": "web",
+    "label": "Drive from web",
+    "description": "Each step clicks the web page on Hermes; the native side follows"
+   }
+  ],
+  "controls": {
+   "pauseId": "scenario.pause",
+   "resumeId": "scenario.resume",
+   "stopId": "scenario.stop",
+   "pauseLabel": "Pause",
+   "resumeLabel": "Resume",
+   "stopLabel": "Stop"
+  },
+  "playing": null
+ },
+ "account": {
+  "available": false,
+  "state": "signed-out",
+  "label": "Account",
+  "request": null,
+  "title": "",
+  "detail": "",
+  "status": null,
+  "signIn": null,
+  "signOut": null,
+  "accessibilityLabel": ""
+ },
+ "surface": {
+  "id": "app.surface",
+  "label": "Show",
+  "value": "native",
+  "options": [
+   {
+    "value": "native",
+    "label": "Native",
+    "description": "SwiftUI, on the shared core in Hermes"
+   },
+   {
+    "value": "web",
+    "label": "Web on Hermes",
+    "description": "The refactored web page, on the same shared core"
+   },
+   {
+    "value": "webOwn",
+    "label": "Web, own core",
+    "description": "The refactored web page, on a core of its own in the page: no Hermes"
+   },
+   {
+    "value": "stock",
+    "label": "Stock Astryx",
+    "description": "Astryx as it is today: its own template and its own state"
+   },
+   {
+    "value": "compare",
+    "label": "Native and web",
+    "description": "Native and web on Hermes, side by side"
+   },
+   {
+    "value": "all",
+    "label": "All four",
+    "description": "All four drawings at once"
+   }
+  ],
+  "groups": [
+   {
+    "label": "Drawing",
+    "values": [
+     "native",
+     "web",
+     "webOwn",
+     "stock"
+    ]
+   },
+   {
+    "label": "Side by side",
+    "values": [
+     "compare",
+     "all"
+    ]
+   }
+  ],
+  "unavailable": "Needs a wider window",
+  "stockTemplate": "components",
+  "stockLabel": "Astryx as it is today: its own template and its own state"
+ }
+}

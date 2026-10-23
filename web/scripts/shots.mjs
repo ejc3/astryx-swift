@@ -33,7 +33,7 @@ const problems = [];
 
 // The stock page (Astryx's own templates), by the screen it stands in for.
 const STOCK = {
-  overview: "theme-showcase", dashboard: "dashboard", inbox: "table-inbox", tasks: "kanban-board", people: "table-page",
+  architecture: "theme-showcase", story: "theme-showcase", overview: "theme-showcase", dashboard: "dashboard", inbox: "table-inbox", tasks: "kanban-board", people: "table-page",
   calendar: "CalendarShowcase", chat: "ai-chat", checkout: "checkout-wizard", profile: "detail-page", settings: "settings",
 };
 

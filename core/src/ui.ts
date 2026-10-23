@@ -24,6 +24,7 @@ export const ICONS = [
   "star", "star-fill", "archive", "trash", "search", "plus", "chevron-left", "chevron-right",
   "arrow-up", "arrow-down", "bell", "lock", "mail", "sparkle", "grid", "filter", "send",
   "clock", "flag", "bolt", "heart", "info", "warning", "close", "undo", "card", "truck",
+  "arrow-right", "diagram", "history",
 ] as const;
 export type Icon = (typeof ICONS)[number];
 
@@ -45,7 +46,8 @@ export type Node =
   | { kind: "grid"; minColumnWidth: number; gap: Gap; children: Node[] }
   | { kind: "split"; primary: Node; detail: Node; showDetailWhenNarrow: boolean; backId?: string; backLabel?: string }
   | { kind: "card"; title?: string; subtitle?: string; action?: ButtonNode; children: Node[] }
-  | { kind: "section"; title: string; description?: string; children: Node[] }
+  /** `level`: the heading's level (4 when absent; 3 for a page's top-level sections). */
+  | { kind: "section"; title: string; description?: string; level?: 3 | 4; children: Node[] }
   | { kind: "heading"; text: string; level: 1 | 2 | 3 }
   | { kind: "text"; text: string; style: "body" | "secondary" | "caption" | "emphasis" | "code"; tone?: Tone }
   | { kind: "badge"; text: string; tone: Tone }
@@ -66,7 +68,10 @@ export type Node =
   | { kind: "statusDot"; tone: Tone; label: string }
   | { kind: "divider" }
   | { kind: "kbd"; keys: string[] }
-  | { kind: "metric"; label: string; value: string; delta?: { text: string; tone: Tone; up: boolean }; trend?: number[] }
+  /** `emphasized`: the figure the section is about, drawn larger. */
+  | { kind: "metric"; label: string; value: string; delta?: { text: string; tone: Tone; up: boolean }; trend?: number[]; emphasized?: boolean }
+  /** One bar split into parts by their values, each part's words and value listed under it. */
+  | { kind: "shares"; label: string; parts: { label: string; value: number; valueText: string; tone: Tone }[] }
   | { kind: "bars"; label: string; bars: { label: string; value: number; valueText: string; highlight: boolean }[] }
   /** `stackBelow`: the table's own width, in points or CSS pixels, below which each row stacks into a record (its first cell as the heading, the other columns as label and value lines). */
   | { kind: "table"; stackBelow: number; columns: { id: string; label: string; align: "start" | "end"; sort: "asc" | "desc" | "none" | null; sortId?: string }[]; rows: { id: string; cells: Cell[]; selected: boolean; selectId?: string }[]; empty: string }
@@ -82,7 +87,154 @@ export type Node =
   /** `stackBelow`: the board's own width, in points or CSS pixels, below which the columns stack one above the other. */
   | { kind: "board"; columns: BoardColumn[]; stackBelow: number }
   /** A refactored stock Astryx template: drawn by its own renderer from `view` (core/src/templates). */
-  | { kind: "template"; template: string; view: unknown };
+  | { kind: "template"; template: string; view: unknown }
+  /** Dated entries in order, on a rail; an `emphasized` entry is the one the rest lead to or follow from. */
+  /** `outcomeLabel`: the words before an entry's `outcome` ("What changed"). */
+  | { kind: "timeline"; label: string; outcomeLabel?: string; entries: TimelineEntry[] }
+  | DiagramNode;
+
+export type TimelineEntry = {
+  /** The date (and time, with its zone) as words. */
+  when: string;
+  title: string;
+  /** Someone's words, exactly; drawn as a quotation. */
+  quote?: string;
+  text?: string;
+  /** What changed because of it, drawn after the node's `outcomeLabel`. */
+  outcome?: string;
+  /** A short tag that sets the entry apart ("Turning point"), in its tone. */
+  badge?: string;
+  tone: Tone;
+  emphasized: boolean;
+};
+
+/**
+ * A diagram of boxes in titled groups, joined by edges, on a grid the core lays out twice: `wide`,
+ * and `narrow` for a diagram narrower than `narrowBelow` (its own width, in points or CSS pixels).
+ * A host draws the grid with columns of equal width and rows as tall as their tallest box (a
+ * group's first row holds only its title), then draws each edge between its boxes' measured frames
+ * by `routeEdge` (core/src/diagram.ts: the web calls it, Swift ports it), and the label of an edge
+ * whose `showLabel` is true at the middle of its longest segment. Pressing a box sends `press` with
+ * its `selectId`; the core then highlights it and its edges, dims the rest and fills `panel`.
+ */
+export type DiagramNode = {
+  kind: "diagram";
+  /** The figure's accessible name. */
+  label: string;
+  /** A line about the whole figure, drawn above it: what the boxes marked `shared` are. */
+  note: string;
+  /** What selecting does, or what is selected: a polite live region on the web, announced on Apple platforms. */
+  hint: string;
+  /** The same for the Mac, which has no Close button in its inspector (Escape instead). */
+  hintMac: string;
+  /**
+   * Which arrangement to draw, by the diagram's own width (points or CSS pixels): `single` below
+   * `singleBelow`, `narrow` below `narrowBelow`, else `wide`. Apple hosts also draw `single` at the
+   * accessibility text sizes when `singleWhenTextIsLarge` is true.
+   */
+  narrowBelow: number;
+  singleBelow: number;
+  singleWhenTextIsLarge: boolean;
+  wide: DiagramGrid;
+  narrow: DiagramGrid;
+  single: DiagramGrid;
+  legendLabel: string;
+  legend: { style: DiagramEdgeStyle; label: string }[];
+  /** The tag on a shared box, and the legend's words for it. */
+  sharedTag: string;
+  sharedLegend: string;
+  /** In reading order: the flow from upstream to proof. */
+  groups: DiagramGroup[];
+  /** In reading order (VoiceOver and the keyboard follow it): the flow, group by group. */
+  boxes: DiagramBox[];
+  edges: DiagramEdge[];
+  selected: string | null;
+  /** The selected box's detail: the inspector (Mac, iPad), a sheet (iPhone), a side panel or bottom sheet (web). */
+  panel: DiagramPanel | null;
+  /** The inspector's name (its toolbar button and menu command) and what it says with nothing selected. */
+  inspector: { label: string; emptyTitle: string; emptyText: string };
+};
+
+export type DiagramLayoutName = "wide" | "narrow" | "single";
+/**
+ * An arrangement's grid. `gap`: between columns and rows, each a step of Astryx's spacing scale;
+ * `margin`: room above, left and right of the grid for routes that run outside it and the groups'
+ * padding; `pad`: how far a group's ground reaches beyond its cells (points or CSS pixels).
+ * `labels`: whether edge labels are drawn in it (the panel says each edge in words either way).
+ */
+export type DiagramGrid = { columns: number; rows: number; gap: { x: number; y: number }; margin: { top: number; left: number; right: number }; pad: number; labels: boolean };
+/** A rectangle of grid cells, from column and row 0. */
+export type DiagramArea = { col: number; row: number; cols: number; rows: number };
+export type DiagramSide = "top" | "right" | "bottom" | "left";
+/** Data (snapshots, rows), control (actions, calls), sync (replication between stores), build (made at build or test time). */
+export type DiagramEdgeStyle = "data" | "control" | "sync" | "build";
+/**
+ * How an edge leaves and enters its boxes (core/src/diagram.ts, `routeEdge`). `at` is 0 to 1 along a
+ * side, left to right or top to bottom (0.5 when absent); `bend` is where a three-segment route
+ * turns, 0 to 1 of the way (0.5 when absent); `lane` is how far out a same-side route runs (1 when
+ * absent), counted from the grid's own edge when `outside` is true, else from the boxes' sides.
+ */
+export type DiagramRoute = { from: DiagramSide; to: DiagramSide; fromAt?: number; toAt?: number; bend?: number; lane?: number; outside?: boolean };
+export type DiagramState = "normal" | "selected" | "linked" | "dimmed";
+
+export type DiagramGroup = { id: string; title: string; wide: DiagramArea; narrow: DiagramArea; single: DiagramArea };
+
+export type DiagramBox = {
+  id: string;
+  title: string;
+  /** One short line under the title. */
+  detail: string;
+  group: string;
+  /** Part of the code every platform runs (the core and sync): drawn with `sharedTag`. */
+  shared: boolean;
+  /** One row high, `cols` columns wide. */
+  wide: DiagramArea;
+  narrow: DiagramArea;
+  single: DiagramArea;
+  state: DiagramState;
+  selectId: string;
+  /** What a screen reader says for the box: its title, its group, whether it is shared, and its line. */
+  accessibilityLabel: string;
+  /** Its state in words for a screen reader ("Connected to AXClient"), or empty. */
+  accessibilityValue: string;
+};
+
+export type DiagramEdge = {
+  id: string;
+  from: string;
+  /** A box's id, or a group's when `toGroup` (the edge ends at the group's ground). */
+  to: string;
+  toGroup: boolean;
+  label: string;
+  style: DiagramEdgeStyle;
+  /** "both": an arrowhead at each end. */
+  direction: "forward" | "both";
+  wide: DiagramRoute;
+  narrow: DiagramRoute;
+  single: DiagramRoute;
+  /** Whether it is drawn now, per arrangement: the wide one draws every edge; the narrow and single ones draw the edges between neighbouring boxes, and every edge of the selected box. */
+  drawn: { wide: boolean; narrow: boolean; single: boolean };
+  state: "normal" | "highlighted" | "dimmed";
+  /** Whether its label is drawn now (in an arrangement that draws labels); placed by `placeLabels`, in the edges' order. */
+  showLabel: boolean;
+};
+
+export type DiagramPanel = {
+  id: string;
+  title: string;
+  detail: string;
+  group: string;
+  about: string;
+  filesLabel: string;
+  files: string[];
+  factsLabel: string;
+  facts: { label: string; value: string }[];
+  linksLabel: string;
+  /** Each edge of the box in words; pressing one selects the box at its other end. */
+  links: { text: string; selectId: string }[];
+  closeId: string;
+  closeLabel: string;
+};
 
 export type ButtonNode = {
   kind: "button";
@@ -132,7 +284,7 @@ export type Screen = {
 };
 
 /** The demos built from generic nodes. */
-export const SCREENS = ["overview", "dashboard", "inbox", "tasks", "people", "calendar", "chat", "checkout", "profile", "settings"] as const;
+export const SCREENS = ["architecture", "story", "overview", "dashboard", "inbox", "tasks", "people", "calendar", "chat", "checkout", "profile", "settings"] as const;
 export type DemoScreenId = (typeof SCREENS)[number];
 /** A refactored template's screen: "t.<template id>". */
 export type TemplateScreenId = `t.${string}`;

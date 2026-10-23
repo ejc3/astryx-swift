@@ -15,6 +15,7 @@ import { writesOf, type Mutation } from "./sync/mutations.ts";
 import type { TemplateIO } from "./templates/types.ts";
 import { cartOf, messagesOf, profileOf, repliesSent, savedTheme, shipOf, tasksOf } from "./screens/saved.ts";
 import { MAX_QUANTITY } from "./sync/areas/demo.ts";
+import { CLOSE, SELECT, isDiagramBox } from "./screens/architecture.ts";
 import { ACCOUNT_WORDS, SIGN_IN_ID, SIGN_OUT_ID, firstSignInWords, initialAccount, isAccountEvent, type AccountEvent, type AccountState } from "./account.ts";
 
 /** Whether `id` names a screen: a demo, or a registered template's "t.<id>". */
@@ -53,6 +54,8 @@ export type State = {
   dialog: "delete-account" | "discard-checkout" | "sign-out" | null;
   /** Signing in to sync (account.ts): who, the sync status, and what the host is asked to do. */
   account: AccountState;
+  /** "How it works": the diagram's selected box (view state, never saved). */
+  architecture: { selected: string | null };
   overview: { notify: boolean; size: string; volume: number; agree: boolean; plan: string; email: string; tags: string[]; bannerOpen: boolean; count: number };
   /** Read, starred and archived are saved (`doc.demo_message`); the rest is view state. */
   inbox: { tab: "all" | "unread" | "starred"; query: string; selected: string | null };
@@ -99,6 +102,7 @@ export function initialState(now: Now): State {
     toast: null,
     dialog: null,
     account: initialAccount(false),
+    architecture: { selected: null },
     overview: { notify: true, size: "md", volume: 60, agree: false, plan: "team", email: "", tags: ["Design", "SwiftUI", "Tokens"], bannerOpen: true, count: 3 },
     inbox: { tab: "all", query: "", selected: "m1" },
     tasks: { filter: "all" },
@@ -446,6 +450,9 @@ function press(s: State, id: string, now: Now): State {
       if (u.kind === "unarchive") return save({ ...s, toast: null, inbox: { ...inbox, selected: u.id } }, [{ name: "demo.message", args: { id: u.id, archived: false } }]);
       return save({ ...s, toast: null }, [{ name: "demo.task", args: { id: u.id, column: u.column } }]);
     }
+    // A box of "How it works": selecting the selected one again clears the selection, as Close does.
+    case SELECT: return isDiagramBox(arg) ? { ...s, architecture: { selected: s.architecture.selected === arg ? null : arg } } : s;
+    case CLOSE: return s.architecture.selected === null ? s : { ...s, architecture: { selected: null } };
     case "overview.count": return { ...s, overview: { ...s.overview, count: s.overview.count + 1 } };
     case "overview.untag": return { ...s, overview: { ...s.overview, tags: s.overview.tags.filter((t) => t !== arg) } };
     case "overview.closeBanner": return { ...s, overview: { ...s.overview, bannerOpen: false } };

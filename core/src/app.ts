@@ -7,6 +7,8 @@ import type { Now } from "./format.ts";
 import { calendar, chat, checkout, profile, settings } from "./screens/life.ts";
 import { dashboard, overview } from "./screens/overview.ts";
 import { inbox, people, tasks } from "./screens/work.ts";
+import { architecture } from "./screens/architecture.ts";
+import { story } from "./screens/story.ts";
 import { messagesOf, savedTheme, tasksOf } from "./screens/saved.ts";
 import { initialState, isScreen, reduce, type State } from "./state.ts";
 import { ACCOUNT_WORDS, accountSnapshot, initialAccount } from "./account.ts";
@@ -24,11 +26,11 @@ import { PROTOCOL, SURFACES, type Action, type AppSnapshot, type DemoScreenId, t
  * unchanged). Placeholder names until web/stock lists what Astryx ships.
  */
 export const STOCK_TEMPLATE: Record<DemoScreenId, string> = {
-  overview: "components", dashboard: "dashboard", inbox: "inbox", tasks: "kanban", people: "table",
+  architecture: "components", story: "components", overview: "components", dashboard: "dashboard", inbox: "inbox", tasks: "kanban", people: "table",
   calendar: "calendar", chat: "chat", checkout: "checkout", profile: "profile", settings: "settings",
 };
 
-const BUILDERS: Record<DemoScreenId, (s: State) => Screen> = { overview, dashboard, inbox, tasks, people, calendar, chat, checkout, profile, settings };
+const BUILDERS: Record<DemoScreenId, (s: State) => Screen> = { architecture, story, overview, dashboard, inbox, tasks, people, calendar, chat, checkout, profile, settings };
 
 /** A template's screen: one node, its view model, drawn by the template's own renderer. */
 function templateScreen(s: State, id: TemplateScreenId, now: Now): Screen {
@@ -45,7 +47,12 @@ const TONE_WORDS: Partial<Record<Tone, string>> = { success: "Success", warning:
 
 export function nav(s: State): NavItem[] {
   const templates: NavItem[] = TEMPLATES.map((t) => withSection({ id: `t.${t.id}` as const, label: t.title, icon: TEMPLATE_ICONS[t.id] ?? "grid" }, "Astryx templates"));
-  return [...templates, ...demoNav(s).map((n) => withSection(n, "More demos"))];
+  // The map of the whole project and how it was made come first: what a newcomer opens before the demos.
+  const about: NavItem[] = [
+    withSection({ id: "architecture", label: "How it works", icon: "diagram" }, "About this spike"),
+    withSection({ id: "story", label: "How this was built", icon: "history" }, "About this spike"),
+  ];
+  return [...about, ...templates, ...demoNav(s).map((n) => withSection(n, "More demos"))];
 }
 
 /** Both sections have a Dashboard, an Inbox...: a screen reader hears the section with the name. */

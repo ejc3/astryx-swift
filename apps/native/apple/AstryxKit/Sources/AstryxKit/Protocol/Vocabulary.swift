@@ -46,6 +46,7 @@ public struct Icon: Codable, Sendable, Hashable, RawRepresentable {
         "clock": "clock", "flag": "flag", "bolt": "bolt", "heart": "heart", "info": "info.circle",
         "warning": "exclamationmark.triangle", "close": "xmark", "undo": "arrow.uturn.backward",
         "card": "creditcard", "truck": "box.truck",
+        "arrow-right": "arrow.right", "diagram": "point.3.connected.trianglepath.dotted", "history": "clock.arrow.circlepath",
     ]
 
     public var symbol: String { Icon.symbols[rawValue] ?? "circle" }

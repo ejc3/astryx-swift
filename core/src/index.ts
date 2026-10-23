@@ -10,3 +10,4 @@ export { TEMPLATES, TEMPLATE_IDS, templateById } from "./templates/index.ts";
 export type { TemplateModule, TemplateAction } from "./templates/types.ts";
 export type { Scenario, ScenarioStep, LocatorOp, Gesture, Driver, Playback, ScenariosSnapshot } from "./scenarios.ts";
 export { SCENARIOS } from "./scenarios.generated.ts";
+export { anchor, CLEAR, gridFrames, LANE, placeLabels, routeEdge, STEP, type GridMetrics, type LabelPlacement, type Point, type Rect } from "./diagram.ts";

@@ -26,11 +26,23 @@ struct AstryxSwiftApp: App {
                 // A sign-in comes back inside its ASWebAuthenticationSession (Host/SignIn.swift). The
                 // same address opened from anywhere else carries nothing the app takes.
                 .onOpenURL { _ in }
+                #if DEBUG
+                // `-AXAppearance dark` or `light` (Debug builds only): captures in either appearance
+                // without changing the system's.
+                .onAppear {
+                    switch UserDefaults.standard.string(forKey: "AXAppearance") {
+                    case "dark": NSApp.appearance = NSAppearance(named: .darkAqua)
+                    case "light": NSApp.appearance = NSAppearance(named: .aqua)
+                    default: break
+                    }
+                }
+                #endif
         }
         .defaultSize(width: 1500, height: 920)
         .windowResizability(.contentMinSize)
         .commands {
             SidebarCommands()
+            InspectorCommands()
             ToolbarCommands()
             AstryxCommands(model: Self.host.model)
         }

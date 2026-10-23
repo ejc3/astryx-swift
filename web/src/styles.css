@@ -198,3 +198,80 @@
 }
 .an-swatch[data-on] { outline-color: var(--color-text-primary); }
 .an-swatch:focus-visible { outline-color: var(--focus-outline-color); }
+
+/* The one soft accent: selected rows and boxes, the story's highlighted entry. */
+:root { --an-accent-soft: color-mix(in srgb, var(--color-accent) 16%, transparent); }
+
+/* ---- diagram ("How it works"): the core's grid, groups behind boxes, edges over them ---- */
+.an-diagram { min-width: 0; }
+.an-diagram-main { min-width: 0; display: flex; flex-direction: column; gap: var(--spacing-4); }
+.an-diagram-legend { display: flex; flex-wrap: wrap; gap: var(--spacing-2) var(--spacing-5); align-items: center; }
+.an-diagram-legend-item { display: inline-flex; gap: var(--spacing-2); align-items: center; }
+.an-diagram-grid { position: relative; display: grid; }
+.an-diagram-group { margin: calc(-1 * var(--an-group-pad)); border-radius: var(--radius-container); background: var(--color-background-muted); }
+/* The title sits on the group's own ground, so a line that crosses it passes behind the words. */
+.an-diagram-group-title { align-self: end; z-index: 3; display: flex; }
+/* Opaque: the group's own muted ground laid over the surface, so no line shows through the words. */
+.an-diagram-group-title > span { background: linear-gradient(var(--color-background-muted), var(--color-background-muted)), var(--color-background-surface); padding-inline-end: var(--spacing-2); border-radius: var(--radius-inner); }
+.an-diagram-box {
+  z-index: 1; position: relative; display: flex; flex-direction: column; gap: var(--spacing-0-5); min-width: 0;
+  text-align: start; padding: var(--spacing-1-5) var(--spacing-2);
+  border: 1px solid var(--color-border); border-radius: var(--radius-element);
+  background: var(--color-background-card); color: var(--color-text-primary); cursor: pointer;
+  overflow-wrap: normal; word-break: normal;
+  transition: background-color var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard);
+}
+.an-diagram-box-tag { display: inline-flex; vertical-align: middle; }
+.an-diagram-box-detail { display: block; }
+/* Beside the panel, a spacing step between the last lane and the panel's divider. */
+.an-diagram-beside { padding-inline-end: var(--spacing-4); }
+.an-diagram-box:hover { box-shadow: var(--shadow-inset-hover, none); }
+.an-diagram-box:focus-visible { outline: var(--focus-outline-width) var(--focus-outline-style) var(--focus-outline-color); outline-offset: var(--focus-outline-offset); }
+/* Selected: Astryx's selectable-card ring, inset, so nothing moves. */
+.an-diagram-box[data-state="selected"] { box-shadow: inset 0 0 0 2px var(--selectable-card-ring-color); background: var(--an-accent-soft); }
+.an-diagram-box[data-state="linked"] { border-color: var(--color-border-emphasized); }
+/* Dimmed: the ground and border recede; the words stay readable (secondary text or stronger). */
+.an-diagram-box[data-state="dimmed"] { background: transparent; border-color: var(--color-border); }
+.an-diagram-edges { position: absolute; inset: 0; overflow: visible; pointer-events: none; z-index: 2; }
+.an-edge { fill: none; stroke: var(--color-icon-secondary); stroke-width: 2; }
+.an-edge[data-style="build"], .an-edge-group[data-style="build"] .an-edge { stroke-width: 2.75; }
+.an-edge-head { fill: var(--color-icon-secondary); }
+.an-edge-group[data-state="highlighted"] .an-edge { stroke: var(--color-accent); stroke-width: 3; }
+.an-edge-group[data-state="highlighted"] .an-edge-head { fill: var(--color-accent); }
+.an-edge-group[data-state="dimmed"] { opacity: 0.3; }
+@media (prefers-contrast: more) {
+  .an-diagram-box[data-state="dimmed"] { background: var(--color-background-card); }
+  .an-edge-group[data-state="dimmed"] { opacity: 1; }
+}
+.an-diagram-label {
+  position: absolute; z-index: 4; transform: translate(-50%, -50%); white-space: nowrap; pointer-events: none;
+  padding: 0 var(--spacing-1); border-radius: var(--radius-inner); border: var(--border-width) solid var(--color-border);
+  background: var(--color-background-surface); color: var(--color-text-secondary);
+  font-family: var(--font-family-body); font-size: var(--text-supporting-size); line-height: var(--text-label-leading); font-weight: var(--font-weight-medium);
+}
+.an-diagram-label[data-state="highlighted"] { color: var(--color-text-accent); border-color: var(--color-accent); }
+.an-diagram-panel-head { display: flex; gap: var(--spacing-2); align-items: flex-start; justify-content: space-between; }
+.an-diagram-panel-title:focus-visible { outline: var(--focus-outline-width) var(--focus-outline-style) var(--focus-outline-color); outline-offset: var(--focus-outline-offset); }
+.an-diagram-link { display: inline-flex; gap: var(--spacing-2); align-items: center; }
+.an-diagram-file { font-family: var(--font-family-code); font-size: var(--text-code-size); line-height: var(--text-code-leading); color: var(--color-text-secondary); overflow-wrap: normal; }
+@media (prefers-reduced-motion: reduce) { .an-diagram-box { transition: none; } }
+
+/* ---- shares: one bar split into parts ---- */
+.an-shares { display: flex; flex-direction: column; gap: var(--spacing-3); }
+.an-shares-bar { display: flex; gap: var(--spacing-0-5); height: var(--spacing-4); border-radius: var(--radius-inner); overflow: hidden; }
+.an-shares-part { min-width: var(--spacing-1); }
+.an-shares-legend { display: grid; grid-template-columns: auto 1fr auto; gap: var(--spacing-2) var(--spacing-3); align-items: center; }
+.an-shares-swatch { width: var(--spacing-3); height: var(--spacing-3); border-radius: var(--radius-inner); }
+
+/* ---- timeline ("How this was built"): a rail of dated entries ---- */
+/* The text's measure; the highlighted entry's card and "What changed" stop there too. */
+.an-timeline-text, .an-timeline-measure { max-width: 72ch; }
+.an-timeline { --an-dot: var(--spacing-3); list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.an-timeline-entry { position: relative; display: flex; gap: var(--spacing-4); padding-bottom: var(--spacing-5); }
+.an-timeline-entry:last-child { padding-bottom: 0; }
+.an-timeline-entry::before { content: ""; position: absolute; left: calc(var(--an-dot) / 2 - var(--border-width)); top: calc(var(--an-dot) + var(--spacing-2)); bottom: 0; width: calc(2 * var(--border-width)); background: var(--color-border); }
+.an-timeline-entry:last-child::before { display: none; }
+.an-timeline-dot { flex: none; width: var(--an-dot); height: var(--an-dot); margin-top: var(--spacing-1); border-radius: var(--radius-full); }
+.an-timeline-body { min-width: 0; flex: 1 1 0; display: flex; flex-direction: column; gap: var(--spacing-1); }
+.an-timeline-when { display: flex; flex-wrap: wrap; gap: var(--spacing-2); align-items: center; }
+.an-timeline-emph { background: var(--an-accent-soft); }

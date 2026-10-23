@@ -19,7 +19,12 @@ final class RenderTests: XCTestCase {
         let renderer = ImageRenderer(content: view)
         renderer.scale = 2
         renderer.proposedSize = ProposedViewSize(width: width, height: height)
-        let image = try XCTUnwrap(renderer.cgImage)
+        var image = try XCTUnwrap(renderer.cgImage)
+        // A page taller than ImageIO writes at 2x (a long screen at phone width) is kept at 1x.
+        if image.height > 16_000 {
+            renderer.scale = 1
+            image = try XCTUnwrap(renderer.cgImage)
+        }
         let data = NSMutableData()
         let destination = try XCTUnwrap(CGImageDestinationCreateWithData(data, UTType.png.identifier as CFString, 1, nil))
         CGImageDestinationAddImage(destination, image, nil)
@@ -117,6 +122,6 @@ final class RenderTests: XCTestCase {
             let app = try Library.app("app-dashboard", surface: mode)
             try write(try png(surfaces(app, astryx, mode: SurfaceMode(mode), width: width, height: height), width: width, height: height), "dashboard.astryx.\(mode)")
         }
-        if only.isEmpty { XCTAssertEqual(written, 14 * 4 + 2 * 2 * 4 + 2) }
+        if only.isEmpty { XCTAssertEqual(written, 17 * 4 + 2 * 2 * 4 + 2) }
     }
 }

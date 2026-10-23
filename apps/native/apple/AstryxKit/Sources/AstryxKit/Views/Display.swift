@@ -40,12 +40,20 @@ struct AXMetric: View {
         VStack(alignment: .leading, spacing: ax.space(1)) {
             Text(node.label).font(ax.fontSmall).foregroundStyle(ax.textSecondary)
                 .axLeading(ax, size: ax.fontSize("font-size-sm", 12), ratio: ax.supportingLeading)
-            Text(node.value)
-                .font(ax.heading(2).monospacedDigit())
-                .foregroundStyle(ax.text)
-                .minimumScaleFactor(0.7)
-                .lineLimit(1)
-                .axLeading(ax, size: ax.fontSize("text-heading-2-size", 20), ratio: ax.headingLeading(2))
+            if node.emphasized == true {
+                Text(node.value)
+                    .font(ax.font("font-size-4xl", 35, weight: "font-weight-semibold").monospacedDigit())
+                    .foregroundStyle(ax.text)
+                    .minimumScaleFactor(0.7)
+                    .lineLimit(1)
+            } else {
+                Text(node.value)
+                    .font(ax.heading(2).monospacedDigit())
+                    .foregroundStyle(ax.text)
+                    .minimumScaleFactor(0.7)
+                    .lineLimit(1)
+                    .axLeading(ax, size: ax.fontSize("text-heading-2-size", 20), ratio: ax.headingLeading(2))
+            }
             if let delta = node.delta {
                 HStack(spacing: ax.hair) {
                     Image(systemName: delta.up ? "arrow.up" : "arrow.down")
@@ -419,5 +427,47 @@ struct AXPagination: View {
 
     private func step(_ icon: String, id: String?, label: String) -> some View {
         AXIconButton(node: IconButtonNode(id: id ?? "", icon: Icon(rawValue: icon), label: label, selected: nil), disabled: id == nil)
+    }
+}
+
+/// `shares`: one bar split into parts by their values, the first in the accent and the rest in
+/// neutral steps (as the web draws it), each part listed with its words and value.
+struct AXShares: View {
+    let node: SharesNode
+    @Environment(\.ax) private var ax
+
+    private func fill(_ tone: Tone, _ index: Int) -> Color {
+        tone == .neutral ? ax.iconSecondary.opacity(0.7 - Double(index) * 0.15) : ax.fillTone(tone)
+    }
+
+    var body: some View {
+        let total = max(node.parts.reduce(0) { $0 + $1.value }, 1)
+        VStack(alignment: .leading, spacing: ax.space(3)) {
+            Text(node.label).font(ax.font("font-size-sm", 12, weight: "font-weight-semibold")).foregroundStyle(ax.textSecondary)
+            GeometryReader { geo in
+                let spacing = ax.hair
+                let width = geo.size.width - spacing * CGFloat(max(node.parts.count - 1, 0))
+                HStack(spacing: spacing) {
+                    ForEach(Array(node.parts.enumerated()), id: \.offset) { i, part in
+                        Rectangle().fill(fill(part.tone, i)).frame(width: max(width * part.value / total, 4))
+                    }
+                }
+            }
+            .frame(height: ax.space(4))
+            .clipShape(RoundedRectangle(cornerRadius: ax.radiusInner, style: .continuous))
+            .accessibilityHidden(true)
+            Grid(alignment: .leading, horizontalSpacing: ax.space(3), verticalSpacing: ax.space(2)) {
+                ForEach(Array(node.parts.enumerated()), id: \.offset) { i, part in
+                    GridRow {
+                        RoundedRectangle(cornerRadius: ax.radiusInner).fill(fill(part.tone, i)).frame(width: ax.space(3), height: ax.space(3))
+                        Text(part.label).font(ax.fontBase).foregroundStyle(ax.text).fixedSize(horizontal: false, vertical: true)
+                        Text(part.valueText).font(ax.fontStrong.monospacedDigit()).foregroundStyle(ax.text)
+                    }
+                    .accessibilityElement(children: .combine)
+                }
+            }
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(node.label)
     }
 }
