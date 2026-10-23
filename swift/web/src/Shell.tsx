@@ -15,6 +15,7 @@ import { Ic } from "./icons.tsx";
 import { Render } from "./render/Render.tsx";
 import { ButtonView } from "./render/controls.tsx";
 import { ThemeSwitcher } from "./ThemeSwitcher.tsx";
+import { AccountPanel } from "./Account.tsx";
 import { Overlays } from "./Overlays.tsx";
 
 
@@ -46,7 +47,7 @@ export function Shell({ app }: { app: AppSnapshot }) {
         topNav={<TopNav label={app.appName} heading={<TopNavHeading heading={app.appName} />} />}
         sideNav={
           <SideNav
-            footer={<ThemeSwitcher theme={app.theme} />}
+            footer={<><AccountPanel account={app.account} /><ThemeSwitcher theme={app.theme} /></>}
           >
             <NavItems app={app} />
           </SideNav>

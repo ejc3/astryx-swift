@@ -4,7 +4,8 @@ import SwiftUI
 /// typing is sent as it happens, like the kit's text fields.
 ///
 /// On a device it is a `NavigationStack` around a `Form`, as Mail's: Cancel at the leading edge
-/// and Send at the trailing edge of the top bar (Send is disabled, the core has no send action),
+/// and Send at the trailing edge of the top bar (stock leaves Send inert; with saving on it sends,
+/// and is disabled until there is someone to send to and a message),
 /// and the draft's tools in the bottom bar. Cancelling a draft with typed content asks what to do
 /// with it (Discard Draft, Save Draft, Keep Editing), and swiping the sheet away is switched off
 /// while there is such content. Drawn to an image (`axStatic`, where a Form cannot be drawn) it
@@ -68,7 +69,11 @@ struct InboxComposeForm: View {
                         .keyboardShortcut(.cancelAction)
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(words.send) {}
+                    Button(words.send) {
+                        guard !inert.contains("send") else { return }
+                        send(.press(id: inboxAction("send")))
+                    }
+                    .disabled(!inert.contains("send") && !compose.canSend)
                 }
                 ToolbarItemGroup(placement: toolsPlacement) {
                     ForEach(words.tools, id: \.id) { tool in

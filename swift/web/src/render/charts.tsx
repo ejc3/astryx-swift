@@ -27,7 +27,7 @@ export function MetricNode({ node }: { node: Of<"metric"> }) {
     <Card padding={4}>
       <VStack gap={1}>
         <Text type="supporting">{node.label}</Text>
-        <Heading level={2}>{node.value}</Heading>
+        {node.emphasized ? <Text size="4xl" weight="semibold">{node.value}</Text> : <Heading level={2}>{node.value}</Heading>}
         {node.delta ? (
           <span className="an-delta" style={{ color: TEXT_TONE[node.delta.tone] }}>
             <Ic name={node.delta.up ? "arrow-up" : "arrow-down"} size="xsm" color="inherit" />
@@ -55,6 +55,29 @@ export function BarsNode({ node }: { node: Of<"bars"> }) {
         ))}
       </div>
       <figcaption><Text type="supporting" size="xsm">{node.label}</Text></figcaption>
+    </figure>
+  );
+}
+
+/** `shares`: one bar split into parts by their values (the first in the accent), each listed with its value. */
+export function SharesNode({ node }: { node: Of<"shares"> }) {
+  const total = node.parts.reduce((sum, p) => sum + p.value, 0) || 1;
+  const fill = (tone: Of<"shares">["parts"][number]["tone"], i: number) => (tone === "neutral" ? `color-mix(in srgb, var(--color-icon-secondary) ${70 - i * 15}%, transparent)` : FILL_TONE[tone]);
+  return (
+    <figure className="an-shares" aria-label={node.label} style={{ margin: 0 }}>
+      <Text type="supporting" weight="semibold">{node.label}</Text>
+      <div className="an-shares-bar" aria-hidden="true">
+        {node.parts.map((p, i) => <span key={i} className="an-shares-part" style={{ flexGrow: p.value / total, background: fill(p.tone, i) }} />)}
+      </div>
+      <div className="an-shares-legend">
+        {node.parts.map((p, i) => (
+          <div key={i} style={{ display: "contents" }}>
+            <span className="an-shares-swatch" style={{ background: fill(p.tone, i) }} aria-hidden="true" />
+            <Text>{p.label}</Text>
+            <Text weight="semibold">{p.valueText}</Text>
+          </div>
+        ))}
+      </div>
     </figure>
   );
 }

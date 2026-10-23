@@ -3,6 +3,20 @@
  "appName": "Astryx Swift",
  "nav": [
   {
+   "id": "architecture",
+   "label": "How it works",
+   "icon": "diagram",
+   "section": "About this spike",
+   "accessibilityLabel": "How it works, About this spike"
+  },
+  {
+   "id": "story",
+   "label": "How this was built",
+   "icon": "history",
+   "section": "About this spike",
+   "accessibilityLabel": "How this was built, About this spike"
+  },
+  {
    "id": "t.showcase",
    "label": "Theme showcase",
    "icon": "sparkle",
@@ -167,7 +181,13 @@
      "assignToMe": "Assign to me",
      "status": "status",
      "done": "Done",
-     "movedTo": "Moved to"
+     "movedTo": "Moved to",
+     "newTask": "New task",
+     "taskTitle": "Title",
+     "taskTitlePlaceholder": "What needs doing?",
+     "create": "Create",
+     "cancel": "Cancel",
+     "noDueDate": "No due date"
     },
     "rules": {
      "columnWidth": 300,
@@ -177,7 +197,6 @@
      "sort",
      "filter",
      "search",
-     "addTask",
      "open",
      "assignToMe"
     ],
@@ -198,6 +217,7 @@
       "label": "Sprint 001"
      }
     ],
+    "adding": null,
     "columns": [
      {
       "id": "todo",
@@ -581,6 +601,18 @@
    "stopLabel": "Stop"
   },
   "playing": null
+ },
+ "account": {
+  "available": false,
+  "state": "signed-out",
+  "label": "Account",
+  "request": null,
+  "title": "",
+  "detail": "",
+  "status": null,
+  "signIn": null,
+  "signOut": null,
+  "accessibilityLabel": ""
  },
  "surface": {
   "id": "app.surface",

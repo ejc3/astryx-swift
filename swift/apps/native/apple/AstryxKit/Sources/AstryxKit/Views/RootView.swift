@@ -479,6 +479,14 @@ struct SidebarView: View {
         }
         .listStyle(.sidebar)
         .modifier(SidebarBackground())
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            // Signing in to sync, when this app can (the core says so).
+            if let account = app.account, account.available {
+                // Over the list's last rows when it scrolls: the system's bar material, as a toolbar has.
+                AccountFooter(account: account)
+                    .background(.bar)
+            }
+        }
         .navigationTitle(app.appName)
     }
 }
@@ -640,6 +648,8 @@ struct ScreenView: View {
         // The page is the surface, white in the light themes, as the web's content area is: the
         // translucent tokens (bubbles, columns, chips) then come out as they do there.
         .background(ax.surface)
+        // "How it works": the selected box's panel, as the screen's inspector.
+        .modifier(DiagramInspector(screenBody: app.screen.body))
         // A screen that scrolls inside itself (the AI chat) has no scroll view for a large title to
         // collapse with: its title is the inline one.
         .modifier(ScreenTitle(screen: app.screen, large: largeTitle && scrolls && !bodyScrollsItself, pageDrawsTitle: !inlineToolbar && typeSize.isAccessibilitySize))
@@ -694,7 +704,14 @@ struct ScreenView: View {
         if scrolls && bodyScrollsItself {
             content.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         } else if scrolls {
-            ScrollView { content }.axCaptureScroll()
+            // The reader lets a node bring one of its views into sight (the diagram's selected box, above its sheet).
+            ScrollViewReader { proxy in
+                ScrollView {
+                    content.environment(\.axScrollTo, { id in withAnimation { proxy.scrollTo(id, anchor: UnitPoint(x: 0.5, y: 0.25)) } })
+                }
+                .axCaptureScroll()
+                .modifier(HardTopEdge(applies: !bodyIsTemplate))
+            }
         } else {
             content.fixedSize(horizontal: false, vertical: true).frame(maxHeight: .infinity, alignment: .top)
         }
@@ -921,5 +938,20 @@ private struct AXCaptureScroll: ViewModifier {
                 try? await Task.sleep(for: .seconds(1))
                 position.scrollTo(y: y)
             }
+    }
+}
+
+/// On iOS and macOS 26 a page of text scrolls under the title bar behind a hard edge, so the
+/// title never sits over sharp words (HIG, Scroll views: the hard style for bars with text).
+/// Templates keep the system's default, as their stock pages do.
+private struct HardTopEdge: ViewModifier {
+    let applies: Bool
+
+    func body(content: Content) -> some View {
+        if #available(iOS 26, macOS 26, *), applies {
+            content.scrollEdgeEffectStyle(.hard, for: .top)
+        } else {
+            content
+        }
     }
 }

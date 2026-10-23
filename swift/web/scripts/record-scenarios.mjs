@@ -468,7 +468,7 @@ async function record() {
     const steps = await stepsFor(t.id);
     if (steps.length === 0) { console.log(`  ${t.id}: no parity steps`); continue; }
     report.template = t.id;
-    const { context, page } = await open(`${base}?screen=t.${t.id}&bare=1`, problems);
+    const { context, page } = await open(`${base}?screen=t.${t.id}&bare=1&stock=1`, problems);
     const stand = recorder(page, report);
     const dir = shotsOf(t.id);
     rmSync(dir, { recursive: true, force: true });
@@ -540,7 +540,7 @@ async function replay() {
 
     // Our page, fresh.
     {
-      const { context, page } = await open(`${base}?screen=t.${t.id}&bare=1`, problems);
+      const { context, page } = await open(`${base}?screen=t.${t.id}&bare=1&stock=1`, problems);
       await still(page); // the recording took the page at rest first, which also sized the viewport
       const results = await play(page, scenario, async (i) => {
         const png = await still(page);

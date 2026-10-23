@@ -82,7 +82,7 @@ export function SectionNode({ node }: { node: Of<"section"> }) {
   return (
     <VStack gap={2}>
       <VStack gap={0.5}>
-        <Heading level={4}>{node.title}</Heading>
+        <Heading level={node.level ?? 4}>{node.title}</Heading>
         {node.description ? <Text type="supporting">{node.description}</Text> : null}
       </VStack>
       <Children nodes={node.children} />

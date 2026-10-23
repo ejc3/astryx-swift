@@ -1,10 +1,11 @@
 /** Calendar, Chat, Checkout, Profile and Settings. */
 import { addDays, clock, dayNumber, daysInMonth, grouped, hueOf, initials, longDate, money, monthTitle, plural, relativeDay, sameDay, weekday, weekdayInitials, type Civil } from "../format.ts";
-import { EVENTS, ME, PEOPLE, PRODUCTS, SHIPPING, SKILLS, TASKS, person } from "../sample.ts";
+import { EVENTS, ME, PEOPLE, PRODUCTS, SHIPPING, SKILLS, person } from "../sample.ts";
 import { checkoutErrors, checks, type State } from "../state.ts";
 import { THEME_INPUTS } from "../themes.ts";
 import type { CalendarDay, Node, Screen } from "../ui.ts";
 import { badge, button, card, grid, h, heading, section, spread, text, v, wrap } from "./nodes.ts";
+import { cartOf, chatOf, profileOf, shipOf, tasksOf, type ChatEntry } from "./saved.ts";
 
 function eventsOn(day: Civil, today: Civil) {
   const offset = dayNumber(day) - dayNumber(today);
@@ -44,6 +45,14 @@ export function calendar(s: State): Screen {
   };
 }
 
+/** When a line was said: a sample line by its age; a saved one by its absolute time (just now, then the time of day). */
+function sentAt(s: State, l: ChatEntry): string {
+  if (l.at === undefined) return l.minutesAgo === 0 ? "Now" : clock(s.minute - (l.minutesAgo ?? 0));
+  const nowMinute = dayNumber(s.today) * 1440 + s.minute - s.utcOffsetMinutes;
+  const atMinute = Math.floor(l.at / 60_000);
+  return nowMinute - atMinute < 1 ? "Now" : clock(atMinute + s.utcOffsetMinutes);
+}
+
 export function chat(s: State): Screen {
   const other = person("p2");
   return {
@@ -51,9 +60,9 @@ export function chat(s: State): Screen {
     toolbar: [],
     body: {
       kind: "chat",
-      messages: s.chat.lines.map((l) => {
+      messages: chatOf(s.doc).map((l) => {
         const who = person(l.from);
-        return { id: l.id, author: who.id === ME.id ? "You" : who.name.split(" ")[0]!, initials: initials(who.name), hue: hueOf(who.name), mine: who.id === ME.id, text: l.text, time: l.minutesAgo === 0 ? "Now" : clock(s.minute - l.minutesAgo) };
+        return { id: l.id, author: who.id === ME.id ? "You" : who.name.split(" ")[0]!, initials: initials(who.name), hue: hueOf(who.name), mine: who.id === ME.id, text: l.text, time: sentAt(s, l) };
       }),
       composer: { id: "chat.draft", value: s.chat.draft, placeholder: `Message ${other.name.split(" ")[0]}`, sendId: "chat.send", sendLabel: "Send", canSend: s.chat.draft.trim() !== "" },
     },
@@ -64,9 +73,10 @@ const STEPS = ["Cart", "Shipping", "Payment", "Review"];
 
 export function checkout(s: State): Screen {
   const c = s.checkout;
-  const lines = PRODUCTS.map((p) => ({ p, q: c.quantities[p.id] ?? 0 }));
+  const cart = cartOf(s.doc), to = shipOf(s.doc);
+  const lines = PRODUCTS.map((p) => ({ p, q: cart[p.id] ?? 0 }));
   const subtotal = lines.reduce((sum, l) => sum + l.p.cents * l.q, 0);
-  const ship = SHIPPING.find((x) => x.value === c.shipping) ?? SHIPPING[0]!;
+  const ship = SHIPPING.find((x) => x.value === to.shipping) ?? SHIPPING[0]!;
   const tax = Math.round(subtotal * 0.0925);
   const total = subtotal + ship.cents + tax;
   const errors = c.attempted === c.step ? checkoutErrors(s, c.step) : {};
@@ -82,7 +92,7 @@ export function checkout(s: State): Screen {
   if (c.placed) {
     return {
       id: "checkout", title: "Checkout", subtitle: "Order confirmed", toolbar: [],
-      body: grid(320, card(undefined, [{ kind: "empty", icon: "check", title: "Thank you, your order is placed", text: `${plural(items, "item")} on the way to ${c.city}. Arrives in ${ship.days.toLowerCase()}.`, action: button("checkout.restart", "Start a new order", "secondary", "undo") }]), summary),
+      body: grid(320, card(undefined, [{ kind: "empty", icon: "check", title: "Thank you, your order is placed", text: `${plural(items, "item")} on the way to ${to.city}. Arrives in ${ship.days.toLowerCase()}.`, action: button("checkout.restart", "Start a new order", "secondary", "undo") }]), summary),
     };
   }
 
@@ -94,10 +104,10 @@ export function checkout(s: State): Screen {
     ];
   } else if (c.step === 1) {
     form = [
-      { kind: "textInput", id: "checkout.name", label: "Full name", value: c.name, placeholder: "Maya Okafor", error: errors.name },
-      { kind: "textInput", id: "checkout.address", label: "Street address", value: c.address, placeholder: "1200 Broadway", error: errors.address },
-      grid(160, { kind: "textInput", id: "checkout.city", label: "City", value: c.city, placeholder: "Oakland", error: errors.city }, { kind: "textInput", id: "checkout.zip", label: "ZIP code", value: c.zip, placeholder: "94612", error: errors.zip }),
-      { kind: "radio", id: "checkout.shipping", label: "Delivery", value: c.shipping, options: SHIPPING.map((x) => ({ value: x.value, label: `${x.label} · ${x.cents === 0 ? "Free" : money(x.cents)}`, description: x.days })) },
+      { kind: "textInput", id: "checkout.name", label: "Full name", value: to.name, placeholder: "Maya Okafor", error: errors.name },
+      { kind: "textInput", id: "checkout.address", label: "Street address", value: to.address, placeholder: "1200 Broadway", error: errors.address },
+      grid(160, { kind: "textInput", id: "checkout.city", label: "City", value: to.city, placeholder: "Oakland", error: errors.city }, { kind: "textInput", id: "checkout.zip", label: "ZIP code", value: to.zip, placeholder: "94612", error: errors.zip }),
+      { kind: "radio", id: "checkout.shipping", label: "Delivery", value: to.shipping, options: SHIPPING.map((x) => ({ value: x.value, label: `${x.label} · ${x.cents === 0 ? "Free" : money(x.cents)}`, description: x.days })) },
     ];
   } else if (c.step === 2) {
     form = [
@@ -107,7 +117,7 @@ export function checkout(s: State): Screen {
     ];
   } else {
     form = [
-      section("Ship to", undefined, text(`${c.name}\n${c.address}\n${c.city} ${c.zip}`), button("checkout.goto:1", "Change", "ghost")),
+      section("Ship to", undefined, text(`${to.name}\n${to.address}\n${to.city} ${to.zip}`), button("checkout.goto:1", "Change", "ghost")),
       section("Pay with", undefined, text(`Card ending ${c.card.replace(/\s/g, "").slice(-4)}, expires ${c.expiry}`), button("checkout.goto:2", "Change", "ghost")),
       section("Items", undefined, ...lines.filter((l) => l.q > 0).map((l) => spread(text(`${l.q} × ${l.p.name}`), text(money(l.p.cents * l.q))))),
     ];
@@ -128,35 +138,37 @@ export function checkout(s: State): Screen {
 
 export function profile(s: State): Screen {
   const me = person(ME.id);
-  const mine = TASKS.filter((t) => t.assignee === ME.id);
+  const mine = tasksOf(s.doc).filter((t) => t.assignee === ME.id);
+  const following = profileOf(s.doc).following;
   const teammates = PEOPLE.filter((p) => p.team === ME.team && p.id !== ME.id);
   return {
     id: "profile", title: "Profile", subtitle: ME.title,
-    toolbar: [button("profile.follow", s.profile.following ? "Following" : "Follow", s.profile.following ? "secondary" : "primary", s.profile.following ? "check" : "plus")],
+    toolbar: [button("profile.follow", following ? "Following" : "Follow", following ? "secondary" : "primary", following ? "check" : "plus")],
     body: v("lg",
       card(undefined, [
         h("md", { kind: "avatar", name: me.name, initials: initials(me.name), hue: hueOf(me.name), size: "lg", status: "success", statusLabel: "Online" }, v("xs", heading(me.name, 1), text(`${ME.title} · ${ME.team}`, "secondary"), text(ME.location, "caption"))),
-        text(s.settings.bio),
+        text(profileOf(s.doc).bio),
         wrap("xs", ...SKILLS.map((k): Node => ({ kind: "token", text: k, tone: "neutral" }))),
       ]),
       grid(200,
         { kind: "metric", label: "Projects", value: grouped(me.projects) },
         { kind: "metric", label: "Open tasks", value: grouped(mine.filter((t) => t.column !== "done").length) },
-        { kind: "metric", label: "Followers", value: grouped(s.profile.following ? 129 : 128) },
+        { kind: "metric", label: "Followers", value: grouped(following ? 129 : 128) },
         { kind: "metric", label: "With the team", value: `${Math.floor(me.joinedDaysAgo / 365)} years` },
       ),
       { kind: "tabs", id: "profile.tab", value: s.profile.tab, tabs: [{ value: "activity", label: "Activity" }, { value: "team", label: "Team", count: grouped(teammates.length) }, { value: "about", label: "About" }] },
       s.profile.tab === "team"
         ? card(undefined, [{ kind: "list", empty: "No teammates.", items: teammates.map((p) => ({ id: p.id, title: p.name, subtitle: `${p.role} · ${p.email}`, leading: { avatar: { initials: initials(p.name), hue: hueOf(p.name) } }, trailing: { text: p.status === "away" ? "Away" : p.status === "invited" ? "Invited" : "Active", tone: p.status === "away" ? "warning" : p.status === "invited" ? "info" : "success" }, emphasized: false, selected: false })) }])
         : s.profile.tab === "about"
-          ? card(undefined, [{ kind: "metadata", items: [{ label: "Email", value: s.settings.email }, { label: "Team", value: ME.team }, { label: "Location", value: ME.location }, { label: "Local time", value: clock(s.minute) }, { label: "Joined", value: relativeDay(addDays(s.today, -me.joinedDaysAgo), s.today) }] }])
+          ? card(undefined, [{ kind: "metadata", items: [{ label: "Email", value: profileOf(s.doc).email }, { label: "Team", value: ME.team }, { label: "Location", value: ME.location }, { label: "Local time", value: clock(s.minute) }, { label: "Joined", value: relativeDay(addDays(s.today, -me.joinedDaysAgo), s.today) }] }])
           : card(undefined, [{ kind: "list", empty: "Nothing yet.", items: mine.map((t) => ({ id: t.id, title: t.title, subtitle: t.column === "done" ? "Completed" : t.column === "doing" ? "In progress" : "Not started", leading: { icon: t.column === "done" ? "check" : "clock", tone: t.column === "done" ? "success" : "accent" }, ...(t.tags[0] ? { trailing: t.tags[0] } : {}), emphasized: false, selected: false })) }]),
     ),
   };
 }
 
 export function settings(s: State): Screen {
-  const st = s.settings;
+  // The fields show the draft while it fails its check, else what is saved; other screens read only what is saved.
+  const saved = profileOf(s.doc), st = { ...saved, name: s.settings.drafts.name ?? saved.name, email: s.settings.drafts.email ?? saved.email, deleted: s.settings.deleted };
   const nameError = checks.required(st.name, "your name");
   const emailError = checks.email(st.email);
   return {
@@ -179,7 +191,7 @@ export function settings(s: State): Screen {
         { kind: "switch", id: "settings.reduceMotion", label: "Reduce motion", description: "Fewer animations everywhere.", on: st.reduceMotion },
       ]),
       card("Danger zone", [spread(v("xs", text("Delete account", "emphasis"), text("Removes your profile and everything you made.", "caption")), button("settings.delete", "Delete account", "destructive", "trash", st.deleted))]),
-      text(`Signed in as ${st.email} · Demo account`, "caption"),
+      text(`Signed in as ${saved.email} · Demo account`, "caption"),
     ),
   };
 }

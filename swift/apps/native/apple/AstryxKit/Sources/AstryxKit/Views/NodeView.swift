@@ -44,6 +44,9 @@ struct NodeView: View {
         case .chat(let n): AXChat(node: n)
         case .board(let n): AXBoard(node: n)
         case .template(let n): TemplateView(node: n)
+        case .timeline(let n): AXTimeline(node: n)
+        case .diagram(let n): AXDiagram(node: n)
+        case .shares(let n): AXShares(node: n)
         case .unknown(let kind): AXPlaceholder(kind: kind)
         }
     }

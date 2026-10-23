@@ -1,5 +1,8 @@
 import Foundation
 
+/// The core's action id for the order template.
+func orderAction(_ id: String) -> String { "tpl.order." + id }
+
 /// The order page's view model: a mirror of `View` in core/src/templates/order/model.ts.
 struct OrderModel: Decodable, Sendable {
     /// "details", "invoices", "timeline", "customer" or "analysis".
@@ -12,14 +15,20 @@ struct OrderModel: Decodable, Sendable {
     let number: String
     let itemCount: Int
     let customerName: String
+    /// "Unfulfilled", "Partially fulfilled" or "Fulfilled": it follows the items marked fulfilled.
     let status: String
+    /// The status badge's tone: "warning", or "success" once every item is fulfilled.
+    let statusVariant: String
     let date: String
     let flag: String
     let products: [Product]
     let summary: [SummaryRow]
     let paidBy: PaidBy
     let activity: [Activity]
+    /// The order's notes, as plain text.
     let notes: String
+    /// With saving on, the notes are edited in place and kept when editing ends (docs/SYNC.md); nil draws them as plain text.
+    let notesEditor: NotesEditor?
     let customer: [Field]
     let fraud: Fraud
     /// The tabs in order; those with `more` sit behind the More menu.
@@ -37,6 +46,19 @@ struct OrderModel: Decodable, Sendable {
     let rules: Rules
 
     func isInert(_ control: String) -> Bool { inert.contains(control) }
+
+    /// The status badge's tone name as the theme knows it.
+    var statusIsDone: Bool { statusVariant == "success" }
+    /// Nothing is left for Fulfill item to do.
+    var allFulfilled: Bool { products.allSatisfy(\.fulfilled) }
+
+    struct NotesEditor: Decodable, Sendable {
+        /// The text so far (the draft, or the saved notes).
+        let value: String
+        /// True once the draft differs from the saved notes.
+        let canSave: Bool
+        let maxLength: Int
+    }
 
     struct Rules: Decodable, Sendable {
         /// The web page's viewport threshold; this drawing measures its pane and uses `paneNarrowBelow`.
@@ -61,11 +83,15 @@ struct OrderModel: Decodable, Sendable {
         let refund: String, sendInvoice: String, timeline: String, filters: String
         let like: String, reply: String, reactions: String
         let notes: String, showMore: String, customer: String, fraudAnalysis: String, riskLevel: String
+        /// Saving on: a fulfilled item's mark, the Like control once liked, the reply box's words.
+        let fulfilled: String, liked: String, save: String, send: String, cancel: String
+        let replyLabel: String, replyPlaceholder: String, you: String
 
         private enum CodingKeys: String, CodingKey {
             case allOrders, restock, edit, seeAll, date, showPanel, hidePanel, more, panelTitle
             case items, fulfillItem, createLabel, invoice, paid, refund, sendInvoice, timeline, filters
             case like, reply, reactions, notes, showMore, customer, fraudAnalysis, riskLevel
+            case fulfilled, liked, save, send, cancel, replyLabel, replyPlaceholder, you
         }
 
         init(from decoder: Decoder) throws {
@@ -97,16 +123,27 @@ struct OrderModel: Decodable, Sendable {
             customer = try c.decode(String.self, forKey: .customer)
             fraudAnalysis = try c.decode(String.self, forKey: .fraudAnalysis)
             riskLevel = try c.decode(String.self, forKey: .riskLevel)
+            fulfilled = try c.decode(String.self, forKey: .fulfilled)
+            liked = try c.decode(String.self, forKey: .liked)
+            save = try c.decode(String.self, forKey: .save)
+            send = try c.decode(String.self, forKey: .send)
+            cancel = try c.decode(String.self, forKey: .cancel)
+            replyLabel = try c.decode(String.self, forKey: .replyLabel)
+            replyPlaceholder = try c.decode(String.self, forKey: .replyPlaceholder)
+            you = try c.decode(String.self, forKey: .you)
         }
     }
 
     struct Product: Decodable, Sendable {
+        let id: String
         let name: String
         let image: String
         let lines: [String]
         let amount: String
         /// Parts drawn one after another: a price, a sign, a count.
         let unit: [COSPart]
+        /// Marked fulfilled (saving on).
+        let fulfilled: Bool
     }
 
     struct SummaryRow: Decodable, Sendable {
@@ -123,6 +160,7 @@ struct OrderModel: Decodable, Sendable {
     }
 
     struct Activity: Decodable, Sendable {
+        let id: String
         let user: String
         let text: String
         let changes: [String]?
@@ -130,6 +168,25 @@ struct OrderModel: Decodable, Sendable {
         /// "3 reactions" (or "Reactions" with no count), for VoiceOver.
         let reactionsLabel: String
         let time: String
+        /// The person likes this entry; `reactions` includes the like.
+        let liked: Bool
+        /// Replies written under the entry, oldest first.
+        let replies: [Reply]
+        /// The reply box, while it is open under this entry.
+        let composer: Composer?
+    }
+
+    struct Reply: Decodable, Sendable {
+        let id: String
+        let user: String
+        let text: String
+        let time: String
+    }
+
+    struct Composer: Decodable, Sendable {
+        let value: String
+        let canSend: Bool
+        let maxLength: Int
     }
 
     struct Field: Decodable, Sendable {

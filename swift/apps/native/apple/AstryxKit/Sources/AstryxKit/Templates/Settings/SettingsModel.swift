@@ -32,7 +32,9 @@ struct SettingsModel: Decodable, Sendable {
     let adminMembers: Bool
     let twoFactor: Bool
     let rules: Rules
-    /// Controls that do nothing in the stock template: "save.basic", "save.password", "save.advanced".
+    /// Controls that do nothing: all three Saves in stock Astryx's behaviour ("save.basic", "save.password",
+    /// "save.advanced"); with saving on, only "save.password" (there is no password backend). A Save that works is
+    /// not drawn here: settings take effect as they are made (`commit:<field>`, see the core's model).
     let inert: [String]
     /// The words only the native drawing writes.
     let words: Words

@@ -33,11 +33,13 @@ import {
   spacingVars,
 } from '@astryxdesign/core/theme/tokens.stylex';
 import {Heading, Text} from '@astryxdesign/core/Text';
+import {AlertDialog} from '@astryxdesign/core/AlertDialog';
 import {Avatar} from '@astryxdesign/core/Avatar';
 import {Badge} from '@astryxdesign/core/Badge';
 import {BottomSheet} from '@astryxdesign/core/BottomSheet';
 import {Button} from '@astryxdesign/core/Button';
 import {Collapsible, CollapsibleGroup} from '@astryxdesign/core/Collapsible';
+import {DropdownMenu} from '@astryxdesign/core/DropdownMenu';
 import {Section} from '@astryxdesign/core/Section';
 import {EmptyState} from '@astryxdesign/core/EmptyState';
 import {Icon} from '@astryxdesign/core/Icon';
@@ -88,6 +90,7 @@ import type {
   ActionView,
   ComposeView,
   MessageView,
+  MoveTarget,
   PaneView,
   RowView,
   View,
@@ -111,6 +114,65 @@ const ACTION_ICONS: Record<ActionView['id'], typeof ArchiveBoxIcon> = {
   delete: TrashIcon,
   reply: ArrowUturnLeftIcon,
 };
+
+/**
+ * One of a thread's actions (Archive, Move to folder, Delete) as an icon button. Stock leaves
+ * them inert; with saving on (the view no longer lists them in `inert`) they work: Archive and
+ * Delete press their action for thread `id`, and Move to folder opens a menu of folders.
+ */
+function ThreadActionButton({
+  action,
+  id,
+  moveTargets,
+  inert,
+  send,
+  size,
+}: {
+  action: ActionView;
+  id: string;
+  moveTargets: MoveTarget[];
+  inert: string[];
+  send: Send;
+  size?: 'sm';
+}) {
+  const icon = <Icon icon={ACTION_ICONS[action.id]} size="sm" />;
+  if (action.id === 'move' && !inert.includes('move')) {
+    return (
+      <DropdownMenu
+        hasChevron={false}
+        items={moveTargets.map(target => ({
+          label: target.label,
+          onClick: () => send({type: 'press', id: target.id}),
+        }))}
+        renderTrigger={props => (
+          <IconButton
+            {...props}
+            variant="ghost"
+            size={size}
+            label={action.ariaLabel}
+            tooltip={action.label}
+            icon={icon}
+          />
+        )}
+      />
+    );
+  }
+  const press_ =
+    (action.id === 'archive' || action.id === 'delete') &&
+    !inert.includes(action.id)
+      ? {onClick: () => press(send, `${action.id}:${id}`)}
+      : {};
+  return (
+    <IconButton
+      variant="ghost"
+      size={size}
+      label={action.ariaLabel}
+      tooltip={action.label}
+      icon={icon}
+      {...press_}
+    />
+  );
+}
 
 const COMPOSER_TOOL_ICONS: Record<string, typeof PaperClipIcon> = {
   attach: PaperClipIcon,
@@ -253,12 +315,16 @@ function ReceivedCell({
   reveal,
   isOverlaid,
   hasAttachmentsLabel,
+  inert,
+  send,
 }: {
   item: RowView;
   reveal: UseContainerRevealReturn;
   /** False on coarse pointers, where the actions are permanent. */
   isOverlaid: boolean;
   hasAttachmentsLabel: string;
+  inert: string[];
+  send: Send;
 }) {
   return (
     <HStack gap={1} vAlign="center" hAlign="end" height={28}>
@@ -269,13 +335,14 @@ function ReceivedCell({
         vAlign="center"
         hAlign="end">
         {item.actions.map(action => (
-          <IconButton
+          <ThreadActionButton
             key={action.id}
-            variant="ghost"
+            action={action}
+            id={item.id}
+            moveTargets={item.moveTargets}
+            inert={inert}
+            send={send}
             size="sm"
-            label={action.ariaLabel}
-            tooltip={action.label}
-            icon={<Icon icon={ACTION_ICONS[action.id]} size="sm" />}
           />
         ))}
       </HStack>
@@ -515,24 +582,27 @@ function ConversationPane({
   pane,
   text,
   messageMeasure,
+  inert,
   send,
   isFullWidth,
 }: {
   pane: PaneView;
   text: View['text']['pane'];
   messageMeasure: number;
+  inert: string[];
   send: Send;
   /** True when the pane has replaced the list rather than sitting beside it. */
   isFullWidth: boolean;
 }) {
   const onClose = () => press(send, 'close');
   const threadActions = pane.actions.map(action => (
-    <IconButton
+    <ThreadActionButton
       key={action.id}
-      variant="ghost"
-      label={action.ariaLabel}
-      tooltip={action.label}
-      icon={<Icon icon={ACTION_ICONS[action.id]} size="sm" />}
+      action={action}
+      id={pane.id}
+      moveTargets={pane.moveTargets}
+      inert={inert}
+      send={send}
     />
   ));
 
@@ -664,10 +734,12 @@ function useRecipientSource(
 function ComposeWindow({
   compose,
   text,
+  inert,
   send,
 }: {
   compose: ComposeView;
   text: View['text']['composer'];
+  inert: string[];
   send: Send;
 }) {
   // A source over the directory the core offers, for what each field holds already.
@@ -799,6 +871,14 @@ function ComposeWindow({
                     label={text.send}
                     variant="primary"
                     icon={<Icon icon={PaperAirplaneIcon} size="sm" />}
+                    // Stock leaves Send inert; with saving on it sends once there
+                    // is someone to send to and something to say.
+                    {...(inert.includes('send')
+                      ? {}
+                      : {
+                          isDisabled: !compose.canSend,
+                          onClick: () => press(send, 'send'),
+                        })}
                   />
                   {text.tools.map(tool => (
                     <IconButton
@@ -954,7 +1034,7 @@ export default function SupportInboxTemplate({view: rawView, send}: TemplateProp
     getContainerProps: reveal.getContainerProps,
   });
 
-  const {receivedWidth} = view;
+  const {receivedWidth, inert} = view;
   const {
     columns: columnText,
     hasAttachments: hasAttachmentsLabel,
@@ -973,6 +1053,8 @@ export default function SupportInboxTemplate({view: rawView, send}: TemplateProp
           reveal={reveal}
           isOverlaid={!isTouch}
           hasAttachmentsLabel={hasAttachmentsLabel}
+          inert={inert}
+          send={send}
         />
       ),
     };
@@ -1074,6 +1156,8 @@ export default function SupportInboxTemplate({view: rawView, send}: TemplateProp
     isTouch,
     reveal,
     receivedWidth,
+    inert,
+    send,
     hasAttachmentsLabel,
     overflowMark,
     previewSeparator,
@@ -1132,20 +1216,56 @@ export default function SupportInboxTemplate({view: rawView, send}: TemplateProp
                     <HStack gap={3} vAlign="center" minHeight={28}>
                       <StackItem size="fill">
                         <HStack gap={1} vAlign="center">
-                          {view.bulkActions.map(action => (
-                            <Button
-                              key={action.id}
-                              label={action.label}
-                              variant="ghost"
-                              size="sm"
-                              icon={
-                                <Icon
-                                  icon={ACTION_ICONS[action.id]}
-                                  size="sm"
-                                />
-                              }
-                            />
-                          ))}
+                          {view.bulkActions.map(action =>
+                            action.id === 'move' && !inert.includes('move') ? (
+                              <DropdownMenu
+                                key={action.id}
+                                hasChevron={false}
+                                items={view.bulkMoveTargets.map(target => ({
+                                  label: target.label,
+                                  onClick: () =>
+                                    send({type: 'press', id: target.id}),
+                                }))}
+                                renderTrigger={props => (
+                                  <Button
+                                    {...props}
+                                    label={action.label}
+                                    variant="ghost"
+                                    size="sm"
+                                    icon={
+                                      <Icon
+                                        icon={ACTION_ICONS[action.id]}
+                                        size="sm"
+                                      />
+                                    }
+                                  />
+                                )}
+                              />
+                            ) : (
+                              <Button
+                                key={action.id}
+                                label={action.label}
+                                variant="ghost"
+                                size="sm"
+                                icon={
+                                  <Icon
+                                    icon={ACTION_ICONS[action.id]}
+                                    size="sm"
+                                  />
+                                }
+                                // Stock leaves these inert; with saving on they
+                                // work on the ticked rows.
+                                {...((action.id === 'archive' ||
+                                  action.id === 'delete') &&
+                                !inert.includes(action.id)
+                                  ? {
+                                      onClick: () =>
+                                        press(send, `${action.id}Selected`),
+                                    }
+                                  : {})}
+                              />
+                            ),
+                          )}
                         </HStack>
                       </StackItem>
 
@@ -1207,6 +1327,7 @@ export default function SupportInboxTemplate({view: rawView, send}: TemplateProp
                 pane={openPane}
                 text={text.pane}
                 messageMeasure={rules.messageMeasure}
+                inert={view.inert}
                 send={send}
                 isFullWidth
               />
@@ -1259,6 +1380,7 @@ export default function SupportInboxTemplate({view: rawView, send}: TemplateProp
                   pane={openPane}
                   text={text.pane}
                   messageMeasure={rules.messageMeasure}
+                  inert={view.inert}
                   send={send}
                   isFullWidth={false}
                 />
@@ -1267,7 +1389,28 @@ export default function SupportInboxTemplate({view: rawView, send}: TemplateProp
           )
         }
       />
-      <ComposeWindow compose={view.compose} text={text.composer} send={send} />
+      <ComposeWindow
+        compose={view.compose}
+        text={text.composer}
+        inert={view.inert}
+        send={send}
+      />
+      {view.confirm === null ? null : (
+        // Delete asks first (saving on only; the view has no question otherwise).
+        <AlertDialog
+          isOpen
+          onOpenChange={isOpen => {
+            if (!isOpen) {
+              send({type: 'press', id: view.confirm?.cancelId ?? ''});
+            }
+          }}
+          title={view.confirm.title}
+          description={view.confirm.description}
+          actionLabel={view.confirm.actionLabel}
+          cancelLabel={view.confirm.cancelLabel}
+          onAction={() => send({type: 'press', id: view.confirm?.actionId ?? ''})}
+        />
+      )}
     </>
   );
 }

@@ -15,6 +15,8 @@ final class ClientHost: NSObject, AXClientServices {
     /// The refactored page on its own core: told only the current screen.
     let own = OwnCoreBridge()
     private let runtime = ReactRuntime()
+    /// Signing in to sync; off when no sync server is configured.
+    let signIn: SignIn
     private var nextCall = 0
     private var connected = false
     /// Actions sent before the core said it was running, in order.
@@ -28,14 +30,21 @@ final class ClientHost: NSObject, AXClientServices {
     override init() {
         var send: (String) -> Void = { _ in }
         model = AppModel(send: { send($0) })
-        start = ClientHost.startArgument()
+        let signIn = SignIn()
+        self.signIn = signIn
+        start = ClientHost.startArgument(signIn: signIn)
         super.init()
         send = { [weak self] action in self?.dispatch(action) }
+        signIn.dispatch = { [weak self] action in self?.dispatch(action) }
+        // The token goes to the runtime by its own operation, never as an action of the core's.
+        signIn.authorize = { [weak self] argument in self?.authorize(argument) }
         web = WebBridge { [weak self] action in self?.dispatch(action) }
     }
 
     /// One snapshot, to both drawings.
     private func deliver(_ store: String, _ json: String) {
+        // The saved doc (docs/SYNC.md): kept on the device, never drawn from here.
+        if store == "doc" { return SavedDoc.write(json) }
         let began = CACurrentMediaTime()
         model.receive(store: store, snapshotJSON: json)
         web.changed(store: store, snapshotJSON: json)
@@ -45,6 +54,9 @@ final class ClientHost: NSObject, AXClientServices {
               let snapshot = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return }
         if let surface = snapshot["surface"] as? [String: Any], let template = surface["stockTemplate"] as? String { stock.show(template) }
         if let current = snapshot["current"] as? String { own.show(current) }
+        let account = snapshot["account"] as? [String: Any]
+        signIn.observe(request: account?["request"] as? [String: Any])
+        signIn.observe(syncState: (account?["status"] as? [String: Any])?["state"] as? String)
         play(snapshot["scenarios"] as? [String: Any])
     }
 
@@ -115,14 +127,21 @@ final class ClientHost: NSObject, AXClientServices {
     }
 
     /// `-AXScreen t.inbox`, `-AXTheme ocean` and `-AXSurface all` on the command line (the
-    /// screen tour, the UI tests) start the core somewhere other than its first state.
-    private static func startArgument() -> String? {
+    /// screen tour, the UI tests) start the core somewhere other than its first state. The
+    /// saved doc and this install's id seed always go in; `-AXFreshDoc YES` (captures, tests)
+    /// starts from the sample data and saves nothing over the kept doc.
+    private static func startArgument(signIn: SignIn) -> String? {
         let defaults = UserDefaults.standard
-        var start: [String: String] = [:]
+        var start: [String: Any] = [:]
         if let screen = defaults.string(forKey: "AXScreen") { start["screen"] = screen }
         if let theme = defaults.string(forKey: "AXTheme") { start["theme"] = theme }
         if let surface = defaults.string(forKey: "AXSurface") { start["surface"] = surface }
-        guard !start.isEmpty, let data = try? JSONSerialization.data(withJSONObject: start) else { return nil }
+        start["seed"] = SavedDoc.seed
+        start["signIn"] = signIn.isAvailable
+        // Signed in, the core starts from the sample data and the account's rows arrive from Zero;
+        // the device's own copy goes along for when the person signs out.
+        if defaults.bool(forKey: "AXFreshDoc") { SavedDoc.isReadOnly = true } else if let doc = SavedDoc.read() { start[signIn.isSignedIn ? "deviceDoc" : "doc"] = doc }
+        guard let data = try? JSONSerialization.data(withJSONObject: start) else { return nil }
         return String(data: data, encoding: .utf8)
     }
 
@@ -138,6 +157,12 @@ final class ClientHost: NSObject, AXClientServices {
         call("dispatch", actionJSON)
     }
 
+    /// Hands the runtime a token and where sync is, or `null` to sign out (SignIn decides when).
+    private func authorize(_ argument: String) {
+        guard connected else { return }
+        call("auth", argument)
+    }
+
     // MARK: AXClientServices, called off the main thread.
 
     nonisolated func libraryConnected(withBridgeVersion bridgeVersion: Int) {
@@ -149,11 +174,21 @@ final class ClientHost: NSObject, AXClientServices {
                 let queued = self.waiting
                 self.waiting = []
                 for action in queued { self.call("dispatch", action) }
+                // Signed in at launch: sync starts now (the token goes to the runtime, not the core).
+                self.signIn.connected()
                 if UserDefaults.standard.bool(forKey: "AXFrameMeter") { FrameMeter.shared.start() }
                 // `-AXScenario inbox:web` (the UI tests, a demo) starts a scenario at once.
                 if let scenario = UserDefaults.standard.string(forKey: "AXScenario") {
                     self.call("dispatch", "{\"type\":\"press\",\"id\":\"scenario.start:\(scenario)\"}")
                 }
+                #if DEBUG
+                // `-AXPress how.select:axclient` (Debug builds, captures): one press as the app starts.
+                if let id = UserDefaults.standard.string(forKey: "AXPress"),
+                   let data = try? JSONSerialization.data(withJSONObject: ["type": "press", "id": id]),
+                   let json = String(data: data, encoding: .utf8) {
+                    self.call("dispatch", json)
+                }
+                #endif
             }
         }
     }

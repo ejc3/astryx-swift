@@ -30,6 +30,19 @@
  *   set  touch             true when the web page's primary pointer cannot hover
  * (A drawing that lays itself out from its own width never sends these three.)
  *
+ * Saved data (docs/SYNC.md), only with saving on (`io.extras`; stock Astryx does none of this):
+ * read state, archived and deleted threads, the folder a thread is in, replies the person sent and
+ * conversations they started. What is drawn is the sample conversations with those laid over them.
+ *   press archive:<id> | delete:<id> | move:<id>:<folder>   one thread (delete asks first)
+ *   press archiveSelected | deleteSelected | moveSelected:<folder>   the ticked rows of this tab
+ *   press deleteConfirm | deleteCancel   answer the question `view.confirm` asks
+ *   press send             send the draft: a reply when it belongs to a thread, else a new conversation
+ * Archive hides a thread from every tab (the Inbox tab is the whole queue, so moving it to Resolved
+ * would not take it out of sight); the saved row keeps it. Move to folder puts a thread in one of
+ * the tabs the template has: Inbox (no folder, shown only on the Inbox tab), Escalations, Waiting
+ * or Resolved. Opening a thread marks it read. Drafts, the open thread and the ticked rows are view
+ * state and are not saved. Refresh, attach, link, image and emoji have nothing behind them.
+ *
  * Controls the core has no action for (Refresh, archive, move, delete, Send, the composer's
  * tools) are listed in the view's `inert`: a host draws them disabled.
  *
@@ -50,8 +63,11 @@
  * `hasSelectedRows`, each row's `actionsWide` and `actionsStacked`, and `panes` (the thread of
  * every visible row, for whichever one that drawing opens), and decides for itself.
  */
-import { grouped } from "../../format.ts";
-import type { TemplateAction, TemplateModule } from "../types.ts";
+import { civilOf, clock, grouped, minuteOf, plural, relativeDay, type Now } from "../../format.ts";
+import { applyWrites, overlay, type Doc, type Row } from "../../sync/doc.ts";
+import { MAX_BODY, MAX_SUBJECT, readPeople, writePeople } from "../../sync/areas/inbox.ts";
+import { writesOf } from "../../sync/mutations.ts";
+import type { TemplateAction, TemplateIO, TemplateModule } from "../types.ts";
 import { CATEGORIES, CONVERSATIONS, type Category, type Conversation, type Priority, type ThreadMessage } from "./data.ts";
 
 // ----- State -----
@@ -87,7 +103,6 @@ export type ComposeState = {
 };
 
 export type InboxState = {
-  conversations: Conversation[];
   category: Category;
   chosen: Chosen;
   /** Ticked rows, in the order they were ticked; may include rows of other tabs. */
@@ -96,6 +111,8 @@ export type InboxState = {
   thread: { key: string; open: string[] };
   lightbox: { id: string; index: number } | null;
   compose: ComposeState;
+  /** The threads a Delete is asking about, while its question is open (saving on only). */
+  confirm: string[] | null;
   /** What the host measured. 0 means not measured yet. */
   layout: { surface: number; list: number; touch: boolean };
 };
@@ -124,6 +141,8 @@ const ROW_ACTIONS: { id: ActionId; label: string }[] = [
 ];
 /** Ids of the controls whose action the core does not have, so a host shows them disabled. */
 const INERT = ["refresh", "archive", "move", "delete", "send", "attach", "link", "image", "emoji"];
+/** With saving on, Archive, Move to folder, Delete and Send work (docs/SYNC.md). */
+const INERT_WITH_EXTRAS = INERT.filter((id) => !["archive", "move", "delete", "send"].includes(id));
 const THREAD_ACTIONS = ROW_ACTIONS.filter((a) => a.id !== "reply");
 const NARROW_ROW_ACTIONS = ROW_ACTIONS.filter((a) => a.id === "archive" || a.id === "delete");
 
@@ -153,6 +172,12 @@ const TEXT = {
   overflowMark: "+",
   unreadStatus: "Unread",
   unreadSuffix: " unread",
+  /** The subject of a message sent without one. */
+  noSubject: "(No subject)",
+  /** Spoken for what a sent message's sender is. */
+  you: "You",
+  /** The question Delete asks, with saving on. */
+  confirm: { cancel: "Cancel", delete: "Delete", title: "Delete this conversation?", titleMany: "Delete these conversations?", undone: "This cannot be undone." },
   hasAttachments: "Has attachments",
   /** Spoken state of a row's tick box. */
   selected: "selected",
@@ -208,6 +233,105 @@ const TEXT = {
   },
 };
 
+// ----- Saved data laid over the samples -----
+
+/** The address the person's own messages come from: the team's domain, so Reply all leaves it out. */
+const OWN_EMAIL = `you${OUR_DOMAIN}`;
+
+/** A conversation as drawn: a sample, or one the person started (`mine`), with the replies they sent (`sent`). */
+type Conv = Conversation & { mine?: boolean; sent?: ThreadMessage[]; sentAt?: number };
+/** What a saved row can change on a sample conversation, as `overlay` merges it in. */
+type Changes = { unread?: boolean; folder?: string; archived?: boolean };
+
+const isCategory = (v: unknown): v is Category => CATEGORIES.some((c) => c.value === v);
+
+/** "4:30 PM" and "Today at 4:30 PM" for a send time: the words the samples use. */
+function whenWords(at: number, now: Now): { short: string; full: string } {
+  const there = { epochMs: at, utcOffsetMinutes: now.utcOffsetMinutes };
+  const day = relativeDay(civilOf(there), civilOf(now));
+  const time = clock(minuteOf(there));
+  return { short: day === "Today" ? time : day, full: `${day} at ${time}` };
+}
+
+/** A typed message as the paragraphs the thread draws. */
+const paragraphs = (text: string): string[] => text.split("\n").filter((line) => line.trim() !== "");
+
+/** The row's text if it is a send time and message a row may hold. */
+function sentRow(row: Row): { text: string; at: number } | null {
+  const { text, sentAt } = row;
+  return typeof text === "string" && text.trim() !== "" && text.length <= MAX_BODY && typeof sentAt === "number" && Number.isFinite(sentAt) ? { text, at: sentAt } : null;
+}
+
+/** A conversation the person started, from its saved row; a row missing what one needs is not drawn. */
+function startedThread(row: Row, now: Now): (Conv & Changes) | null {
+  const sent = sentRow(row);
+  const to = readPeople(row.to);
+  const first = to?.[0];
+  if (!sent || !first || typeof row.subject !== "string" || row.subject.length > MAX_SUBJECT) return null;
+  const when = whenWords(sent.at, now);
+  const lines = paragraphs(sent.text);
+  const head = lines[0] ?? "";
+  return {
+    id: row.id,
+    sender: first.label,
+    senderEmail: first.id,
+    subject: row.subject.trim() === "" ? TEXT.noSubject : row.subject.trim(),
+    preview: head.length > 100 ? `${head.slice(0, 100)}…` : head,
+    tags: [],
+    receivedAt: when.short,
+    receivedFull: when.full,
+    isUnread: false,
+    priority: "normal",
+    category: "inbox",
+    assignee: null,
+    body: lines,
+    attachments: [],
+    mine: true,
+    ...(typeof row.unread === "boolean" ? { unread: row.unread } : {}),
+    ...(typeof row.folder === "string" ? { folder: row.folder } : {}),
+    ...(row.archived === true ? { archived: true } : {}),
+    sentAt: sent.at,
+  } as Conv & Changes;
+}
+
+/** The replies the person sent, by thread, oldest first. */
+function repliesByThread(doc: Doc, now: Now): Map<string, ThreadMessage[]> {
+  const found: { thread: string; at: number; message: ThreadMessage }[] = [];
+  for (const row of Object.values(doc.inbox_message)) {
+    const sent = sentRow(row);
+    if (!sent || typeof row.thread !== "string" || readPeople(row.to) === null) continue;
+    found.push({ thread: row.thread, at: sent.at, message: { id: row.id, sender: TEXT.you, senderEmail: OWN_EMAIL, receivedFull: whenWords(sent.at, now).full, body: paragraphs(sent.text) } });
+  }
+  found.sort((a, b) => a.at - b.at || (a.message.id < b.message.id ? -1 : a.message.id > b.message.id ? 1 : 0));
+  const out = new Map<string, ThreadMessage[]>();
+  for (const f of found) out.set(f.thread, [...(out.get(f.thread) ?? []), f.message]);
+  return out;
+}
+
+/**
+ * Every conversation that is drawn: the samples with the person's saved rows laid over them (read
+ * state, folder), without the archived and deleted ones, the conversations they started first
+ * (newest on top), and their sent replies at the end of each thread. Without saving on, the samples.
+ */
+function conversations(doc: Doc | undefined, now: Now, extras: boolean): Conv[] {
+  if (!doc || !extras) return CONVERSATIONS;
+  const merged = overlay<Conv & Changes>(CONVERSATIONS, doc.inbox_thread, (row) => startedThread(row, now));
+  const replies = repliesByThread(doc, now);
+  const drawn = merged
+    .filter((c) => c.archived !== true)
+    .map((c): Conv => {
+      const sent = replies.get(c.id);
+      return {
+        ...c,
+        isUnread: typeof c.unread === "boolean" ? c.unread : c.isUnread,
+        category: isCategory(c.folder) ? c.folder : c.category,
+        ...(sent ? { sent } : {}),
+      };
+    });
+  const started = drawn.filter((c) => c.mine).sort((a, b) => (b.sentAt ?? 0) - (a.sentAt ?? 0) || (a.id < b.id ? -1 : 1));
+  return [...started, ...drawn.filter((c) => !c.mine)];
+}
+
 // ----- Derivation -----
 
 function inCategory(item: Conversation, category: Category): boolean {
@@ -215,19 +339,19 @@ function inCategory(item: Conversation, category: Category): boolean {
 }
 
 type Derived = {
-  visible: Conversation[];
+  visible: Conv[];
   isMeasured: boolean;
   isSingleSurface: boolean;
   openId: string | null;
-  openConversation: Conversation | null;
+  openConversation: Conv | null;
   isPaneFullWidth: boolean;
   isListMeasured: boolean;
   isStacked: boolean;
   isTight: boolean;
 };
 
-function derive(s: InboxState): Derived {
-  const visible = s.conversations.filter((item) => inCategory(item, s.category));
+function derive(s: InboxState, list: readonly Conv[]): Derived {
+  const visible = list.filter((item) => inCategory(item, s.category));
   const isMeasured = s.layout.surface > 0;
   const isSingleSurface = isMeasured && s.layout.surface < SINGLE_SURFACE_BELOW;
   const defaultOpenId = isSingleSurface ? null : (visible[0]?.id ?? null);
@@ -248,23 +372,24 @@ function derive(s: InboxState): Derived {
   };
 }
 
-/** The thread's messages, oldest first, the conversation's own last. */
-function threadMessages(conversation: Conversation): ThreadMessage[] {
+/** The thread's messages, oldest first: the earlier ones, the conversation's own, then the replies the person sent. */
+function threadMessages(conversation: Conv): ThreadMessage[] {
   return [
     ...(conversation.replies ?? []),
     {
       id: conversation.id,
-      sender: conversation.sender,
-      senderEmail: conversation.senderEmail,
+      sender: conversation.mine ? TEXT.you : conversation.sender,
+      senderEmail: conversation.mine ? OWN_EMAIL : conversation.senderEmail,
       receivedFull: conversation.receivedFull,
       body: conversation.body,
       attachments: conversation.attachments,
     },
+    ...(conversation.sent ?? []),
   ];
 }
 
 /** Reply goes to the newest sender; Reply all adds everyone else outside the team who wrote in the thread. */
-function replyDraft(conversation: Conversation, isReplyAll: boolean): { conversationId: string; recipients: Recipient[]; subject: string } {
+function replyDraft(conversation: Conv, isReplyAll: boolean): { conversationId: string; recipients: Recipient[]; subject: string } {
   const author: Recipient = { id: conversation.senderEmail, label: conversation.sender };
   const others = (conversation.replies ?? [])
     .filter((message) => !message.senderEmail.endsWith(OUR_DOMAIN) && message.senderEmail !== conversation.senderEmail)
@@ -283,8 +408,8 @@ function threadKey(d: Derived): string {
 }
 
 /** Remounts the disclosure group (as the stock template does with a React key) when the thread or layout changes. */
-function settle(s: InboxState): InboxState {
-  const d = derive(s);
+function settle(s: InboxState, list: readonly Conv[]): InboxState {
+  const d = derive(s, list);
   const key = threadKey(d);
   if (s.thread.key === key) return s;
   return { ...s, thread: { key, open: d.openId === null ? [] : [d.openId] } };
@@ -320,8 +445,18 @@ function recipients(value: string | number | boolean): Recipient[] | null {
 
 const EMPTY_COMPOSE: ComposeState = { isOpen: false, recipients: [], cc: [], bcc: [], hasCc: false, hasBcc: false, subject: "", body: "", conversationId: null, queries: { recipients: "", cc: "", bcc: "" } };
 
-function startReply(s: InboxState, isReplyAll: boolean): InboxState {
-  const conversation = derive(s).openConversation;
+/** What an action works with besides the view state: the conversations drawn, and (with saving on) how to save. */
+type Ctx = {
+  list: readonly Conv[];
+  now: Now;
+  /** Present only with saving on. */
+  io: TemplateIO | undefined;
+  /** Asks for a mutation and keeps the doc as it will stand, so the rest of this action sees it. */
+  save(name: "inbox.read" | "inbox.archive" | "inbox.delete" | "inbox.move" | "inbox.reply" | "inbox.compose", args: Record<string, unknown>): void;
+};
+
+function startReply(s: InboxState, isReplyAll: boolean, list: readonly Conv[]): InboxState {
+  const conversation = derive(s, list).openConversation;
   if (!conversation) return s;
   const draft = replyDraft(conversation, isReplyAll);
   const c = s.compose;
@@ -339,13 +474,95 @@ function startReply(s: InboxState, isReplyAll: boolean): InboxState {
   };
 }
 
-function press(s: InboxState, id: string): InboxState {
+/** Whether the draft can be sent: someone to send it to, and something to say. Saved text has limits. */
+function canSend(c: ComposeState): boolean {
+  const fits = (people: Recipient[]) => readPeople(writePeople(people)) !== null;
+  return c.recipients.length > 0 && fits(c.recipients) && fits(c.cc) && fits(c.bcc) && c.body.trim() !== "" && c.body.length <= MAX_BODY;
+}
+
+const isFolder = (v: string): v is Category => CATEGORIES.some((c) => c.value === v);
+
+/** The ticked rows of this tab, in the order they were ticked. */
+function ticked(s: InboxState, list: readonly Conv[]): string[] {
+  const visible = new Set(derive(s, list).visible.map((c) => c.id));
+  return s.selected.filter((id) => visible.has(id));
+}
+
+/** The actions that save (docs/SYNC.md); only called with saving on. */
+function savingAction(s: InboxState, key: string, arg: string, ctx: Ctx): InboxState | null {
+  const { list, now, io } = ctx;
+  if (!io) return null;
+  const exists = (id: string) => list.some((c) => c.id === id);
+  const without = (ids: readonly string[]) => s.selected.filter((id) => !ids.includes(id));
+  const archive = (ids: string[]): InboxState => {
+    for (const id of ids) ctx.save("inbox.archive", { id });
+    return { ...s, selected: without(ids) };
+  };
+  const move = (ids: string[], folder: string): InboxState => {
+    if (!isFolder(folder)) return s;
+    const moving = ids.filter((id) => list.find((c) => c.id === id)?.category !== folder);
+    for (const id of moving) ctx.save("inbox.move", { id, folder });
+    return moving.length === 0 ? s : { ...s, selected: without(ids) };
+  };
+  switch (key) {
+    case "archive":
+      return exists(arg) ? archive([arg]) : s;
+    case "archiveSelected": {
+      const ids = ticked(s, list);
+      return ids.length === 0 ? s : archive(ids);
+    }
+    case "move": {
+      const cut = arg.lastIndexOf(":");
+      return cut < 0 || !exists(arg.slice(0, cut)) ? s : move([arg.slice(0, cut)], arg.slice(cut + 1));
+    }
+    case "moveSelected":
+      return move(ticked(s, list), arg);
+    case "delete":
+      return exists(arg) ? { ...s, confirm: [arg] } : s;
+    case "deleteSelected": {
+      const ids = ticked(s, list);
+      return ids.length === 0 ? s : { ...s, confirm: ids };
+    }
+    case "deleteCancel":
+      return s.confirm ? { ...s, confirm: null } : s;
+    case "deleteConfirm": {
+      const ids = (s.confirm ?? []).filter(exists);
+      for (const id of ids) ctx.save("inbox.delete", { id });
+      return s.confirm ? { ...s, confirm: null, selected: without(ids) } : s;
+    }
+    case "send": {
+      const c = s.compose;
+      if (!canSend(c)) return s;
+      const people = { to: writePeople(c.recipients), cc: writePeople(c.cc), bcc: writePeople(c.bcc) };
+      const thread = c.conversationId === null ? undefined : list.find((x) => x.id === c.conversationId);
+      const id = io.mint();
+      if (thread) {
+        // A reply goes at the end of its thread, expanded when that thread is the open one.
+        ctx.save("inbox.reply", { id, thread: thread.id, at: now.epochMs, ...people, body: c.body });
+        const open = derive(s, list).openId === thread.id;
+        return { ...s, compose: { ...EMPTY_COMPOSE }, thread: open ? { ...s.thread, open: [...s.thread.open, id] } : s.thread };
+      }
+      // A new message is a new conversation, opened on the Inbox tab where it is.
+      ctx.save("inbox.compose", { id, at: now.epochMs, ...people, subject: c.subject.slice(0, MAX_SUBJECT), body: c.body });
+      return { ...s, compose: { ...EMPTY_COMPOSE }, category: "inbox", chosen: { kind: "open", id } };
+    }
+    default:
+      return null;
+  }
+}
+
+function press(s: InboxState, id: string, ctx: Ctx): InboxState {
   const at = id.indexOf(":");
   const key = at < 0 ? id : id.slice(0, at);
   const arg = at < 0 ? "" : id.slice(at + 1);
+  const saved = savingAction(s, key, arg, ctx);
+  if (saved) return saved;
   switch (key) {
-    case "open":
+    case "open": {
+      // Opening a thread reads it (saving on).
+      if (ctx.io && ctx.list.find((c) => c.id === arg)?.isUnread) ctx.save("inbox.read", { id: arg });
       return { ...s, chosen: { kind: "open", id: arg } };
+    }
     case "close":
       return { ...s, chosen: { kind: "closed" } };
     case "unselectAll":
@@ -360,9 +577,9 @@ function press(s: InboxState, id: string): InboxState {
     case "compose":
       return { ...s, compose: { ...s.compose, isOpen: true } };
     case "reply":
-      return startReply(s, false);
+      return startReply(s, false, ctx.list);
     case "replyAll":
-      return startReply(s, true);
+      return startReply(s, true, ctx.list);
     case "showCc":
       return { ...s, compose: { ...s.compose, hasCc: true } };
     case "showBcc":
@@ -424,25 +641,44 @@ function set(s: InboxState, id: string, value: string | number | boolean): Inbox
 
 function initial(): InboxState {
   return settle({
-    conversations: CONVERSATIONS.map((c) => ({ ...c })),
     category: "inbox",
     chosen: { kind: "none" },
     selected: [],
     thread: { key: "", open: [] },
     lightbox: null,
     compose: { ...EMPTY_COMPOSE },
+    confirm: null,
     layout: { surface: 0, list: 0, touch: false },
-  });
+  }, CONVERSATIONS);
 }
 
-function reduce(s: InboxState, action: TemplateAction): InboxState {
-  const next = action.type === "set" ? set(s, action.id, action.value) : press(s, action.id);
-  return next === s ? s : settle(next);
+function reduce(s: InboxState, action: TemplateAction, now: Now, io: TemplateIO | undefined): InboxState {
+  // Without saving on (stock Astryx, the parity harness) the samples are all there is and nothing is asked for.
+  const saving = io?.extras === true ? io : undefined;
+  let doc = saving?.doc;
+  let asked = false;
+  const ctx: Ctx = {
+    list: conversations(doc, now, saving !== undefined),
+    now,
+    io: saving,
+    save(name, args) {
+      saving!.save(name, args);
+      asked = true;
+      const writes = writesOf(name, args);
+      if (writes && doc) doc = applyWrites(doc, writes);
+    },
+  };
+  const next = action.type === "set" ? set(s, action.id, action.value) : press(s, action.id, ctx);
+  if (next === s && !asked) return s;
+  // Settle against what is drawn once the saves land: a thread that was archived or deleted is no longer the open one.
+  return settle(next, asked ? conversations(doc, now, true) : ctx.list);
 }
 
 // ----- View -----
 
 export type ActionView = { id: ActionId; label: string; ariaLabel: string };
+/** A "Move to folder" menu entry: `id` is the action to press. */
+export type MoveTarget = { label: string; id: string };
 export type TokenView = { label: string; color: "red" | "orange" | "default" };
 
 export type RowView = {
@@ -465,6 +701,8 @@ export type RowView = {
   actionsWide: ActionView[];
   /** The hover actions of a stacked row (archive and delete), whatever was measured. */
   actionsStacked: ActionView[];
+  /** The folders this thread can move to (all but its own), for the Move to folder menu. */
+  moveTargets: MoveTarget[];
 };
 
 export type AttachmentView = { id: string; name: string; src: string; previewAlt: string; lightboxAlt: string };
@@ -491,6 +729,8 @@ export type PaneView = {
   /** Expanded message ids. */
   openMessages: string[];
   actions: ActionView[];
+  /** The folders this thread can move to (all but its own), for the Move to folder menu. */
+  moveTargets: MoveTarget[];
 };
 
 /** What the person chose, apart from any layout: the content a drawing opens its thread from. */
@@ -523,6 +763,19 @@ export type ComposeView = {
   suggestions: { recipients: Recipient[]; cc: Recipient[]; bcc: Recipient[] };
   /** Whether the draft holds typed content that cancelling would lose. */
   isDirty: boolean;
+  /** Whether Send has something to do: someone to send to and a message (saving on). */
+  canSend: boolean;
+};
+
+/** The question Delete asks before it deletes (saving on); null when none is open. */
+export type ConfirmView = {
+  title: string;
+  description: string;
+  actionLabel: string;
+  cancelLabel: string;
+  /** The actions to press: `deleteConfirm` and `deleteCancel`. */
+  actionId: string;
+  cancelId: string;
 };
 
 export type InboxView = {
@@ -539,6 +792,10 @@ export type InboxView = {
   /** "2 conversations selected", as the separate text nodes the stock template draws. */
   selectionLabel: string[];
   bulkActions: { id: ActionId; label: string }[];
+  /** The folders the ticked rows can move to: `moveSelected:<folder>`. */
+  bulkMoveTargets: MoveTarget[];
+  /** Delete's question, while it is open. */
+  confirm: ConfirmView | null;
   openId: string | null;
   mode: {
     isSingleSurface: boolean;
@@ -599,14 +856,37 @@ function isDirty(c: ComposeState): boolean {
   return c.conversationId === null && (c.recipients.length > 0 || c.subject.trim() !== "");
 }
 
-function view(s: InboxState): InboxView {
-  const d = derive(s);
-  const unreadByTab = (category: Category): number => s.conversations.filter((c) => c.isUnread && inCategory(c, category)).length;
+/** Delete's question for the threads it is about (those still there), or null. */
+function confirmView(s: InboxState, list: readonly Conv[]): ConfirmView | null {
+  const about = (s.confirm ?? []).map((id) => list.find((c) => c.id === id)).filter((c): c is Conv => c !== undefined);
+  if (about.length === 0) return null;
+  const one = about.length === 1;
+  return {
+    title: one ? TEXT.confirm.title : TEXT.confirm.titleMany,
+    description: `${one ? `“${about[0]!.subject}”` : plural(about.length, "conversation")} will be deleted. ${TEXT.confirm.undone}`,
+    actionLabel: TEXT.confirm.delete,
+    cancelLabel: TEXT.confirm.cancel,
+    actionId: "tpl.inbox.deleteConfirm",
+    cancelId: "tpl.inbox.deleteCancel",
+  };
+}
+
+/** The Move to folder entries for a thread in `folder` (none: for the ticked rows, every folder). */
+function moveTargets(id: string | null, folder: Category | null): MoveTarget[] {
+  return CATEGORIES.filter((c) => c.value !== folder).map((c) => ({ label: c.label, id: id === null ? `tpl.inbox.moveSelected:${c.value}` : `tpl.inbox.move:${id}:${c.value}` }));
+}
+
+function view(s: InboxState, now: Now, doc: Doc | undefined, extras: boolean): InboxView {
+  const conversationsDrawn = conversations(doc, now, extras);
+  const d = derive(s, conversationsDrawn);
+  const unreadByTab = (category: Category): number => conversationsDrawn.filter((c) => c.isUnread && inCategory(c, category)).length;
   const selected = new Set(s.selected);
   const selectedCount = d.visible.filter((item) => selected.has(item.id)).length;
   const rowActions = d.isStacked ? NARROW_ROW_ACTIONS : ROW_ACTIONS;
   const c = s.compose;
-  const directory: Recipient[] = s.conversations.map((item) => ({ id: item.senderEmail, label: item.sender }));
+  const directory: Recipient[] = conversationsDrawn
+    .map((item) => ({ id: item.senderEmail, label: item.sender }))
+    .filter((person, at, all) => all.findIndex((other) => other.id === person.id) === at);
 
   const rows: RowView[] = d.visible.map((item) => ({
     id: item.id,
@@ -624,15 +904,17 @@ function view(s: InboxState): InboxView {
     actions: actionViews(rowActions, item.subject),
     actionsWide: actionViews(ROW_ACTIONS, item.subject),
     actionsStacked: actionViews(NARROW_ROW_ACTIONS, item.subject),
+    moveTargets: moveTargets(item.id, item.category),
   }));
 
-  const paneOf = (conversation: Conversation, openMessages: string[]): PaneView => ({
+  const paneOf = (conversation: Conv, openMessages: string[]): PaneView => ({
     id: conversation.id,
     subject: conversation.subject,
     priority: priorityToken(conversation.priority),
     tags: conversation.tags,
     openMessages,
     actions: actionViews(THREAD_ACTIONS, conversation.subject),
+    moveTargets: moveTargets(conversation.id, conversation.category),
     messages: threadMessages(conversation).map((message) => {
       const attachments = message.attachments ?? [];
       return {
@@ -660,17 +942,19 @@ function view(s: InboxState): InboxView {
 
   return {
     text: TEXT,
-    subtitle: [grouped(s.conversations.filter((x) => x.isUnread).length), " unread of ", grouped(s.conversations.length), " ", "conversations"],
+    subtitle: [grouped(conversationsDrawn.filter((x) => x.isUnread).length), " unread of ", grouped(conversationsDrawn.length), " ", "conversations"],
     tab: s.category,
     tabs: CATEGORIES.map((option) => {
       const unread = unreadByTab(option.value);
       return { value: option.value, label: option.label, badge: unread === 0 ? null : unread };
     }),
     rows,
-    selectedKeys: s.selected,
+    selectedKeys: s.selected.filter((id) => conversationsDrawn.some((c) => c.id === id)),
     hasSelection: selectedCount > 0 && !d.isStacked,
     selectionLabel: [String(selectedCount), " ", selectedCount === 1 ? "conversation" : "conversations", " ", "selected"],
     bulkActions: THREAD_ACTIONS,
+    bulkMoveTargets: moveTargets(null, null),
+    confirm: confirmView(s, conversationsDrawn),
     openId: d.openId,
     mode: {
       isSingleSurface: d.isSingleSurface,
@@ -697,7 +981,7 @@ function view(s: InboxState): InboxView {
     choice,
     hasSelectedRows: selectedCount > 0,
     panes,
-    inert: INERT,
+    inert: extras ? INERT_WITH_EXTRAS : INERT,
     receivedWidth: trailingWidth(rowActions.length, s.layout.touch),
     pane,
     compose: {
@@ -717,6 +1001,7 @@ function view(s: InboxState): InboxView {
         bcc: searchRecipients(directory, c.bcc, c.queries.bcc),
       },
       isDirty: isDirty(c),
+      canSend: canSend(c),
     },
   };
 }
@@ -726,6 +1011,6 @@ export const inbox: TemplateModule<InboxState, InboxView> = {
   astryx: "table-inbox",
   title: "Inbox",
   initial: () => initial(),
-  reduce: (s, action) => reduce(s, action),
-  view: (s) => view(s),
+  reduce: (s, action, now, io) => reduce(s, action, now, io),
+  view: (s, now, doc, extras = true) => view(s, now, doc, extras),
 };

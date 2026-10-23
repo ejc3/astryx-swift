@@ -53,6 +53,8 @@ web/             the Astryx web host (Vite + React 19 + @astryxdesign/core)
   src/templates/   the same templates refactored: Astryx's JSX drawing the core's view model
   public/astryx-drive.js  the in-page scenario driver
   scripts/         parity, scenario recording and replay, screenshots
+sync/            saved data on Zero: schema, queries and mutators made from the core's; startSync for hosts
+server/          the API: sign-in (/native/login) and Zero's /api/zero/query and /api/zero/mutate (Hono, Node)
 apps/native/     the Apple apps
   js/              the Hermes bundle's entry and the native module's spec
   apple/AstryxKit  SwiftUI drawing of every node and template, painted with Astryx's tokens
@@ -73,6 +75,7 @@ npm run parity -w web         # stock vs refactored, pixel for pixel (Playwright
 npm run record -w web         # re-record the scenarios from the parity steps
 npm run replay -w web         # replay them on fresh pages and compare
 node core/scripts/themes.mjs  # regenerate the theme tokens from Astryx's resolver
+npm run e2e -w sync           # sync end to end: Postgres, zero-cache, the API, Zero clients (docs/SYNC.md)
 ```
 
 The apps, on a Mac with Xcode 26, xcodegen and CocoaPods:
@@ -87,6 +90,12 @@ Launch arguments: `-AXScreen t.inbox`, `-AXSurface all`, `-AXTheme ocean`,
 `-AXScenario inbox:web`. `scripts/testflight.sh ios|macos` archives and uploads a build
 (`TEAM_ID` in the environment; run it in the desktop session, where signing can reach the
 keychain).
+
+Sign-in and sync (docs/SYNC.md) are off unless the build names a sync server:
+`ASTRYX_SYNC_URL=https://<sync host>` as a build setting (the apps) or
+`VITE_ASTRYX_SYNC_URL` (the web page). A Debug build also takes `-AXSyncURL <url>` (http
+allowed for this machine) and `-AXDevTokenFile <path>` or `-AXDevToken <token>`, a token from a
+local stack, to test without a browser; neither exists in a Release build.
 
 ## Status
 

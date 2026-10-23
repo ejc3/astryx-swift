@@ -113,6 +113,21 @@ const OWN: Record<IconName, Svg> = {
   "chevron-right": glyph(path("M9.5 5l7 7-7 7")),
   "arrow-up": glyph(path("M12 19V5M6 11l6-6 6 6")),
   "arrow-down": glyph(path("M12 5v14M6 13l6 6 6-6")),
+  "arrow-right": glyph(path("M5 12h14M13 6l6 6-6 6")),
+  diagram: glyph(
+    <>
+      <rect x="3" y="4" width="7" height="5" rx="1.5" />
+      <rect x="14" y="4" width="7" height="5" rx="1.5" />
+      <rect x="8.5" y="15" width="7" height="5" rx="1.5" />
+      <path d="M6.5 9v3h11V9M12 12v3" />
+    </>,
+  ),
+  history: glyph(
+    <>
+      <path d="M4 12a8 8 0 1 0 2.4-5.7M4 4v4h4" />
+      <path d="M12 8v4l3 2" />
+    </>,
+  ),
   filter: glyph(path("M3.5 5h17l-6.5 8v6l-4-2v-4z")),
   clock: glyph(
     <>

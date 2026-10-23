@@ -23,6 +23,8 @@ import {Avatar} from '@astryxdesign/core/Avatar';
 import {Button} from '@astryxdesign/core/Button';
 import {TabList, Tab, TabMenu} from '@astryxdesign/core/TabList';
 import {Divider} from '@astryxdesign/core/Divider';
+import {TextArea} from '@astryxdesign/core/TextArea';
+import {TextInput} from '@astryxdesign/core/TextInput';
 import {Link} from '@astryxdesign/core/Link';
 import {List, ListItem} from '@astryxdesign/core/List';
 import {MetadataList, MetadataListItem} from '@astryxdesign/core/MetadataList';
@@ -42,7 +44,12 @@ import {
   ViewColumnsIcon,
 } from '@heroicons/react/24/outline';
 import type {View} from '../../../core/src/templates/order/model.ts';
+import type {Action} from '@astryx-native/core';
 import type {TemplateProps} from './props.ts';
+
+type Send = (action: Action) => void;
+const press = (send: Send, id: string) =>
+  send({type: 'press', id: `tpl.order.${id}`});
 
 // ─── Styles ─────────────────────────────────────────────────────────────────
 import type {CSSProperties} from 'react';
@@ -116,7 +123,7 @@ function PageHeader({
                   </HStack>
                   <HStack gap={1} vAlign="center">
                     <Bullet />
-                    <Badge variant="warning" label={view.status} />
+                    <Badge variant={view.statusVariant} label={view.status} />
                   </HStack>
                   <HStack gap={1} vAlign="center">
                     <Bullet />
@@ -199,8 +206,12 @@ function PageHeader({
 }
 
 // ─── Items Card ─────────────────────────────────────────────────────────────
-function ItemsCard({view}: {view: View}) {
+function ItemsCard({view, send}: {view: View; send: Send}) {
   const {words} = view;
+  // Not in stock Astryx (it leaves Fulfill item inert): with saving on it
+  // marks the next item fulfilled (docs/SYNC.md).
+  const canFulfill = !view.inert.includes('fulfill');
+  const allFulfilled = view.products.every(p => p.fulfilled);
   return (
     <Section>
       <VStack gap={4}>
@@ -208,11 +219,19 @@ function ItemsCard({view}: {view: View}) {
           <StackItem size="fill">
             <HStack gap={2} vAlign="center">
               <Heading level={2}>{words.items}</Heading>
-              <Badge variant="warning" label={view.status} />
+              <Badge variant={view.statusVariant} label={view.status} />
             </HStack>
           </StackItem>
           <HStack gap={2}>
-            <Button label={words.fulfillItem} variant="ghost" />
+            <Button
+              label={words.fulfillItem}
+              variant="ghost"
+              {...(canFulfill
+                ? {onClick: () => press(send, 'fulfill')}
+                : allFulfilled
+                  ? {isDisabled: true}
+                  : {})}
+            />
             <Button label={words.createLabel} variant="secondary" />
           </HStack>
         </HStack>
@@ -229,6 +248,11 @@ function ItemsCard({view}: {view: View}) {
                       {line}
                     </Text>
                   ))}
+                  {product.fulfilled && (
+                    <Text type="supporting" color="accent">
+                      {words.fulfilled}
+                    </Text>
+                  )}
                 </VStack>
               }
               onClick={() => {}}
@@ -309,8 +333,11 @@ function InvoiceCard({view}: {view: View}) {
 }
 
 // ─── Timeline ───────────────────────────────────────────────────────────────
-function TimelineSection({view}: {view: View}) {
+function TimelineSection({view, send}: {view: View; send: Send}) {
   const {words} = view;
+  // Stock draws Like and Reply as plain text; with saving on they are buttons.
+  const canLike = !view.inert.includes('like');
+  const canReply = !view.inert.includes('reply');
   return (
     <Section>
       <VStack gap={4}>
@@ -369,18 +396,83 @@ function TimelineSection({view}: {view: View}) {
                           {item.reactions}
                         </Text>
                       </HStack>
-                      <Text type="supporting" color="secondary">
-                        {words.like}
-                      </Text>
+                      {canLike ? (
+                        <Button
+                          label={item.liked ? words.liked : words.like}
+                          variant="ghost"
+                          size="sm"
+                          aria-pressed={item.liked}
+                          onClick={() => press(send, `like:${item.id}`)}
+                        />
+                      ) : (
+                        <Text type="supporting" color="secondary">
+                          {words.like}
+                        </Text>
+                      )}
                       <Bullet />
-                      <Text type="supporting" color="secondary">
-                        {words.reply}
-                      </Text>
+                      {canReply ? (
+                        <Button
+                          label={words.reply}
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => press(send, `reply:${item.id}`)}
+                        />
+                      ) : (
+                        <Text type="supporting" color="secondary">
+                          {words.reply}
+                        </Text>
+                      )}
                       <Bullet />
                       <Text type="supporting" color="secondary">
                         {item.time}
                       </Text>
                     </HStack>
+                    {item.replies.map(reply => (
+                      <HStack key={reply.id} gap={3} vAlign="start">
+                        <Avatar name={reply.user} size="sm" />
+                        <StackItem size="fill">
+                          <Card variant="muted" padding={3}>
+                            <VStack gap={1}>
+                              <Text type="body" weight="bold">
+                                {reply.user}
+                              </Text>
+                              <Text type="body">{reply.text}</Text>
+                              <Text type="supporting" color="secondary">
+                                {reply.time}
+                              </Text>
+                            </VStack>
+                          </Card>
+                        </StackItem>
+                      </HStack>
+                    ))}
+                    {item.composer && (
+                      <HStack gap={2} vAlign="end">
+                        <StackItem size="fill">
+                          <TextInput
+                            label={words.replyLabel}
+                            isLabelHidden
+                            placeholder={words.replyPlaceholder}
+                            value={item.composer.value}
+                            hasAutoFocus
+                            onChange={value =>
+                              send({type: 'set', id: 'tpl.order.replyText', value})
+                            }
+                            onEnter={() => press(send, 'replySend')}
+                          />
+                        </StackItem>
+                        <Button
+                          label={words.cancel}
+                          variant="secondary"
+                          onClick={() => press(send, 'replyCancel')}
+                        />
+                        <Button
+                          label={words.send}
+                          variant="primary"
+                          isDisabled={!item.composer.canSend}
+                          onClick={() => press(send, 'replySend')}
+                        />
+                      </HStack>
+                    )}
                   </VStack>
                 </StackItem>
               </HStack>
@@ -395,17 +487,42 @@ function TimelineSection({view}: {view: View}) {
 // ─── Right Panel ────────────────────────────────────────────────────────────
 // Renders as a fixed-width side panel on desktop, and as a plain stacked section
 // on mobile (so it flows below the content instead of squishing beside it).
-function PanelContent({view}: {view: View}) {
+function PanelContent({view, send}: {view: View; send: Send}) {
   const {words} = view;
   return (
     <VStack gap={4}>
       <Collapsible trigger={<Heading level={4}>{words.notes}</Heading>}>
-        <Text type="body">
-          {view.notes}{' '}
-          <Link href="#" color="secondary">
-            {words.showMore}
-          </Link>
-        </Text>
+        {view.notesEditor ? (
+          // Not in stock Astryx: with saving on the notes can be edited and
+          // saved (docs/SYNC.md).
+          <VStack gap={2}>
+            <TextArea
+              label={words.notes}
+              isLabelHidden
+              rows={5}
+              value={view.notesEditor.value}
+              maxLength={view.notesEditor.maxLength}
+              onChange={value =>
+                send({type: 'set', id: 'tpl.order.notes', value})
+              }
+            />
+            <HStack hAlign="end">
+              <Button
+                label={words.save}
+                variant="secondary"
+                isDisabled={!view.notesEditor.canSave}
+                onClick={() => press(send, 'notesSave')}
+              />
+            </HStack>
+          </VStack>
+        ) : (
+          <Text type="body">
+            {view.notes}{' '}
+            <Link href="#" color="secondary">
+              {words.showMore}
+            </Link>
+          </Text>
+        )}
       </Collapsible>
       <Collapsible trigger={<Heading level={4}>{words.customer}</Heading>}>
         <MetadataList>
@@ -433,13 +550,13 @@ function PanelContent({view}: {view: View}) {
 }
 
 // Desktop: fixed-width side panel in the layout's `end` slot.
-function RightPanel({view}: {view: View}) {
+function RightPanel({view, send}: {view: View; send: Send}) {
   return (
     <LayoutPanel
       width={view.rules.panelWidth}
       padding={4}
       role="complementary">
-      <PanelContent view={view} />
+      <PanelContent view={view} send={send} />
     </LayoutPanel>
   );
 }
@@ -487,13 +604,13 @@ export default function DetailPage2Template({view: raw, send}: TemplateProps) {
         content={
           <LayoutContent role="main">
             <VStack gap={4}>
-              <ItemsCard view={view} />
+              <ItemsCard view={view} send={send} />
               <InvoiceCard view={view} />
-              <TimelineSection view={view} />
+              <TimelineSection view={view} send={send} />
             </VStack>
           </LayoutContent>
         }
-        end={!isNarrow && showSidePanel ? <RightPanel view={view} /> : undefined}
+        end={!isNarrow && showSidePanel ? <RightPanel view={view} send={send} /> : undefined}
       />
       {/* Mobile: the side panel content opens as a full-screen dialog. (A
           side drawer/sheet would be more idiomatic, but Astryx has no Drawer
@@ -511,7 +628,7 @@ export default function DetailPage2Template({view: raw, send}: TemplateProps) {
           }
           content={
             <LayoutContent padding={4}>
-              <PanelContent view={view} />
+              <PanelContent view={view} send={send} />
             </LayoutContent>
           }
         />

@@ -50,6 +50,14 @@ export default function SettingsTemplate({view: raw, send}: TemplateProps) {
     send({type: 'set', id: `tpl.settings.${field}`, value});
   const pressNav = (label: string) =>
     send({type: 'press', id: `tpl.settings.nav:${label}`});
+  // Stock's Save buttons do nothing. With saving on, the basic and advanced
+  // Saves commit their section's changed fields; the password Save stays inert
+  // (no authentication backend), so it is still listed in `view.inert` and
+  // gets no handler (docs/SYNC.md).
+  const save = (id: string) =>
+    view.inert.includes(id)
+      ? {}
+      : {onClick: () => send({type: 'press', id: `tpl.settings.${id}`})};
 
   return (
     <Layout
@@ -140,7 +148,7 @@ export default function SettingsTemplate({view: raw, send}: TemplateProps) {
                   onChange={setText('email')}
                 />
                 <HStack>
-                  <Button label={words.save} variant="primary" />
+                  <Button label={words.save} variant="primary" {...save('save.basic')} />
                 </HStack>
               </VStack>
             </Grid>
@@ -172,7 +180,7 @@ export default function SettingsTemplate({view: raw, send}: TemplateProps) {
                   onChange={setText('confirmPw')}
                 />
                 <HStack>
-                  <Button label={words.save} variant="primary" />
+                  <Button label={words.save} variant="primary" {...save('save.password')} />
                 </HStack>
               </VStack>
             </Grid>
@@ -204,7 +212,7 @@ export default function SettingsTemplate({view: raw, send}: TemplateProps) {
                   onChange={setToggle('twoFactor')}
                 />
                 <HStack>
-                  <Button label={words.save} variant="primary" />
+                  <Button label={words.save} variant="primary" {...save('save.advanced')} />
                 </HStack>
               </VStack>
             </Grid>

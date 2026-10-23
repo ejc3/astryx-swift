@@ -65,6 +65,7 @@ private struct SectionHeader<Badge: View, Buttons: View>: View {
 struct OrderItems: View {
     let model: OrderModel
     @Environment(\.ax) private var ax
+    @Environment(\.axSend) private var send
     @Environment(\.dynamicTypeSize) private var typeSize
 
     /// The amount is bold, a step heavier than the semibold of a name.
@@ -75,10 +76,14 @@ struct OrderItems: View {
     var body: some View {
         VStack(alignment: .leading, spacing: ax.space(4)) {
             SectionHeader(title: model.words.items) {
-                AXBadge(text: model.status, tone: .warning)
+                AXBadge(text: model.status, tone: model.statusIsDone ? .success : .warning)
             } buttons: {
-                // Inert in the stock page, which draws them enabled; so do we.
-                COSButton(label: model.words.fulfillItem, variant: .ghost) {}
+                // Stock leaves these inert and draws them enabled; so do we. Fulfill item works when
+                // saving is on, until every item is fulfilled.
+                COSButton(label: model.words.fulfillItem, variant: .ghost) {
+                    if !model.isInert("fulfill") { send(.press(id: orderAction("fulfill"))) }
+                }
+                .disabled(model.allFulfilled)
                 COSButton(label: model.words.createLabel, variant: .secondary) {}
             }
             // A spacious list: each row has room above and below it.
@@ -89,6 +94,10 @@ struct OrderItems: View {
                             .axLeading(ax, size: ax.fontSize("font-size-base", 14), ratio: ax.bodyLeading)
                         ForEach(Array(product.lines.enumerated()), id: \.offset) { _, line in
                             Text(line).font(ax.fontSmall).foregroundStyle(ax.textSecondary)
+                                .axLeading(ax, size: ax.fontSize("font-size-sm", 12), ratio: ax.supportingLeading)
+                        }
+                        if product.fulfilled {
+                            Text(model.words.fulfilled).font(ax.fontSmall).foregroundStyle(ax.accent)
                                 .axLeading(ax, size: ax.fontSize("font-size-sm", 12), ratio: ax.supportingLeading)
                         }
                     }
@@ -188,6 +197,8 @@ struct OrderInvoice: View {
 struct OrderTimeline: View {
     let model: OrderModel
     @Environment(\.ax) private var ax
+    @Environment(\.axSend) private var send
+    @FocusState private var focus: String?
 
     var body: some View {
         VStack(alignment: .leading, spacing: ax.space(4)) {
@@ -203,6 +214,8 @@ struct OrderTimeline: View {
                         VStack(alignment: .leading, spacing: ax.space(2)) {
                             note(item)
                             footer(item)
+                            ForEach(item.replies, id: \.id) { reply in replyRow(reply) }
+                            if let composer = item.composer { composerRow(composer) }
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                     }
@@ -237,16 +250,52 @@ struct OrderTimeline: View {
     }
 
     /// A text link with a 44-point target (the extra is taken back from the layout, so the line
-    /// does not grow). The stock page's Like and Reply do nothing and are drawn enabled.
-    private func inertLink(_ title: String) -> some View {
-        Button {} label: {
+    /// does not grow). The stock page's Like and Reply do nothing and are drawn enabled; with saving
+    /// on, the core does not list them as inert and they act.
+    private func link(_ title: String, selected: Bool = false, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
             Text(title).font(ax.fontSmall)
                 .frame(minWidth: cosTouch, minHeight: cosTouch)
                 .contentShape(Rectangle())
                 .padding(.vertical, -(cosTouch - 16) / 2)
         }
         .buttonStyle(.plain)
-        .foregroundStyle(ax.textSecondary)
+        .foregroundStyle(selected ? ax.accent : ax.textSecondary)
+        .accessibilityAddTraits(selected ? .isSelected : [])
+    }
+
+    /// A reply the person wrote, under its entry.
+    private func replyRow(_ reply: OrderModel.Reply) -> some View {
+        HStack(alignment: .top, spacing: ax.space(3)) {
+            COSAvatar(name: reply.user, size: .sm)
+            VStack(alignment: .leading, spacing: ax.space(1)) {
+                Text(reply.user).font(ax.fontStrong).foregroundStyle(ax.text)
+                Text(reply.text).font(ax.fontBase).foregroundStyle(ax.text)
+                Text(reply.time).font(ax.fontSmall).foregroundStyle(ax.textSecondary)
+            }
+            .fixedSize(horizontal: false, vertical: true)
+            .padding(ax.space(3))
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(RoundedRectangle(cornerRadius: ax.radiusContainer, style: .continuous).fill(ax.muted))
+            .accessibilityElement(children: .combine)
+        }
+    }
+
+    /// The reply box: a field with Cancel and Send; Return sends.
+    private func composerRow(_ composer: OrderModel.Composer) -> some View {
+        VStack(alignment: .leading, spacing: ax.space(2)) {
+            COSTextBox(
+                id: orderAction("replyText"), label: model.words.replyLabel, value: composer.value,
+                placeholder: model.words.replyPlaceholder, maxLength: composer.maxLength,
+                focusKey: "reply", focus: $focus, submitLabel: .send
+            ) { if composer.canSend { send(.press(id: orderAction("replySend"))) } }
+            HStack(spacing: ax.space(2)) {
+                COSButton(label: model.words.cancel, variant: .secondary) { send(.press(id: orderAction("replyCancel"))) }
+                COSButton(label: model.words.send, variant: .primary) { send(.press(id: orderAction("replySend"))) }
+                    .disabled(!composer.canSend)
+            }
+        }
+        .onAppear { focus = "reply" }
     }
 
     private func footer(_ item: OrderModel.Activity) -> some View {
@@ -259,9 +308,13 @@ struct OrderTimeline: View {
             .foregroundStyle(ax.textSecondary)
             .accessibilityElement(children: .combine)
             .accessibilityLabel(item.reactionsLabel)
-            inertLink(model.words.like)
+            link(item.liked ? model.words.liked : model.words.like, selected: item.liked) {
+                if !model.isInert("like") { send(.press(id: orderAction("like:" + item.id))) }
+            }
             COSBullet()
-            inertLink(model.words.reply)
+            link(model.words.reply) {
+                if !model.isInert("reply") { send(.press(id: orderAction("reply:" + item.id))) }
+            }
             COSBullet()
             Text(item.time).font(ax.fontSmall).foregroundStyle(ax.textSecondary)
         }
@@ -272,15 +325,21 @@ struct OrderTimeline: View {
 struct OrderPanelContent: View {
     let model: OrderModel
     @Environment(\.ax) private var ax
+    @Environment(\.axSend) private var send
+    @FocusState private var focus: String?
 
     var body: some View {
         VStack(alignment: .leading, spacing: ax.space(4)) {
             COSCollapsible(spokenTitle: model.words.notes) {
                 Text(model.words.notes).font(ax.heading(4)).foregroundStyle(ax.text).accessibilityAddTraits(.isHeader)
             } content: {
-                (Text(model.notes + " ").foregroundStyle(ax.text) + Text(model.words.showMore).foregroundStyle(ax.textSecondary).underline())
-                    .font(ax.fontBase)
-                    .fixedSize(horizontal: false, vertical: true)
+                if let editor = model.notesEditor {
+                    notesEditor(editor)
+                } else {
+                    (Text(model.notes + " ").foregroundStyle(ax.text) + Text(model.words.showMore).foregroundStyle(ax.textSecondary).underline())
+                        .font(ax.fontBase)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
             COSCollapsible(spokenTitle: model.words.customer) {
                 Text(model.words.customer).font(ax.heading(4)).foregroundStyle(ax.text).accessibilityAddTraits(.isHeader)
@@ -310,6 +369,26 @@ struct OrderPanelContent: View {
             }
         }
         .environment(\.cosWords, model.words.common)
+    }
+
+    /// The notes as a text editor that keeps its text when editing ends (focus leaves it), as the
+    /// platforms do for an edit in place; the keyboard's Done button ends it on iPhone and iPad.
+    private func notesEditor(_ editor: OrderModel.NotesEditor) -> some View {
+        COSTextBox(
+            id: orderAction("notes"), label: model.words.notes, value: editor.value, multiline: true,
+            maxLength: editor.maxLength, focusKey: "notes", focus: $focus
+        )
+        .onChange(of: focus) { old, new in
+            if old == "notes", new != "notes", editor.canSave { send(.press(id: orderAction("notesSave"))) }
+        }
+        #if os(iOS)
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button(model.words.common.done) { focus = nil }.fontWeight(.semibold)
+            }
+        }
+        #endif
     }
 
     /// The risk level as a bar, filled in the success color.

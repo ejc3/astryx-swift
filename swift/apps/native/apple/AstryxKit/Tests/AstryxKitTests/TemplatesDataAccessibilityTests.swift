@@ -23,7 +23,9 @@ final class TemplatesDataAccessibilityTests: XCTestCase {
         XCTAssertEqual(model.text.composer.discardAction, "Discard Draft")
         XCTAssertEqual(model.text.composer.remove, "Remove")
         XCTAssertEqual(model.text.selected, "selected")
-        for id in ["refresh", "archive", "move", "delete", "send", "attach"] { XCTAssertTrue(model.isInert(id), id) }
+        // With saving on, Archive, Move to folder, Delete and Send work (docs/SYNC.md); the rest stay inert.
+        for id in ["refresh", "attach", "link", "image", "emoji"] { XCTAssertTrue(model.isInert(id), id) }
+        for id in ["archive", "move", "delete", "send"] { XCTAssertFalse(model.isInert(id), id) }
         XCTAssertFalse(model.isInert("reply"))
         XCTAssertEqual([model.mode.rules.singleSurfaceBelow, model.mode.rules.stackRowsBelow, model.mode.rules.tightenColumnsBelow], [900, 560, 900])
         XCTAssertFalse(model.compose.isDirty)
@@ -33,8 +35,11 @@ final class TemplatesDataAccessibilityTests: XCTestCase {
         let model = try view("kanban").decode(KanbanModel.self)
         XCTAssertEqual(model.words.addTask, "Add task")
         XCTAssertEqual(model.words.movedTo, "Moved to")
-        XCTAssertTrue(model.isInert("addTask"))
+        // With saving on, Add task opens the new-task sheet (docs/SYNC.md); Assign to me stays inert.
+        XCTAssertFalse(model.isInert("addTask"))
         XCTAssertTrue(model.isInert("assignToMe"))
+        XCTAssertEqual([model.words.newTask, model.words.create, model.words.cancel], ["New task", "Create", "Cancel"])
+        XCTAssertNil(model.adding)
         XCTAssertFalse(model.isInert("sprint"))
     }
 

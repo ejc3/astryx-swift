@@ -1,8 +1,13 @@
-export { appSnapshot, BRIDGE_VERSION, connectBridge, createClient, themeSnapshot, type BridgeHost, type Client, type StoreName, type ThemeSnapshot } from "./app.ts";
+export { appSnapshot, BRIDGE_VERSION, connectBridge, createClient, themeSnapshot, type BridgeHost, type Client, type ClientStart, type StoreName, type ThemeSnapshot } from "./app.ts";
+export { SCHEMA, TABLES, emptyDoc, readDoc, overlay, applyWrites, fitsColumn, isTable, type ColumnType, type Doc, type Row, type Field, type TableName, type Write } from "./sync/doc.ts";
+export { MUTATIONS, writesOf, isMutationName, isId, type Mutation, type MutationName } from "./sync/mutations.ts";
+export { between, spread } from "./sync/order.ts";
 export type { Now } from "./format.ts";
+export { SYNC_STATES, accountSnapshot, statusWords, type AccountEvent, type AccountPhase, type AccountRequest, type AccountSnapshot, type SyncState } from "./account.ts";
 export { THEME_INPUTS, type ThemeInput } from "./themes.ts";
 export * from "./ui.ts";
 export { TEMPLATES, TEMPLATE_IDS, templateById } from "./templates/index.ts";
 export type { TemplateModule, TemplateAction } from "./templates/types.ts";
 export type { Scenario, ScenarioStep, LocatorOp, Gesture, Driver, Playback, ScenariosSnapshot } from "./scenarios.ts";
 export { SCENARIOS } from "./scenarios.generated.ts";
+export { anchor, CLEAR, gridFrames, LANE, placeLabels, routeEdge, STEP, type GridMetrics, type LabelPlacement, type Point, type Rect } from "./diagram.ts";

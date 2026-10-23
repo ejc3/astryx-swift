@@ -56,7 +56,9 @@ test("the view is plain JSON", () => {
 
 test("the view says which controls are inert, and carries the native words", () => {
   const v = view(start());
-  assert.deepEqual(v.inert, ["save.basic", "save.password", "save.advanced"]);
+  // With extras (the default) two Saves work; the password's has no backend and stays inert. Stock mode lists all three.
+  assert.deepEqual(v.inert, ["save.password"]);
+  assert.deepEqual(settings.view(start(), NOW, undefined, false).inert, ["save.basic", "save.password", "save.advanced"]);
   assert.equal(v.words.save, "Save");
   assert.equal(v.words.password.current, "Verify current password");
   assert.equal(v.words.done, "Done");

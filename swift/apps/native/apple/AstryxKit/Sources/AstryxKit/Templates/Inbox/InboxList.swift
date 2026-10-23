@@ -1,13 +1,22 @@
 import SwiftUI
 
-/// What a row or thread action does here. The core has no archive, move or delete action (the
-/// model lists them as `inert`); they are drawn enabled as the web draws them, and do nothing.
+/// What a row or thread action does here. Archive and Delete press the core's action for the
+/// thread (Delete asks first: the model's `confirm` draws the question) unless the model lists
+/// them as `inert` (stock Astryx: they are drawn enabled as the web draws them, and do nothing).
+/// Move to folder is a menu of the model's `moveTargets` (`InboxIconMenu`), not a single action.
 /// "Reply" on a row opens that thread and starts the reply, both actions the core has.
 @MainActor
-func inboxPerform(_ action: String, row id: String, send: AXSender) {
-    guard action == "reply" else { return }
-    send(.press(id: inboxAction("open:\(id)")))
-    send(.press(id: inboxAction("reply")))
+func inboxPerform(_ action: String, row id: String, send: AXSender, inert: [String]) {
+    switch action {
+    case "reply":
+        send(.press(id: inboxAction("open:\(id)")))
+        send(.press(id: inboxAction("reply")))
+    case "archive", "delete":
+        guard !inert.contains(action) else { return }
+        send(.press(id: inboxAction("\(action):\(id)")))
+    default:
+        return
+    }
 }
 
 /// Makes `thread` the core's open thread before an action that works on the core's open thread
@@ -29,10 +38,20 @@ struct InboxRowMenu: View {
 
     var body: some View {
         ForEach(actions) { action in
-            Button(role: action.id == "delete" ? .destructive : nil) {
-                inboxPerform(action.id, row: row.id, send: send)
-            } label: {
-                Label(action.label, systemImage: inboxSymbol(action.id))
+            if action.id == "move" && !inert.contains("move") {
+                Menu {
+                    ForEach(row.moveTargets) { target in
+                        Button(target.label) { send(.press(id: target.id)) }
+                    }
+                } label: {
+                    Label(action.label, systemImage: inboxSymbol(action.id))
+                }
+            } else {
+                Button(role: action.id == "delete" ? .destructive : nil) {
+                    inboxPerform(action.id, row: row.id, send: send, inert: inert)
+                } label: {
+                    Label(action.label, systemImage: inboxSymbol(action.id))
+                }
             }
         }
     }
@@ -99,8 +118,12 @@ struct InboxRowView: View {
         if showsHoverActions {
             HStack(spacing: ax.hair) {
                 ForEach(layout.actions(of: row)) { action in
-                    InboxIconButton(symbol: inboxSymbol(action.id), label: action.ariaLabel, help: action.label) {
-                        inboxPerform(action.id, row: row.id, send: send)
+                    if action.id == "move" && !inert.contains("move") {
+                        InboxIconMenu(symbol: inboxSymbol(action.id), label: action.ariaLabel, help: action.label, targets: row.moveTargets)
+                    } else {
+                        InboxIconButton(symbol: inboxSymbol(action.id), label: action.ariaLabel, help: action.label) {
+                            inboxPerform(action.id, row: row.id, send: send, inert: inert)
+                        }
                     }
                 }
             }
@@ -330,16 +353,31 @@ struct InboxListColumn: View {
     private func bulkBandContent(label: String, vertical: Bool) -> some View {
         let actions = HStack(spacing: ax.space(1)) {
             ForEach(model.bulkActions) { action in
-                Button {
-                } label: {
-                    Label(action.label, systemImage: inboxSymbol(action.id))
-                        .font(ax.fontLabel)
-                        .foregroundStyle(ax.text)
-                        .padding(.horizontal, ax.space(2))
-                        .frame(minHeight: InboxTarget.side)
-                        .contentShape(Rectangle())
+                let label = Label(action.label, systemImage: inboxSymbol(action.id))
+                    .font(ax.fontLabel)
+                    .foregroundStyle(ax.text)
+                    .padding(.horizontal, ax.space(2))
+                    .frame(minHeight: InboxTarget.side)
+                    .contentShape(Rectangle())
+                if action.id == "move" && !model.isInert("move") {
+                    // Move to folder: a menu of the folders the ticked rows can go to.
+                    Menu {
+                        ForEach(model.bulkMoveTargets) { target in
+                            Button(target.label) { send(.press(id: target.id)) }
+                        }
+                    } label: { label }
+                    .menuStyle(.button)
+                    .menuIndicator(.hidden)
+                    .buttonStyle(.plain)
+                    .fixedSize()
+                } else {
+                    // Archive and Delete work on the ticked rows (Delete asks first); stock leaves them inert.
+                    Button {
+                        guard (action.id == "archive" || action.id == "delete") && !model.isInert(action.id) else { return }
+                        send(.press(id: inboxAction("\(action.id)Selected")))
+                    } label: { label }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
             }
         }
         let summary = HStack(spacing: ax.space(3)) {
@@ -429,11 +467,11 @@ struct InboxListColumn: View {
                         .listRowInsets(EdgeInsets())
                         .listRowSeparator(.hidden)
                         .listRowBackground(Color.clear)
-                        .modifier(InboxTrailingSwipe(row: row.id, actions: layout.actions(of: row).filter { $0.id != "reply" }))
+                        .modifier(InboxTrailingSwipe(row: row, actions: layout.actions(of: row).filter { $0.id != "reply" }, inert: model.inert))
                         .swipeActions(edge: .leading, allowsFullSwipe: true) {
                             ForEach(layout.actions(of: row).filter { $0.id == "reply" }) { action in
                                 Button {
-                                    inboxPerform(action.id, row: row.id, send: send)
+                                    inboxPerform(action.id, row: row.id, send: send, inert: model.inert)
                                 } label: {
                                     Label(action.label, systemImage: inboxSymbol(action.id))
                                 }
@@ -467,8 +505,9 @@ struct InboxListColumn: View {
 
 /// A row's trailing swipe, only when some action on it does something.
 struct InboxTrailingSwipe: ViewModifier {
-    let row: String
+    let row: InboxModel.Row
     let actions: [InboxModel.RowAction]
+    let inert: [String]
     @Environment(\.ax) private var ax
     @Environment(\.axSend) private var send
 
@@ -478,12 +517,23 @@ struct InboxTrailingSwipe: ViewModifier {
         } else {
             content.swipeActions(edge: .trailing, allowsFullSwipe: false) {
                 ForEach(actions) { action in
-                    Button(role: action.id == "delete" ? .destructive : nil) {
-                        inboxPerform(action.id, row: row, send: send)
-                    } label: {
-                        Label(action.label, systemImage: inboxSymbol(action.id))
+                    if action.id == "move" && !inert.contains("move") {
+                        Menu {
+                            ForEach(row.moveTargets) { target in
+                                Button(target.label) { send(.press(id: target.id)) }
+                            }
+                        } label: {
+                            Label(action.label, systemImage: inboxSymbol(action.id))
+                        }
+                        .tint(ax.iconSecondary)
+                    } else {
+                        Button(role: action.id == "delete" ? .destructive : nil) {
+                            inboxPerform(action.id, row: row.id, send: send, inert: inert)
+                        } label: {
+                            Label(action.label, systemImage: inboxSymbol(action.id))
+                        }
+                        .tint(action.id == "delete" ? ax.danger : (action.id == "move" ? ax.iconSecondary : ax.accent))
                     }
-                    .tint(action.id == "delete" ? ax.danger : (action.id == "move" ? ax.iconSecondary : ax.accent))
                 }
             }
         }

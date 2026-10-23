@@ -1,5 +1,5 @@
 import type { Node } from "@astryx-native/core";
-import { BarsNode, MetricNode } from "./charts.tsx";
+import { BarsNode, MetricNode, SharesNode } from "./charts.tsx";
 import { BoardNode } from "./board.tsx";
 import { CalendarNode } from "./calendar.tsx";
 import { ChatNode } from "./chat.tsx";
@@ -8,6 +8,8 @@ import { ListNode, MetadataNode, PaginationNode, StepperNode, TabsNode, TableNod
 import { BannerNode, EmptyNode } from "./feedback.tsx";
 import { CardNode, GridNode, SectionNode, SplitNode, StackNode } from "./layout.tsx";
 import { TemplateNode } from "./template.tsx";
+import { DiagramNodeView } from "./diagram.tsx";
+import { TimelineNode } from "./timeline.tsx";
 import { AvatarGroupNode, AvatarNode, BadgeNode, DividerNode, HeadingNode, KbdNode, StatusDotNode, TextNode, TokenNode } from "./text.tsx";
 
 /** One node, drawn with the Astryx component it is named after. */
@@ -51,6 +53,9 @@ export function Render({ node }: { node: Node }) {
     case "chat": return <ChatNode node={node} />;
     case "board": return <BoardNode node={node} />;
     case "template": return <TemplateNode node={node} />;
+    case "timeline": return <TimelineNode node={node} />;
+    case "diagram": return <DiagramNodeView node={node} />;
+    case "shares": return <SharesNode node={node} />;
     default: return assertNever(node);
   }
 }

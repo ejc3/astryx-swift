@@ -43,6 +43,12 @@ public indirect enum Node: Decodable, Sendable {
     case board(BoardNode)
     /// A refactored Astryx template; drawn as a named placeholder until its own view exists.
     case template(TemplateNode)
+    /// Dated entries on a rail ("How this was built").
+    case timeline(TimelineNode)
+    /// Boxes in groups joined by routed edges, on the core's grid ("How it works").
+    case diagram(DiagramNode)
+    /// One bar split into parts by their values.
+    case shares(SharesNode)
     /// A kind this kit cannot draw; the associated value says which and why.
     case unknown(String)
 
@@ -90,6 +96,9 @@ public indirect enum Node: Decodable, Sendable {
             case "chat": self = .chat(try ChatNode(from: decoder))
             case "board": self = .board(try BoardNode(from: decoder))
             case "template": self = .template(try TemplateNode(from: decoder))
+            case "timeline": self = .timeline(try TimelineNode(from: decoder))
+            case "diagram": self = .diagram(try DiagramNode(from: decoder))
+            case "shares": self = .shares(try SharesNode(from: decoder))
             default: self = .unknown(kind)
             }
         } catch {
@@ -138,6 +147,9 @@ public indirect enum Node: Decodable, Sendable {
         case .chat: "chat"
         case .board: "board"
         case .template: "template"
+        case .timeline: "timeline"
+        case .diagram: "diagram"
+        case .shares: "shares"
         case .unknown(let why): why
         }
     }
@@ -191,6 +203,8 @@ public struct CardNode: Decodable, Sendable {
 public struct SectionNode: Decodable, Sendable {
     public let title: String
     public let description: String?
+    /// The heading's level: 4 when absent, 3 for a page's top-level sections.
+    public let level: Int?
     public let children: [Node]
 }
 
@@ -365,6 +379,8 @@ public struct MetricNode: Decodable, Sendable {
     }
     public let label: String
     public let value: String
+    /// The figure a section is about, drawn larger.
+    public let emphasized: Bool?
     public let delta: Delta?
     public let trend: [Double]?
 }
@@ -595,4 +611,171 @@ public struct BoardNode: Decodable, Sendable {
 public struct TemplateNode: Decodable, Sendable {
     public let template: String
     public let view: JSONValue
+}
+
+// MARK: Timeline and diagram
+
+/// `timeline`: dated entries in order; the `emphasized` one is the moment the rest lead to or follow.
+public struct TimelineNode: Decodable, Sendable {
+    public struct Entry: Decodable, Sendable {
+        public let when: String
+        public let title: String
+        public let quote: String?
+        public let text: String?
+        /// What changed because of it, after the node's `outcomeLabel`.
+        public let outcome: String?
+        /// A short tag in the entry's tone ("Turning point").
+        public let badge: String?
+        public let tone: Tone
+        public let emphasized: Bool
+    }
+    public let label: String
+    public let outcomeLabel: String?
+    public let entries: [Entry]
+}
+
+/// `shares`: one bar split into parts by their values, each listed with its words and value.
+public struct SharesNode: Decodable, Sendable {
+    public struct Part: Decodable, Sendable {
+        public let label: String
+        public let value: Double
+        public let valueText: String
+        public let tone: Tone
+    }
+    public let label: String
+    public let parts: [Part]
+}
+
+/// `diagram` (core/src/ui.ts `DiagramNode`): boxes in titled groups, joined by edges, on a grid
+/// the core lays out three times. Hosts route the edges and place their labels by the rules in
+/// core/src/diagram.ts (`DiagramRouting` here is its port).
+public struct DiagramNode: Decodable, Sendable {
+    public enum Layout: String, Sendable { case wide, narrow, single }
+    public struct Grid: Decodable, Sendable, Equatable {
+        public struct Gap: Decodable, Sendable, Equatable { public let x: Double; public let y: Double }
+        public struct Margin: Decodable, Sendable, Equatable { public let top: Double; public let left: Double; public let right: Double }
+        public let columns: Int
+        public let rows: Int
+        public let gap: Gap
+        public let margin: Margin
+        public let pad: Double
+        public let labels: Bool
+    }
+    public struct Area: Decodable, Sendable, Equatable {
+        public let col: Int
+        public let row: Int
+        public let cols: Int
+        public let rows: Int
+    }
+    public enum Side: String, Decodable, Sendable { case top, right, bottom, left }
+    public enum EdgeStyle: String, Decodable, Sendable { case data, control, sync, build }
+    public enum State: String, Decodable, Sendable { case normal, selected, linked, dimmed }
+    public struct Route: Decodable, Sendable, Equatable {
+        public let from: Side
+        public let to: Side
+        public let fromAt: Double?
+        public let toAt: Double?
+        public let bend: Double?
+        public let lane: Double?
+        public let outside: Bool?
+    }
+    public struct Group: Decodable, Sendable {
+        public let id: String
+        public let title: String
+        public let wide: Area
+        public let narrow: Area
+        public let single: Area
+        public func area(_ layout: Layout) -> Area { layout == .wide ? wide : layout == .narrow ? narrow : single }
+    }
+    public struct Box: Decodable, Sendable {
+        public let id: String
+        public let title: String
+        public let detail: String
+        public let group: String
+        public let shared: Bool
+        public let wide: Area
+        public let narrow: Area
+        public let single: Area
+        public let state: State
+        public let selectId: String
+        public let accessibilityLabel: String
+        public let accessibilityValue: String
+        public func area(_ layout: Layout) -> Area { layout == .wide ? wide : layout == .narrow ? narrow : single }
+    }
+    public struct Edge: Decodable, Sendable {
+        public enum Direction: String, Decodable, Sendable { case forward, both }
+        public enum EdgeState: String, Decodable, Sendable { case normal, highlighted, dimmed }
+        public let id: String
+        public struct Drawn: Decodable, Sendable { public let wide: Bool; public let narrow: Bool; public let single: Bool }
+        public let from: String
+        /// A box's id, or a group's when `toGroup`.
+        public let to: String
+        public let toGroup: Bool
+        public let label: String
+        public let style: EdgeStyle
+        public let direction: Direction
+        public let wide: Route
+        public let narrow: Route
+        public let single: Route
+        /// Whether it is drawn now, in each arrangement.
+        public let drawn: Drawn
+        public let state: EdgeState
+        public let showLabel: Bool
+        public func route(_ layout: Layout) -> Route { layout == .wide ? wide : layout == .narrow ? narrow : single }
+        public func isDrawn(_ layout: Layout) -> Bool { layout == .wide ? drawn.wide : layout == .narrow ? drawn.narrow : drawn.single }
+    }
+    public struct LegendItem: Decodable, Sendable {
+        public let style: EdgeStyle
+        public let label: String
+    }
+    public struct Panel: Decodable, Sendable {
+        public struct Fact: Decodable, Sendable {
+            public let label: String
+            public let value: String
+        }
+        public struct Link: Decodable, Sendable {
+            public let text: String
+            public let selectId: String
+        }
+        public let id: String
+        public let title: String
+        public let detail: String
+        public let group: String
+        public let about: String
+        public let filesLabel: String
+        public let files: [String]
+        public let factsLabel: String
+        public let facts: [Fact]
+        public let linksLabel: String
+        public let links: [Link]
+        public let closeId: String
+        public let closeLabel: String
+    }
+    public struct Inspector: Decodable, Sendable {
+        public let label: String
+        public let emptyTitle: String
+        public let emptyText: String
+    }
+    public let label: String
+    public let note: String
+    public let hint: String
+    /// The hint on the Mac (no Close button there: Escape).
+    public let hintMac: String
+    public let narrowBelow: Double
+    public let singleBelow: Double
+    public let singleWhenTextIsLarge: Bool
+    public let wide: Grid
+    public let narrow: Grid
+    public let single: Grid
+    public let legendLabel: String
+    public let legend: [LegendItem]
+    public let sharedTag: String
+    public let sharedLegend: String
+    public let groups: [Group]
+    public let boxes: [Box]
+    public let edges: [Edge]
+    public let selected: String?
+    public let panel: Panel?
+    public let inspector: Inspector
+    public func grid(_ layout: Layout) -> Grid { layout == .wide ? wide : layout == .narrow ? narrow : single }
 }

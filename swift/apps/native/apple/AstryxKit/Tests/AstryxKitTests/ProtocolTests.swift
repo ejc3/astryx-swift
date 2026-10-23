@@ -3,8 +3,8 @@ import XCTest
 
 /// The Codable mirrors of ui.ts against the fixtures the core wrote.
 final class ProtocolTests: XCTestCase {
-    func testThereAreFourteenAppFixturesAndFourThemes() throws {
-        XCTAssertEqual(try Library.names(prefix: "app-").count, 14)
+    func testThereAreSeventeenAppFixturesAndFourThemes() throws {
+        XCTAssertEqual(try Library.names(prefix: "app-").count, 17)
         XCTAssertEqual(try Library.names(prefix: "theme-").count, 4)
     }
 
@@ -62,8 +62,9 @@ final class ProtocolTests: XCTestCase {
             "star", "star-fill", "archive", "trash", "search", "plus", "chevron-left", "chevron-right",
             "arrow-up", "arrow-down", "bell", "lock", "mail", "sparkle", "grid", "filter", "send",
             "clock", "flag", "bolt", "heart", "info", "warning", "close", "undo", "card", "truck",
+            "arrow-right", "diagram", "history",
         ]
-        XCTAssertEqual(icons.count, 37)
+        XCTAssertEqual(icons.count, 40)
         for icon in icons {
             XCTAssertNotNil(Icon.symbols[icon], icon)
         }

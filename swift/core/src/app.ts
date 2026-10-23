@@ -7,7 +7,13 @@ import type { Now } from "./format.ts";
 import { calendar, chat, checkout, profile, settings } from "./screens/life.ts";
 import { dashboard, overview } from "./screens/overview.ts";
 import { inbox, people, tasks } from "./screens/work.ts";
+import { architecture } from "./screens/architecture.ts";
+import { story } from "./screens/story.ts";
+import { messagesOf, savedTheme, tasksOf } from "./screens/saved.ts";
 import { initialState, isScreen, reduce, type State } from "./state.ts";
+import { ACCOUNT_WORDS, accountSnapshot, initialAccount } from "./account.ts";
+import { readDoc, type Doc } from "./sync/doc.ts";
+import type { Mutation } from "./sync/mutations.ts";
 import { TEMPLATES, templateById } from "./templates/index.ts";
 import { SCENARIOS } from "./scenarios.generated.ts";
 import type { ScenariosSnapshot } from "./scenarios.ts";
@@ -20,16 +26,16 @@ import { PROTOCOL, SURFACES, type Action, type AppSnapshot, type DemoScreenId, t
  * unchanged). Placeholder names until web/stock lists what Astryx ships.
  */
 export const STOCK_TEMPLATE: Record<DemoScreenId, string> = {
-  overview: "components", dashboard: "dashboard", inbox: "inbox", tasks: "kanban", people: "table",
+  architecture: "components", story: "components", overview: "components", dashboard: "dashboard", inbox: "inbox", tasks: "kanban", people: "table",
   calendar: "calendar", chat: "chat", checkout: "checkout", profile: "profile", settings: "settings",
 };
 
-const BUILDERS: Record<DemoScreenId, (s: State) => Screen> = { overview, dashboard, inbox, tasks, people, calendar, chat, checkout, profile, settings };
+const BUILDERS: Record<DemoScreenId, (s: State) => Screen> = { architecture, story, overview, dashboard, inbox, tasks, people, calendar, chat, checkout, profile, settings };
 
 /** A template's screen: one node, its view model, drawn by the template's own renderer. */
 function templateScreen(s: State, id: TemplateScreenId, now: Now): Screen {
   const t = templateById(id.slice(2))!;
-  return { id, title: t.title, subtitle: `Astryx's ${t.astryx} template, on the shared core`, toolbar: [], body: { kind: "template", template: t.id, view: t.view(s.templates[t.id], now) } };
+  return { id, title: t.title, subtitle: `Astryx's ${t.astryx} template, on the shared core`, toolbar: [], body: { kind: "template", template: t.id, view: t.view(s.templates[t.id], now, s.doc, s.extras) } };
 }
 
 const TEMPLATE_ICONS: Record<string, Icon> = { showcase: "sparkle", dashboard: "chart", inbox: "inbox", kanban: "check", invoice: "card", calendar: "calendar", chat: "chat", checkout: "cart", order: "truck", settings: "gear" };
@@ -41,7 +47,12 @@ const TONE_WORDS: Partial<Record<Tone, string>> = { success: "Success", warning:
 
 export function nav(s: State): NavItem[] {
   const templates: NavItem[] = TEMPLATES.map((t) => withSection({ id: `t.${t.id}` as const, label: t.title, icon: TEMPLATE_ICONS[t.id] ?? "grid" }, "Astryx templates"));
-  return [...templates, ...demoNav(s).map((n) => withSection(n, "More demos"))];
+  // The map of the whole project and how it was made come first: what a newcomer opens before the demos.
+  const about: NavItem[] = [
+    withSection({ id: "architecture", label: "How it works", icon: "diagram" }, "About this spike"),
+    withSection({ id: "story", label: "How this was built", icon: "history" }, "About this spike"),
+  ];
+  return [...about, ...templates, ...demoNav(s).map((n) => withSection(n, "More demos"))];
 }
 
 /** Both sections have a Dashboard, an Inbox...: a screen reader hears the section with the name. */
@@ -50,8 +61,8 @@ function withSection(n: Omit<NavItem, "section" | "accessibilityLabel">, section
 }
 
 function demoNav(s: State): Omit<NavItem, "section" | "accessibilityLabel">[] {
-  const unread = s.inbox.messages.filter((m) => !m.read && !m.archived).length;
-  const open = s.tasks.tasks.filter((t) => t.column !== "done").length;
+  const unread = messagesOf(s.doc).filter((m) => !m.read && !m.archived).length;
+  const open = tasksOf(s.doc).filter((t) => t.column !== "done").length;
   const items: Omit<NavItem, "section" | "accessibilityLabel">[] = [
     { id: "overview", label: "Components", icon: "grid" },
     { id: "dashboard", label: "Dashboard", icon: "chart" },
@@ -69,6 +80,7 @@ function demoNav(s: State): Omit<NavItem, "section" | "accessibilityLabel">[] {
 
 function dialog(s: State): Dialog | null {
   if (s.dialog === "delete-account") return { title: "Delete your account?", text: "Your profile, tasks and messages will be removed after 30 days. You can cancel until then.", confirm: { kind: "button", id: "dialog.confirm", label: "Delete account", variant: "destructive" }, cancel: { kind: "button", id: "dialog.cancel", label: "Keep it", variant: "secondary" } };
+  if (s.dialog === "sign-out") { const w = ACCOUNT_WORDS.dialog; return { title: w.title, text: w.text, confirm: { kind: "button", id: "dialog.confirm", label: w.confirm, variant: "destructive" }, cancel: { kind: "button", id: "dialog.cancel", label: w.cancel, variant: "secondary" } }; }
   if (s.dialog === "discard-checkout") return { title: "Start a new order?", text: "Your cart goes back to its first three items and the forms are cleared.", confirm: { kind: "button", id: "dialog.confirm", label: "Start over", variant: "primary" }, cancel: { kind: "button", id: "dialog.cancel", label: "Cancel", variant: "secondary" } };
   return null;
 }
@@ -106,6 +118,7 @@ export function appSnapshot(s: State, now: Now): AppSnapshot {
     dialog: dialog(s),
     theme: { id: s.theme, label: "Theme", setId: "settings.theme", options: THEME_INPUTS.map((t) => ({ value: t.id, label: t.label })) },
     scenarios: scenariosSnapshot(s),
+    account: accountSnapshot(s.account),
     surface: {
       id: "app.surface", label: "Show", value: s.surface,
       options: [
@@ -136,18 +149,44 @@ export type Client = {
   getSnapshot(store: StoreName): unknown;
   dispatch(action: Action): void;
   subscribe(listener: (store: StoreName) => void): () => void;
+  /**
+   * Hears every change to saved data once the core has applied it: the mutations, in order, and
+   * the whole saved doc after them. A host saves the doc on the device (signed out) or sends the
+   * mutations to Zero (signed in); docs/SYNC.md.
+   */
+  onSave(listener: (mutations: readonly Mutation[], doc: Doc) => void): () => void;
+};
+
+/** Where a client starts: the screen, theme and drawing; the saved doc kept on the device; this device's id seed. */
+export type ClientStart = Partial<Pick<State, "screen" | "theme" | "surface">> & {
+  /** The saved doc as the host stored it; checked, never trusted. */
+  doc?: unknown;
+  /** A new random string per install (the host's randomness; the core has none). */
+  seed?: string;
+  /** False to behave exactly as stock Astryx (the parity harness): nothing beyond stock, nothing saved. */
+  extras?: boolean;
+  /** Whether this host can sign in to sync (it was configured with a sync server). Off by default. */
+  signIn?: boolean;
 };
 
 /** A client over a clock. `now` is read for each action, never by the core itself. */
-export function createClient(now: () => Now, start?: Partial<Pick<State, "screen" | "theme" | "surface">>): Client {
+export function createClient(now: () => Now, start?: ClientStart): Client {
   const first = initialState(now());
+  const seed = start?.seed !== undefined && /^[A-Za-z0-9_]{4,40}$/.test(start.seed) ? start.seed : first.seed;
   let state: State = {
     ...first,
-    ...start,
+    ...(start?.theme !== undefined ? { theme: start.theme } : {}),
     screen: start?.screen && isScreen(start.screen) ? start.screen : first.screen,
     surface: start?.surface && (SURFACES as readonly string[]).includes(start.surface) ? start.surface : first.surface,
+    doc: start?.extras === false || start?.doc === undefined ? first.doc : readDoc(start.doc),
+    seed,
+    extras: start?.extras ?? true,
+    account: initialAccount(start?.signIn === true && start?.extras !== false),
   };
+  // The theme the person chose (saved) wins over the host's starting one.
+  state = { ...state, theme: savedTheme(state.doc) ?? state.theme };
   const listeners = new Set<(store: StoreName) => void>();
+  const savers = new Set<(mutations: readonly Mutation[], doc: Doc) => void>();
   return {
     getSnapshot(store) {
       return store === "theme" ? themeSnapshot(state) : appSnapshot(state, now());
@@ -156,12 +195,19 @@ export function createClient(now: () => Now, start?: Partial<Pick<State, "screen
       const before = state;
       state = reduce(state, action, now());
       if (state === before) return;
+      const out = state.outbox;
+      if (out.length > 0) state = { ...state, outbox: [] };
+      if (out.length > 0) for (const s of savers) s(out, state.doc);
       for (const l of listeners) l("app");
       if (state.theme !== before.theme) for (const l of listeners) l("theme");
     },
     subscribe(listener) {
       listeners.add(listener);
       return () => listeners.delete(listener);
+    },
+    onSave(listener) {
+      savers.add(listener);
+      return () => savers.delete(listener);
     },
   };
 }

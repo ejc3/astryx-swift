@@ -29,9 +29,12 @@ import {
   Layout,
   LayoutHeader,
   LayoutContent,
+  LayoutFooter,
   HStack,
   VStack,
 } from '@astryxdesign/core/Layout';
+import {Dialog, DialogHeader} from '@astryxdesign/core/Dialog';
+import {TextInput} from '@astryxdesign/core/TextInput';
 import {Text, Heading} from '@astryxdesign/core/Text';
 import {Card} from '@astryxdesign/core/Card';
 import {Badge} from '@astryxdesign/core/Badge';
@@ -296,6 +299,68 @@ function BoardColumn({
 }
 
 // ============= MAIN =============
+
+// The new-task sheet: a title, then Create. Not in stock Astryx; the core
+// opens it when saving is on, and makes the card (core/src/templates/kanban).
+function NewTaskDialog({
+  adding,
+  words,
+  send,
+}: {
+  adding: NonNullable<View['adding']>;
+  words: KanbanWords;
+  send: (action: Action) => void;
+}) {
+  const close = () => send({type: 'press', id: 'tpl.kanban.addTaskCancel'});
+  const create = () => send({type: 'press', id: 'tpl.kanban.addTaskCreate'});
+  return (
+    <Dialog
+      isOpen
+      purpose="form"
+      width={440}
+      onOpenChange={open => {
+        if (!open) close();
+      }}>
+      <Layout
+        header={
+          <DialogHeader
+            title={words.newTask}
+            onOpenChange={open => {
+              if (!open) close();
+            }}
+          />
+        }
+        content={
+          <LayoutContent>
+            <TextInput
+              label={words.taskTitle}
+              placeholder={words.taskTitlePlaceholder}
+              value={adding.title}
+              hasAutoFocus
+              onChange={value =>
+                send({type: 'set', id: 'tpl.kanban.newTitle', value})
+              }
+              onEnter={create}
+            />
+          </LayoutContent>
+        }
+        footer={
+          <LayoutFooter hasDivider>
+            <HStack gap={2} hAlign="end">
+              <Button label={words.cancel} variant="secondary" onClick={close} />
+              <Button
+                label={words.create}
+                variant="primary"
+                isDisabled={!adding.canCreate}
+                onClick={create}
+              />
+            </HStack>
+          </LayoutFooter>
+        }
+      />
+    </Dialog>
+  );
+}
 
 export default function KanbanBoardTemplate({view: raw, send}: TemplateProps) {
   const view = raw as View;
@@ -565,6 +630,14 @@ export default function KanbanBoardTemplate({view: raw, send}: TemplateProps) {
                     label={view.words.addTask}
                     variant="primary"
                     icon={<Icon icon={PlusIcon} size="sm" />}
+                    // Stock leaves Add task inert; with saving on it opens
+                    // the new-task sheet (docs/SYNC.md).
+                    {...(view.inert.includes('addTask')
+                      ? {}
+                      : {
+                          onClick: () =>
+                            send({type: 'press', id: 'tpl.kanban.addTask'}),
+                        })}
                   />
                 </HStack>
               }
@@ -587,6 +660,9 @@ export default function KanbanBoardTemplate({view: raw, send}: TemplateProps) {
           </LayoutContent>
         }
       />
+      {view.adding ? (
+        <NewTaskDialog adding={view.adding} words={view.words} send={send} />
+      ) : null}
       {drag && draggedItem ? (
         <Card
           padding={3}

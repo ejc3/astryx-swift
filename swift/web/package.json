@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@astryx-native/core": "0.1.0",
+    "@astryx-native/sync": "0.1.0",
     "@astryxdesign/core": "0.7.1",
     "@heroicons/react": "2.2.0",
     "@stylexjs/stylex": "0.19.0",

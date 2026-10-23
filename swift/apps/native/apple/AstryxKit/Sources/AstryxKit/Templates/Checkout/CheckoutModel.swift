@@ -14,6 +14,8 @@ struct CheckoutModel: Decodable, Sendable {
     /// The current step's text fields in the order they sit on the page: Return moves along it.
     let fieldOrder: [String]
     let items: [Item]
+    /// With saving on, a cart an order emptied has a button that fills it again: its label (press "refill"). Nil otherwise.
+    let refillLabel: String?
     let summary: Summary
     let actions: Actions
     let promo: Promo

@@ -1,0 +1,918 @@
+{
+ "protocol": 1,
+ "appName": "Astryx Swift",
+ "nav": [
+  {
+   "id": "architecture",
+   "label": "How it works",
+   "icon": "diagram",
+   "section": "About this spike",
+   "accessibilityLabel": "How it works, About this spike"
+  },
+  {
+   "id": "story",
+   "label": "How this was built",
+   "icon": "history",
+   "section": "About this spike",
+   "accessibilityLabel": "How this was built, About this spike"
+  },
+  {
+   "id": "t.showcase",
+   "label": "Theme showcase",
+   "icon": "sparkle",
+   "section": "Astryx templates",
+   "accessibilityLabel": "Theme showcase, Astryx templates"
+  },
+  {
+   "id": "t.dashboard",
+   "label": "Dashboard",
+   "icon": "chart",
+   "section": "Astryx templates",
+   "accessibilityLabel": "Dashboard, Astryx templates"
+  },
+  {
+   "id": "t.inbox",
+   "label": "Inbox",
+   "icon": "inbox",
+   "section": "Astryx templates",
+   "accessibilityLabel": "Inbox, Astryx templates"
+  },
+  {
+   "id": "t.kanban",
+   "label": "Kanban board",
+   "icon": "check",
+   "section": "Astryx templates",
+   "accessibilityLabel": "Kanban board, Astryx templates"
+  },
+  {
+   "id": "t.invoice",
+   "label": "Invoice",
+   "icon": "card",
+   "section": "Astryx templates",
+   "accessibilityLabel": "Invoice, Astryx templates"
+  },
+  {
+   "id": "t.calendar",
+   "label": "Calendar",
+   "icon": "calendar",
+   "section": "Astryx templates",
+   "accessibilityLabel": "Calendar, Astryx templates"
+  },
+  {
+   "id": "t.chat",
+   "label": "AI chat",
+   "icon": "chat",
+   "section": "Astryx templates",
+   "accessibilityLabel": "AI chat, Astryx templates"
+  },
+  {
+   "id": "t.checkout",
+   "label": "Checkout",
+   "icon": "cart",
+   "section": "Astryx templates",
+   "accessibilityLabel": "Checkout, Astryx templates"
+  },
+  {
+   "id": "t.order",
+   "label": "Order detail",
+   "icon": "truck",
+   "section": "Astryx templates",
+   "accessibilityLabel": "Order detail, Astryx templates"
+  },
+  {
+   "id": "t.settings",
+   "label": "Settings",
+   "icon": "gear",
+   "section": "Astryx templates",
+   "accessibilityLabel": "Settings, Astryx templates"
+  },
+  {
+   "id": "overview",
+   "label": "Components",
+   "icon": "grid",
+   "section": "More demos",
+   "accessibilityLabel": "Components, More demos"
+  },
+  {
+   "id": "dashboard",
+   "label": "Dashboard",
+   "icon": "chart",
+   "section": "More demos",
+   "accessibilityLabel": "Dashboard, More demos"
+  },
+  {
+   "id": "inbox",
+   "label": "Inbox",
+   "icon": "inbox",
+   "badge": "3",
+   "section": "More demos",
+   "accessibilityLabel": "Inbox, More demos"
+  },
+  {
+   "id": "tasks",
+   "label": "Tasks",
+   "icon": "check",
+   "badge": "7",
+   "section": "More demos",
+   "accessibilityLabel": "Tasks, More demos"
+  },
+  {
+   "id": "people",
+   "label": "People",
+   "icon": "people",
+   "section": "More demos",
+   "accessibilityLabel": "People, More demos"
+  },
+  {
+   "id": "calendar",
+   "label": "Calendar",
+   "icon": "calendar",
+   "section": "More demos",
+   "accessibilityLabel": "Calendar, More demos"
+  },
+  {
+   "id": "chat",
+   "label": "Messages",
+   "icon": "chat",
+   "section": "More demos",
+   "accessibilityLabel": "Messages, More demos"
+  },
+  {
+   "id": "checkout",
+   "label": "Checkout",
+   "icon": "cart",
+   "section": "More demos",
+   "accessibilityLabel": "Checkout, More demos"
+  },
+  {
+   "id": "profile",
+   "label": "Profile",
+   "icon": "person",
+   "section": "More demos",
+   "accessibilityLabel": "Profile, More demos"
+  },
+  {
+   "id": "settings",
+   "label": "Settings",
+   "icon": "gear",
+   "section": "More demos",
+   "accessibilityLabel": "Settings, More demos"
+  }
+ ],
+ "current": "story",
+ "screen": {
+  "id": "story",
+  "title": "How this was built",
+  "subtitle": "57 agents, Oct 17 to 22",
+  "toolbar": [],
+  "body": {
+   "kind": "stack",
+   "axis": "vertical",
+   "gap": "lg",
+   "children": [
+    {
+     "kind": "section",
+     "title": "Born in a Claude conversation",
+     "description": "Oct 17, times in Pacific time (PT)",
+     "children": [
+      {
+       "kind": "timeline",
+       "label": "Born in a Claude conversation",
+       "outcomeLabel": "What changed",
+       "entries": [
+        {
+         "when": "Oct 17, 7:20 am PT",
+         "title": "The first question",
+         "tone": "neutral",
+         "emphasized": false,
+         "quote": "Please look at astryx. Should we use that as our css basis for [the family dashboard]?",
+         "text": "At 7:53 am the owner set the shape: \"just like my other apps, I want the core to be in shareable typescript / JavaScript, but ui be native\"."
+        },
+        {
+         "when": "Oct 17, 9:52 am PT",
+         "title": "The spike begins",
+         "tone": "accent",
+         "emphasized": true,
+         "quote": "I want to do a spike for astryx native. Same thing where it's core logic can stay in JavaScript but ui all swift. Generate a rich set of web, Mac and native demo screens. Open source repo [and TestFlight] under me at end."
+        },
+        {
+         "when": "Oct 17, 10:05 am PT",
+         "title": "First commit",
+         "tone": "neutral",
+         "emphasized": false,
+         "quote": "core: ten Astryx screens as one tree of component nodes, every word worked out here"
+        }
+       ]
+      }
+     ],
+     "level": 3
+    },
+    {
+     "kind": "section",
+     "title": "Code shared by every platform",
+     "description": "Hand-written source lines: tests, scripts, generated files and the stock Astryx reference copies are left out.",
+     "children": [
+      {
+       "kind": "grid",
+       "minColumnWidth": 220,
+       "gap": "md",
+       "children": [
+        {
+         "kind": "metric",
+         "label": "Of all the code, shared by every platform: all of the logic",
+         "value": "24%",
+         "emphasized": true
+        },
+        {
+         "kind": "metric",
+         "label": "Of the iPhone and Mac apps' code, shared",
+         "value": "31%"
+        },
+        {
+         "kind": "metric",
+         "label": "Of the web page's code, shared",
+         "value": "52%"
+        }
+       ]
+      },
+      {
+       "kind": "text",
+       "text": "The shared part is every state, rule, word, layout threshold, search and mutation. The rest draws.",
+       "style": "body"
+      },
+      {
+       "kind": "shares",
+       "label": "Hand-written lines, by part",
+       "parts": [
+        {
+         "label": "Shared: the core and sync",
+         "value": 9868,
+         "valueText": "9,868 lines",
+         "tone": "accent"
+        },
+        {
+         "label": "The web drawing",
+         "value": 8933,
+         "valueText": "8,933 lines",
+         "tone": "neutral"
+        },
+        {
+         "label": "The Apple drawing and host",
+         "value": 21523,
+         "valueText": "21,523 lines",
+         "tone": "neutral"
+        },
+        {
+         "label": "The server",
+         "value": 569,
+         "valueText": "569 lines",
+         "tone": "neutral"
+        }
+       ]
+      },
+      {
+       "kind": "card",
+       "title": "Lines, by part",
+       "children": [
+        {
+         "kind": "metadata",
+         "items": [
+          {
+           "label": "Core",
+           "value": "9,234"
+          },
+          {
+           "label": "Sync",
+           "value": "634"
+          },
+          {
+           "label": "Web",
+           "value": "8,933"
+          },
+          {
+           "label": "SwiftUI kit",
+           "value": "19,911"
+          },
+          {
+           "label": "Apple host",
+           "value": "1,246 Swift, 283 JavaScript"
+          },
+          {
+           "label": "App shells",
+           "value": "83"
+          },
+          {
+           "label": "Server",
+           "value": "569"
+          }
+         ]
+        }
+       ]
+      }
+     ],
+     "level": 3
+    },
+    {
+     "kind": "section",
+     "title": "How it was built",
+     "description": "From the transcripts, Oct 17, 7:20 am PT to Oct 22; approximate where it says about",
+     "children": [
+      {
+       "kind": "grid",
+       "minColumnWidth": 280,
+       "gap": "md",
+       "children": [
+        {
+         "kind": "metric",
+         "label": "Conversation with Claude Code",
+         "value": "1"
+        },
+        {
+         "kind": "metric",
+         "label": "Agents launched, one task each",
+         "value": "57"
+        },
+        {
+         "kind": "metric",
+         "label": "Model calls",
+         "value": "5,738"
+        },
+        {
+         "kind": "metric",
+         "label": "Tokens processed",
+         "value": "About 1.37 billion"
+        },
+        {
+         "kind": "metric",
+         "label": "Read from the prompt cache",
+         "value": "About 95%"
+        },
+        {
+         "kind": "metric",
+         "label": "Tokens written",
+         "value": "About 1.46 million"
+        }
+       ]
+      },
+      {
+       "kind": "text",
+       "text": "The person's part: direction and judgement in short messages (what to build, the bar to meet, approving outward-facing steps such as TestFlight testers and the AWS account), and reviews of what came back. Not code.",
+       "style": "secondary"
+      },
+      {
+       "kind": "grid",
+       "minColumnWidth": 340,
+       "gap": "md",
+       "children": [
+        {
+         "kind": "card",
+         "title": "57 agents, by kind",
+         "children": [
+          {
+           "kind": "metadata",
+           "items": [
+            {
+             "label": "Builders",
+             "value": "12: web host, SwiftUI kit, six template refactors, three native-view agents, scenario recorder"
+            },
+            {
+             "label": "Reviewers",
+             "value": "14: HIG council 5, Mac compare 5, iPhone compare 4"
+            },
+            {
+             "label": "Fixers",
+             "value": "14: HIG fix batches 4, inbox layout 1, accessibility sizes 1, Mac fixes 4, iPhone fixes 4"
+            },
+            {
+             "label": "Pushdown into the core",
+             "value": "4"
+            },
+            {
+             "label": "Saved data and sync",
+             "value": "8"
+            },
+            {
+             "label": "Skill review",
+             "value": "4, on the house-style skill's pull request"
+            },
+            {
+             "label": "These two screens",
+             "value": "1, and three more for their own council"
+            }
+           ]
+          }
+         ]
+        },
+        {
+         "kind": "card",
+         "title": "Two models",
+         "children": [
+          {
+           "kind": "metadata",
+           "items": [
+            {
+             "label": "Claude Opus",
+             "value": "Planning, review, anything touching credentials or infrastructure: about 56% of tokens"
+            },
+            {
+             "label": "Claude Sonnet",
+             "value": "Well-scoped engineering: about 44% of tokens"
+            }
+           ]
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "kind": "card",
+       "title": "Skills",
+       "children": [
+        {
+         "kind": "metadata",
+         "items": [
+          {
+           "label": "app-house-style",
+           "value": "Written at the start (Oct 17, 7:56 am PT) from the owner's rule: the core in shareable TypeScript, the UI native. Every agent building the spike read it."
+          },
+          {
+           "label": "apple-hig-review",
+           "value": "The owner's Human Interface Guidelines review; the councils used it (read 38 times by the reviewers)."
+          },
+          {
+           "label": "drive-mac",
+           "value": "Building, signing and screenshots on the owner's Mac from the remote session; TestFlight uploads."
+          },
+          {
+           "label": "swift-perf-hill-climb",
+           "value": "Written on Oct 18 for the frame meter and Instruments runs, so the performance work can be repeated."
+          },
+          {
+           "label": "code-review, simplify",
+           "value": "On the house-style skill's own pull request, before work began."
+          },
+          {
+           "label": "skill-creator",
+           "value": "To write the two skills above."
+          }
+         ]
+        }
+       ]
+      }
+     ],
+     "level": 3
+    },
+    {
+     "kind": "section",
+     "title": "What followed",
+     "description": "The work, the design councils, the polish and the eight turning points for quality; times in Pacific time (PT)",
+     "children": [
+      {
+       "kind": "timeline",
+       "label": "What followed",
+       "outcomeLabel": "What changed",
+       "entries": [
+        {
+         "when": "Oct 17, 10:40 to 11:10 am PT",
+         "title": "The bar, in four messages",
+         "tone": "warning",
+         "emphasized": false,
+         "badge": "Turning point",
+         "text": "Five requirements: stock and refactored web pixel-perfect; web on Hermes passes the same tests; scenarios that drive native from web and web from native, shipped in the app; a fourth drawing, pure web on its own core; and iOS too.",
+         "outcome": "From then on \"looks right\" was never the test; a machine comparison at threshold 0 was."
+        },
+        {
+         "when": "Oct 17",
+         "title": "The core and four drawings",
+         "tone": "neutral",
+         "emphasized": false,
+         "text": "Native and web on Hermes on one state, web on its own core, and stock Astryx."
+        },
+        {
+         "when": "Oct 17",
+         "title": "Why the charts never matched",
+         "tone": "warning",
+         "emphasized": false,
+         "badge": "Turning point",
+         "text": "The dashboard agent found that Recharts animates in JavaScript, so waiting for CSS to settle does nothing, and a full-page screenshot resizes the viewport, which restarts the animation. It asked the coordinating session to change the shared harness, which also grew the viewport to the page before each capture and rasterized on one thread.",
+         "outcome": "The fix went into the shared harness, for every template, not into the dashboard."
+        },
+        {
+         "when": "Oct 18, 6:23 am PT",
+         "title": "Ten templates on the core",
+         "tone": "neutral",
+         "emphasized": false,
+         "text": "Ten stock templates refactored onto the core, and parity at 1216 of 1216 identical. AstryxKit draws all ten in SwiftUI. First TestFlight builds; the open-source fork."
+        },
+        {
+         "when": "Oct 18, 11:10 am PT",
+         "title": "Council: Human Interface Guidelines",
+         "tone": "neutral",
+         "emphasized": false,
+         "text": "Five reviewers in parallel with apple-hig-review: the Mac app; iPhone and iPad chrome; data templates; form templates; accessibility. Every finding ruled, then four fix batches (2:27 pm)."
+        },
+        {
+         "when": "Oct 18",
+         "title": "\"Black on blue?\"",
+         "tone": "warning",
+         "emphasized": false,
+         "badge": "Turning point",
+         "text": "The owner opened the Mac app and asked \"black on blue?\" and \"How did that make it through our design reviewer?\" The HIG council had reviewed screens one at a time. The sidebar row was fixed the same hour, with a developer banner that showed in a Release build.",
+         "outcome": "Native and web reviewed side by side, every screen, every difference ruled: the Mac and iPhone councils."
+        },
+        {
+         "when": "Oct 18, 6:56 pm PT",
+         "title": "Council: Mac, native against web",
+         "tone": "neutral",
+         "emphasized": false,
+         "text": "Five reviewers compared every screen side by side. About 410 differences listed: 45 kept as Mac conventions, each with its HIG citation; about 328 fixed (about 320 native, 8 web or core) by four fix agents (7:21 pm); the rest duplicates of another row or questions ruled."
+        },
+        {
+         "when": "Oct 18",
+         "title": "One cause behind many rows",
+         "tone": "warning",
+         "emphasized": false,
+         "badge": "Turning point",
+         "text": "A reviewer traced many colour differences to one cause: native painted the page with the body colour (#F1F4F7) where the web uses the surface (#FFFFFF), and Astryx's translucent fills came out darker on grey.",
+         "outcome": "One fix closed every row citing it."
+        },
+        {
+         "when": "Oct 18",
+         "title": "The reviewers checked too",
+         "tone": "warning",
+         "emphasized": false,
+         "badge": "Turning point",
+         "text": "Two rulings were wrong: field outlines are Astryx's emphasized border, not its default; field labels are medium weight, not regular.",
+         "outcome": "Both found by reading the computed styles and Astryx's source instead of trusting screenshots."
+        },
+        {
+         "when": "Oct 18, 9:23 pm PT",
+         "title": "Council: iPhone, native against web",
+         "tone": "neutral",
+         "emphasized": false,
+         "text": "Four reviewers. About 270 differences listed: 99 kept as iOS conventions; about 143 fixed (137 native, 6 web or core) by four fix agents (9:52 pm); the rest duplicates of another row or questions ruled."
+        },
+        {
+         "when": "Oct 18 to Oct 19",
+         "title": "Polish: layout, text sizes, chart labels",
+         "tone": "neutral",
+         "emphasized": false,
+         "text": "Inbox layout moved out of shared state; accessibility text sizes (AX5) for buttons and the kanban toolbar; the dashboard's time labels placed exactly as Recharts places them."
+        },
+        {
+         "when": "Oct 19",
+         "title": "Performance, and the issue",
+         "tone": "neutral",
+         "emphasized": false,
+         "text": "A hill climb with a frame meter on device and Instruments' hitches and time profiler: 105 fps mean (120 Hz display) on the Mac during scenarios, 57.9 to 59.9 fps on an iPhone 13. The issue draft for the Astryx maintainers."
+        },
+        {
+         "when": "Oct 19, 6:45 pm PT",
+         "title": "Words and rules into the core",
+         "tone": "warning",
+         "emphasized": false,
+         "badge": "Turning point",
+         "quote": "Is there more to push down in the JSX to prevent duplication?",
+         "text": "Four agents moved every word, layout threshold and search into the core: the JSX holds no English and no breakpoint of its own.",
+         "outcome": "Moving the kanban card's words fixed four parity differences on the way."
+        },
+        {
+         "when": "Oct 22",
+         "title": "Saved data without breaking parity",
+         "tone": "warning",
+         "emphasized": false,
+         "badge": "Turning point",
+         "text": "Three agents moved the templates onto saved data. Stock mode (?stock=1) keeps the harness comparing like with like.",
+         "outcome": "It caught that a moved kanban card must keep stock's \"Edited 2h ago\" and its place in board order."
+        },
+        {
+         "when": "Oct 22",
+         "title": "Saved work and sign-in",
+         "tone": "neutral",
+         "emphasized": false,
+         "text": "One mutation definition run by the core, Zero's client and the server. Zero in Hermes, with SQLite on the device. Optional sign-in through Cloudflare Access. Its own AWS account and Terraform repository."
+        },
+        {
+         "when": "Oct 22",
+         "title": "Polish: sign-in lasts until sign-out",
+         "tone": "neutral",
+         "emphasized": false,
+         "text": "Rotating refresh tokens; reusing a replaced one after two minutes ends the session."
+        },
+        {
+         "when": "Oct 22",
+         "title": "A font, not the code",
+         "tone": "warning",
+         "emphasized": false,
+         "badge": "Turning point",
+         "text": "After the build container was rebuilt, the chat replay failed by 71,955 pixels on every step, while stock and ours still matched each other.",
+         "outcome": "The cause was a missing font (DejaVu Sans Mono), not the code."
+        }
+       ]
+      }
+     ],
+     "level": 3
+    },
+    {
+     "kind": "section",
+     "title": "Found without being asked",
+     "description": "What the most insightful agents found",
+     "children": [
+      {
+       "kind": "metadata",
+       "items": [
+        {
+         "label": "Dashboard refactor",
+         "value": "Recharts animates in JavaScript, and a full-page screenshot restarts it: the two causes behind the charts' differences."
+        },
+        {
+         "label": "Compare reviewer, templates B",
+         "value": "The single page-colour cause behind many rows."
+        },
+        {
+         "label": "Performance hill climb",
+         "value": "On the Mac every long frame gap (290 to 450 ms) followed a sheet opening or closing, because AppKit animates sheets on the main thread; on iPhone, sheets did not stop frames."
+        },
+        {
+         "label": "Sync builder",
+         "value": "Its end-to-end test found a lock key with a NUL byte, which Postgres text cannot hold; it replaced read-then-write with one upsert, so two devices creating the same row never collide."
+        },
+        {
+         "label": "Settings and demo screens",
+         "value": "After a relaunch, new record ids restarted at 1 and could overwrite saved rows; minting now skips ids already saved, with a test."
+        },
+        {
+         "label": "Checkout",
+         "value": "Order totals in integer cents, checked against the dollar figures the page shows for 270 cart combinations."
+        },
+        {
+         "label": "Apple sync",
+         "value": "Zero needed three things Hermes lacks (Symbol.asyncIterator, TextDecoder, a URL that keeps Zero's paths); it wrote a UTF-8 decoder to the standard and fuzzed it against Node's: 30,000 cases, no mismatches."
+        },
+        {
+         "label": "Infrastructure",
+         "value": "The account's apply role would have exceeded an IAM policy size limit as a new policy; it added statements to the existing one, as the newest account had."
+        }
+       ]
+      }
+     ],
+     "level": 3
+    },
+    {
+     "kind": "section",
+     "title": "The result, in numbers",
+     "description": "43 commits at 66ea1ef, before these two screens; tests counted with them",
+     "children": [
+      {
+       "kind": "grid",
+       "minColumnWidth": 300,
+       "gap": "md",
+       "children": [
+        {
+         "kind": "card",
+         "title": "Tests",
+         "children": [
+          {
+           "kind": "metadata",
+           "items": [
+            {
+             "label": "Core",
+             "value": "260"
+            },
+            {
+             "label": "Swift",
+             "value": "106"
+            },
+            {
+             "label": "Sync",
+             "value": "20"
+            },
+            {
+             "label": "Server",
+             "value": "20"
+            },
+            {
+             "label": "Sync end to end",
+             "value": "37 checks"
+            },
+            {
+             "label": "Parity",
+             "value": "1216 of 1216 identical"
+            }
+           ]
+          }
+         ]
+        },
+        {
+         "kind": "card",
+         "title": "Shipped",
+         "children": [
+          {
+           "kind": "metadata",
+           "items": [
+            {
+             "label": "TestFlight",
+             "value": "iPhone and Mac, internal and external testers"
+            },
+            {
+             "label": "Open source",
+             "value": "the fork ejc3/astryx-swift"
+            },
+            {
+             "label": "Infrastructure",
+             "value": "a private repository"
+            }
+           ]
+          }
+         ]
+        }
+       ]
+      }
+     ],
+     "level": 3
+    }
+   ]
+  }
+ },
+ "toast": null,
+ "dialog": null,
+ "theme": {
+  "id": "astryx",
+  "label": "Theme",
+  "setId": "settings.theme",
+  "options": [
+   {
+    "value": "astryx",
+    "label": "Astryx"
+   },
+   {
+    "value": "ocean",
+    "label": "Ocean"
+   },
+   {
+    "value": "ember",
+    "label": "Ember"
+   },
+   {
+    "value": "grape",
+    "label": "Grape"
+   }
+  ]
+ },
+ "scenarios": {
+  "label": "Scenarios",
+  "list": [
+   {
+    "id": "showcase",
+    "title": "Store: pay, ask the chat, manage inventory",
+    "template": "Theme showcase",
+    "steps": "14 steps"
+   },
+   {
+    "id": "dashboard",
+    "title": "Dashboard: chart, views and tables",
+    "template": "Dashboard",
+    "steps": "10 steps"
+   },
+   {
+    "id": "inbox",
+    "title": "Inbox: triage and reply",
+    "template": "Inbox",
+    "steps": "27 steps"
+   },
+   {
+    "id": "kanban",
+    "title": "Board: sprints and moving cards",
+    "template": "Kanban board",
+    "steps": "10 steps"
+   },
+   {
+    "id": "invoice",
+    "title": "Invoice: search, sort and filter lines",
+    "template": "Invoice",
+    "steps": "17 steps"
+   },
+   {
+    "id": "calendar",
+    "title": "Calendar: pick days and page months",
+    "template": "Calendar",
+    "steps": "9 steps"
+   },
+   {
+    "id": "chat",
+    "title": "Chat: ask, edit and open the document",
+    "template": "AI chat",
+    "steps": "13 steps"
+   },
+   {
+    "id": "checkout",
+    "title": "Checkout: from cart to paying",
+    "template": "Checkout",
+    "steps": "16 steps"
+   },
+   {
+    "id": "order",
+    "title": "Order: tabs, menus and panels",
+    "template": "Order detail",
+    "steps": "14 steps"
+   },
+   {
+    "id": "settings",
+    "title": "Settings: edit a profile and search",
+    "template": "Settings",
+    "steps": "12 steps"
+   }
+  ],
+  "drivers": [
+   {
+    "value": "native",
+    "label": "Drive from native",
+    "description": "Each step taps the SwiftUI side; the web drawings follow"
+   },
+   {
+    "value": "web",
+    "label": "Drive from web",
+    "description": "Each step clicks the web page on Hermes; the native side follows"
+   }
+  ],
+  "controls": {
+   "pauseId": "scenario.pause",
+   "resumeId": "scenario.resume",
+   "stopId": "scenario.stop",
+   "pauseLabel": "Pause",
+   "resumeLabel": "Resume",
+   "stopLabel": "Stop"
+  },
+  "playing": null
+ },
+ "account": {
+  "available": false,
+  "state": "signed-out",
+  "label": "Account",
+  "request": null,
+  "title": "",
+  "detail": "",
+  "status": null,
+  "signIn": null,
+  "signOut": null,
+  "accessibilityLabel": ""
+ },
+ "surface": {
+  "id": "app.surface",
+  "label": "Show",
+  "value": "native",
+  "options": [
+   {
+    "value": "native",
+    "label": "Native",
+    "description": "SwiftUI, on the shared core in Hermes"
+   },
+   {
+    "value": "web",
+    "label": "Web on Hermes",
+    "description": "The refactored web page, on the same shared core"
+   },
+   {
+    "value": "webOwn",
+    "label": "Web, own core",
+    "description": "The refactored web page, on a core of its own in the page: no Hermes"
+   },
+   {
+    "value": "stock",
+    "label": "Stock Astryx",
+    "description": "Astryx as it is today: its own template and its own state"
+   },
+   {
+    "value": "compare",
+    "label": "Native and web",
+    "description": "Native and web on Hermes, side by side"
+   },
+   {
+    "value": "all",
+    "label": "All four",
+    "description": "All four drawings at once"
+   }
+  ],
+  "groups": [
+   {
+    "label": "Drawing",
+    "values": [
+     "native",
+     "web",
+     "webOwn",
+     "stock"
+    ]
+   },
+   {
+    "label": "Side by side",
+    "values": [
+     "compare",
+     "all"
+    ]
+   }
+  ],
+  "unavailable": "Needs a wider window",
+  "stockTemplate": "components",
+  "stockLabel": "Astryx as it is today: its own template and its own state"
+ }
+}

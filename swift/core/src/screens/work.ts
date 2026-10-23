@@ -4,10 +4,11 @@ import { COLUMNS, PEOPLE, ROLES, ME, person, type Person } from "../sample.ts";
 import { PER_PAGE, type SortColumn, type State } from "../state.ts";
 import type { BoardColumn, Node, Screen, Tone } from "../ui.ts";
 import { badge, button, card, h, heading, spread, text, v } from "./nodes.ts";
+import { messagesOf, tasksOf } from "./saved.ts";
 
 export function inbox(s: State): Screen {
   const i = s.inbox;
-  const live = i.messages.filter((m) => !m.archived);
+  const live = messagesOf(s.doc).filter((m) => !m.archived);
   const q = i.query.trim().toLowerCase();
   const inTab = live.filter((m) => (i.tab === "unread" ? !m.read : i.tab === "starred" ? m.starred : true));
   const shown = q === "" ? inTab : inTab.filter((m) => `${person(m.from).name} ${m.subject} ${m.preview}`.toLowerCase().includes(q));
@@ -51,7 +52,8 @@ const BOARD_STACK_BELOW = 760;
 export function tasks(s: State): Screen {
   const t = s.tasks;
   const mine = t.filter === "mine";
-  const shown = mine ? t.tasks.filter((x) => x.assignee === ME.id) : t.tasks;
+  const all = tasksOf(s.doc);
+  const shown = mine ? all.filter((x) => x.assignee === ME.id) : all;
   const columns: BoardColumn[] = COLUMNS.map((c, ci) => {
     const cards = shown.filter((x) => x.column === c.id);
     return {

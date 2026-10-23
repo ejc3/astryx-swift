@@ -105,6 +105,9 @@ export const PRODUCTS: readonly Product[] = [
   { id: "k3", name: "Notebook Set", detail: "Dot grid, three pack", cents: 2400, hue: 140 },
 ];
 
+/** What the cart holds before anyone changes it: quantity by product id. */
+export const CART_QUANTITIES: Readonly<Record<string, number>> = { k1: 1, k2: 2, k3: 1 };
+
 export const SHIPPING: readonly { value: string; label: string; days: string; cents: number }[] = [
   { value: "standard", label: "Standard", days: "5-7 business days", cents: 0 },
   { value: "express", label: "Express", days: "2-3 business days", cents: 1500 },
@@ -130,3 +133,6 @@ export const ACTIVITY: readonly { who: string; did: string; minutesAgo: number; 
 ];
 
 export const SKILLS: readonly string[] = ["SwiftUI", "TypeScript", "Design systems", "Accessibility", "Motion", "Prototyping"];
+
+/** The demo account's Settings screen before anyone changes it (the Profile screen reads the same values). */
+export const PROFILE_DEFAULTS = { name: "Maya Okafor", email: "maya@northwind.example", bio: "Design engineer. I make the components and the tools that check them.", emailNotes: true, pushNotes: false, digest: "weekly", density: "comfortable", reduceMotion: false, following: false } as const;

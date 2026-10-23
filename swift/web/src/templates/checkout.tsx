@@ -489,6 +489,17 @@ export default function CheckoutWizardPage({view: raw, send}: TemplateProps) {
                           </VStack>
                         ))}
                       </VStack>
+                      {/* Not in stock Astryx: with saving on, a cart an order
+                          emptied can be filled again (docs/SYNC.md). */}
+                      {view.refillLabel != null && (
+                        <HStack gap={2}>
+                          <Button
+                            label={view.refillLabel}
+                            variant="secondary"
+                            onClick={() => press('refill')}
+                          />
+                        </HStack>
+                      )}
                       {currentErrors.items && (
                         <FieldStatus
                           type="error"

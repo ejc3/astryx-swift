@@ -94,7 +94,7 @@ struct OrderHeader: View {
             }
             HStack(spacing: ax.space(1)) {
                 COSBullet()
-                AXBadge(text: model.status, tone: .warning)
+                AXBadge(text: model.status, tone: model.statusIsDone ? .success : .warning)
             }
             HStack(spacing: ax.space(1)) {
                 COSBullet()
