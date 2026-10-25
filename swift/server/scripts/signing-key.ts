@@ -2,7 +2,7 @@
 
 /**
  * Makes a token signing key for local use and writes it to a file (mode 0600), never to the
- * terminal: `pnpm --filter ./server key -- <file>` (default `.scratch/token-signing-key` at the
+ * terminal: `pnpm --filter ./server run key -- <file>` (default `.scratch/token-signing-key` at the
  * repository root, which git ignores). Load it into the environment when starting the API:
  *   TOKEN_SIGNING_KEY="$(cat .scratch/token-signing-key)" ...
  * Staging and production keys are made the same way, straight into Secrets Manager, by the infra.

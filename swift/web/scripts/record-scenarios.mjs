@@ -2,9 +2,9 @@
 // and proves they replay.
 //
 //   pnpm --filter ./web record                       record every template that has parity steps
-//   pnpm --filter ./web record -- inbox chat         only these (the others stay as they are)
+//   pnpm --filter ./web run record -- inbox chat         only these (the others stay as they are)
 //   pnpm --filter ./web replay                       replay the recorded scenarios on a fresh page
-//   pnpm --filter ./web replay -- inbox              only these
+//   pnpm --filter ./web run replay -- inbox              only these
 //   add --no-build to either to serve dist/ as it is
 //
 // RECORD runs each step of scripts/parity-steps/<id>.mjs on the refactored page

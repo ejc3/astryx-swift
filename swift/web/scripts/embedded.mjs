@@ -6,7 +6,7 @@
 // made-up origin and a sub-path, which also proves the build has no absolute asset paths.
 //
 //   pnpm --filter ./web embedded              build, then check
-//   pnpm --filter ./web embedded -- --no-build   check the existing dist/
+//   pnpm --filter ./web run embedded -- --no-build   check the existing dist/
 import { readFileSync, existsSync } from "node:fs";
 import { extname, join, normalize } from "node:path";
 import { fileURLToPath } from "node:url";

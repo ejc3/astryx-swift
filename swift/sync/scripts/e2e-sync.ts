@@ -62,7 +62,9 @@ const ok = (m: string) => {
 };
 class Failure extends Error {}
 const check = (cond: unknown, m: string): void => {
-  if (!cond) {throw new Failure(m);}
+  if (!cond) {
+    throw new Failure(m);
+  }
   ok(m);
 };
 const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
@@ -74,8 +76,12 @@ async function until<T>(
   const end = Date.now() + ms;
   for (;;) {
     const v = await fn();
-    if (v) {return v as NonNullable<T>;}
-    if (Date.now() > end) {throw new Failure(`timed out waiting for ${what}`);}
+    if (v) {
+      return v as NonNullable<T>;
+    }
+    if (Date.now() > end) {
+      throw new Failure(`timed out waiting for ${what}`);
+    }
     await sleep(50);
   }
 }
@@ -100,7 +106,9 @@ async function freePorts(count: number): Promise<number> {
   for (let i = 0; i < 200; i++) {
     const p = PORT_LO + Math.floor(Math.random() * (PORT_HI - PORT_LO - count));
     const range = Array.from({length: count}, (_, k) => p + k);
-    if (range.some(x => taken.has(x))) {continue;}
+    if (range.some(x => taken.has(x))) {
+      continue;
+    }
     if ((await Promise.all(range.map(canBind))).every(Boolean)) {
       range.forEach(x => taken.add(x));
       return p;
@@ -125,10 +133,11 @@ function start(
   closeSync(out);
   children.push({name, proc, group});
   proc.once('exit', (code, signal) => {
-    if (!stopping)
-      {console.error(
+    if (!stopping) {
+      console.error(
         `e2e-sync: ${name} exited (${signal ?? code}); see ${join(RUN, `${name}.log`)}`,
-      );}
+      );
+    }
   });
   return proc;
 }
@@ -136,7 +145,9 @@ function start(
 let stopping = false;
 async function teardown() {
   stopping = true;
-  for (const h of handles.splice(0)) {await h.stop().catch(() => {});}
+  for (const h of handles.splice(0)) {
+    await h.stop().catch(() => {});
+  }
   proxy?.close();
   await db?.end({timeout: 2}).catch(() => {});
   // The newest first: zero-cache, then the API, then Postgres (SIGINT is its fast shutdown).
@@ -145,8 +156,9 @@ async function teardown() {
       proc.exitCode !== null ||
       proc.signalCode !== null ||
       proc.pid === undefined
-    )
-      {continue;}
+    ) {
+      continue;
+    }
     const gone = new Promise(r => proc.once('exit', r));
     const signal = proc === pg ? 'SIGINT' : 'SIGTERM';
     try {
@@ -155,15 +167,22 @@ async function teardown() {
       /* already gone */
     }
     await Promise.race([gone, sleep(10_000)]);
-    if (proc.exitCode === null && proc.signalCode === null)
-      {try {
+    if (proc.exitCode === null && proc.signalCode === null) {
+      try {
         process.kill(group ? -proc.pid : proc.pid, 'SIGKILL');
       } catch {
         /* gone */
-      }}
+      }
+    }
   }
-  for (const f of ['pgdata', 'replica.db', 'replica.db-wal', 'replica.db-shm'])
-    {rmSync(join(RUN, f), {recursive: true, force: true});}
+  for (const f of [
+    'pgdata',
+    'replica.db',
+    'replica.db-wal',
+    'replica.db-shm',
+  ]) {
+    rmSync(join(RUN, f), {recursive: true, force: true});
+  }
 }
 
 // --- A socket proxy that can go offline ----------------------------------------------------------
@@ -195,13 +214,17 @@ async function makeProxy(target: number): Promise<Proxy> {
     port,
     offline() {
       up = false;
-      for (const s of live) {s.destroy();}
+      for (const s of live) {
+        s.destroy();
+      }
     },
     online() {
       up = true;
     },
     close() {
-      for (const s of live) {s.destroy();}
+      for (const s of live) {
+        s.destroy();
+      }
       server.close();
     },
   };
@@ -210,17 +233,20 @@ async function makeProxy(target: number): Promise<Proxy> {
 // --- The stack -----------------------------------------------------------------------------------
 
 function pgBin(): string {
-  if (process.env.PG_BIN) {return process.env.PG_BIN;}
+  if (process.env.PG_BIN) {
+    return process.env.PG_BIN;
+  }
   const base = '/usr/lib/postgresql';
   const versions = existsSync(base)
     ? readdirSync(base)
         .filter(v => /^\d+$/.test(v))
         .sort((a, b) => Number(b) - Number(a))
     : [];
-  if (!versions[0])
-    {throw new Failure(
+  if (!versions[0]) {
+    throw new Failure(
       'no Postgres: install it (apt-get install postgresql) or set PG_BIN',
-    );}
+    );
+  }
   return join(base, versions[0], 'bin');
 }
 
@@ -249,7 +275,9 @@ async function startPostgres(): Promise<{url: string; sql: postgres.Sql}> {
     {encoding: 'utf8'},
   );
   rmSync(pwfile);
-  if (init.status !== 0) {throw new Failure(`initdb failed: ${init.stderr}`);}
+  if (init.status !== 0) {
+    throw new Failure(`initdb failed: ${init.stderr}`);
+  }
   const port = await freePorts(1);
   const sock = join(RUN, 'sock');
   mkdirSync(sock, {recursive: true});
@@ -319,7 +347,9 @@ function core() {
   return {
     dispatch(a: Action) {
       real.dispatch(a); // the core takes the rows as it would in an app
-      if (a.type === 'rows') {tables.set(a.table, a.rows as Row[]);}
+      if (a.type === 'rows') {
+        tables.set(a.table, a.rows as Row[]);
+      }
     },
     onSave(l: (m: readonly Mutation[], d: Doc) => void) {
       savers.add(l);
@@ -327,7 +357,9 @@ function core() {
     },
     /** As if the core had saved these (a person acted). */
     save(...ms: Mutation[]) {
-      for (const s of savers) {s(ms, readDoc({}));}
+      for (const s of savers) {
+        s(ms, readDoc({}));
+      }
     },
     rows: (table: string) => tables.get(table) ?? null,
     row: (table: string, id: string) =>
@@ -433,7 +465,7 @@ async function main() {
   const cachePort = await freePorts(3);
   start(
     'zero-cache',
-    join(ROOT, 'node_modules/.bin/zero-cache'),
+    join(ROOT, 'sync/node_modules/.bin/zero-cache'),
     [],
     {
       ZERO_UPSTREAM_DB: url,

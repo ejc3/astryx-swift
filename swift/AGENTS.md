@@ -20,7 +20,7 @@ Read `README.md` first.
   follow the `swift-perf-hill-climb` skill (`.agents/skills/swift-perf-hill-climb/SKILL.md`; Claude
   Code finds it through `.claude/skills`): measure, one change, measure again, log it in its
   `results.md`.
-- **Checks before committing:** `pnpm test`, `pnpm exec tsc --noEmit -p core/tsconfig.test.json`,
+- **Checks before committing:** `pnpm test`, `pnpm --filter ./core typecheck`,
   `pnpm exec eslint` in `core/`, `pnpm --filter ./web typecheck`, and for template changes the parity run
   for that template. On the Mac: `swift build` and `swift test` in `apps/native/apple/AstryxKit`.
 - **Public repository:** no personal names, emails, hostnames, account or team ids, local paths

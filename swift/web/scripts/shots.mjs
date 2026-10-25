@@ -3,7 +3,7 @@
 // stock page (Astryx's own templates) for each screen, light.
 //
 //   pnpm --filter ./web shots              build, then shoot
-//   pnpm --filter ./web shots -- --no-build   shoot the existing dist/
+//   pnpm --filter ./web run shots -- --no-build   shoot the existing dist/
 //
 // The browser comes from Playwright's cache (`npx playwright install chromium` once).
 import { mkdirSync, rmSync } from "node:fs";
