@@ -2,8 +2,8 @@
 // 1440x900 and 390x844, light and dark, plus the ocean and grape looks on the dashboard, plus the
 // stock page (Astryx's own templates) for each screen, light.
 //
-//   npm run shots -w web              build, then shoot
-//   npm run shots -w web -- --no-build   shoot the existing dist/
+//   pnpm --filter ./web shots              build, then shoot
+//   pnpm --filter ./web shots -- --no-build   shoot the existing dist/
 //
 // The browser comes from Playwright's cache (`npx playwright install chromium` once).
 import { mkdirSync, rmSync } from "node:fs";

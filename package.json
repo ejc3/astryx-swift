@@ -117,7 +117,7 @@
     "vitest": "^4.1.11",
     "yaml": "^2.9.0"
   },
-  "packageManager": "pnpm@11.10.0",
+  "packageManager": "pnpm@12.15.0",
   "lint-staged": {
     "*.{ts,tsx}": "eslint --cache --fix",
     "*.{ts,tsx,md}": "prettier --write"

@@ -3,6 +3,7 @@
  * two directories up. Nothing is copied: the apps run the files the web page and the server run.
  */
 const path = require("path");
+const { realpathSync } = require("node:fs");
 const { getDefaultConfig, mergeConfig } = require("@react-native/metro-config");
 
 const repoRoot = path.resolve(__dirname, "../..");
@@ -21,7 +22,7 @@ const WORKSPACE = {
 const SOURCES = [path.join(repoRoot, "core", "src"), path.join(repoRoot, "sync", "src")].map((d) => d + path.sep);
 /** op-sqlite and the URL polyfill ask for `react-native`'s index, which names every component; they need three modules of it. */
 const RN_LITE = path.join(__dirname, "js", "rn-lite.ts");
-const LITE_USERS = [["@op-engineering", "op-sqlite"], ["react-native-url-polyfill"]].map((p) => path.join(__dirname, "node_modules", ...p) + path.sep);
+const LITE_USERS = [["@op-engineering", "op-sqlite"], ["react-native-url-polyfill"]].map((p) => realpathSync(path.join(__dirname, "node_modules", ...p)) + path.sep);
 
 module.exports = mergeConfig(defaults, {
   watchFolders: [path.join(repoRoot, "core", "src"), path.join(repoRoot, "sync", "src")],
