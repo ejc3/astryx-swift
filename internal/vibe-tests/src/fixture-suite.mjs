@@ -149,8 +149,8 @@ export function validateDeterministicContent(relativeFile, content) {
 export function validatePackageJson(fixtureId, packageJson) {
   if (packageJson.private !== true)
     fail(`${fixtureId}: package must be private`);
-  if (packageJson.packageManager !== 'pnpm@11.10.0') {
-    fail(`${fixtureId}: packageManager must be pnpm@11.10.0`);
+  if (packageJson.packageManager !== 'pnpm@12.15.0') {
+    fail(`${fixtureId}: packageManager must be pnpm@12.15.0`);
   }
   if (packageJson.engines?.node !== '>=24 <25') {
     fail(`${fixtureId}: Node range must be >=24 <25`);
