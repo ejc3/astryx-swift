@@ -4,8 +4,8 @@
 // Every pixel must match. Diffs go to web/parity/ (git-ignored).
 //
 //   pnpm --filter ./web parity                    build, then compare every template
-//   pnpm --filter ./web run parity -- dashboard chat  only these
-//   pnpm --filter ./web run parity -- --no-build
+//   pnpm --filter ./web run parity dashboard chat  only these
+//   pnpm --filter ./web run parity --no-build
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { build, preview } from "vite";
