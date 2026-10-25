@@ -10,7 +10,7 @@ Read `README.md` first.
   no `Intl`, no clock (`now` is an argument), no randomness. `pnpm exec eslint` in `core/` enforces it.
 - **Stock Astryx is the specification.** A refactored template (`web/src/templates/<id>.tsx`)
   keeps Astryx's JSX and must match its stock copy pixel for pixel:
-  `pnpm --filter ./web parity -- <id>` must report every comparison identical. Don't change the stock
+  `pnpm --filter ./web run parity <id>` must report every comparison identical. Don't change the stock
   copies; change the refactored copy or the core until they match.
 - **Scenarios are recorded, not written.** Change a template's parity steps
   (`web/scripts/parity-steps/<id>.mjs`), then `pnpm --filter ./web record` and `pnpm --filter ./web replay`.
