@@ -16,18 +16,18 @@ The starting point is Astryx as it is today: its own page templates (`npx astryx
 with their state in React. Ten of them are **refactored** onto the core, and the refactor is
 held to one rule: the refactored web template must look **pixel for pixel** like the stock
 one, at rest and after every interaction, in Chromium and WebKit, light and dark, desktop and
-phone (`npm run parity -w web`: 1216 of 1216 comparisons identical).
+phone (`pnpm --filter ./web parity`: 1216 of 1216 comparisons identical).
 
 ## Four drawings, side by side
 
 The apps show each screen four ways, and on a wide Mac (or a large iPad) all four at once:
 
-| Drawing | UI | State |
-|---|---|---|
-| Native | SwiftUI, painted with Astryx's own tokens | the shared core, in Hermes |
-| Web on Hermes | the refactored Astryx web page | the same shared core |
-| Web, own core | the refactored web page, standalone | a core of its own, in the page (no Hermes) |
-| Stock Astryx | Astryx's template as generated | its own React state |
+| Drawing       | UI                                        | State                                      |
+| ------------- | ----------------------------------------- | ------------------------------------------ |
+| Native        | SwiftUI, painted with Astryx's own tokens | the shared core, in Hermes                 |
+| Web on Hermes | the refactored Astryx web page            | the same shared core                       |
+| Web, own core | the refactored web page, standalone       | a core of its own, in the page (no Hermes) |
+| Stock Astryx  | Astryx's template as generated            | its own React state                        |
 
 ## Scenarios
 
@@ -67,21 +67,21 @@ apps/native/     the Apple apps
 Node 22.18 or later.
 
 ```sh
-npm install
-npm test                      # the core's tests
-npm run build -w web          # the web page, and the copy the apps embed
-npm run dev -w web            # the web page alone, on its own core
-npm run parity -w web         # stock vs refactored, pixel for pixel (Playwright)
-npm run record -w web         # re-record the scenarios from the parity steps
-npm run replay -w web         # replay them on fresh pages and compare
+pnpm install --frozen-lockfile
+pnpm test                      # the core's tests
+pnpm --filter ./web build          # the web page, and the copy the apps embed
+pnpm --filter ./web dev            # the web page alone, on its own core
+pnpm --filter ./web parity         # stock vs refactored, pixel for pixel (Playwright)
+pnpm --filter ./web record         # re-record the scenarios from the parity steps
+pnpm --filter ./web replay         # replay them on fresh pages and compare
 node core/scripts/themes.mjs  # regenerate the theme tokens from Astryx's resolver
-npm run e2e -w sync           # sync end to end: Postgres, zero-cache, the API, Zero clients (docs/SYNC.md)
+pnpm --filter ./sync e2e           # sync end to end: Postgres, zero-cache, the API, Zero clients (docs/SYNC.md)
 ```
 
 The apps, on a Mac with Xcode 26, xcodegen and CocoaPods:
 
 ```sh
-cd apps/native && npm ci
+cd apps/native && pnpm install --frozen-lockfile
 cd apple/macOS && xcodegen generate && pod install   # or apple/iOS
 open AstryxSwift.xcworkspace
 ```

@@ -8,7 +8,7 @@
 # as a one-off LaunchAgent: see the README). Signing is automatic, with the account Xcode
 # is signed in to. BUNDLE_ID (default io.github.ejc3.astryxswift) names the app record,
 # made once by hand in App Store Connect: Apple's API cannot make one. BUILD_DIR takes the
-# archive, the export and DerivedData (default build/). Build web/ first (npm run build -w web).
+# archive, the export and DerivedData (default build/). Build web/ first (pnpm --filter ./web build).
 set -euo pipefail
 : "${TEAM_ID:?set TEAM_ID to the Apple developer team}"
 platform=${1:?ios or macos}
@@ -24,7 +24,7 @@ case $platform in
   *) echo "ios or macos, not $platform" >&2; exit 2 ;;
 esac
 
-npm ci --no-audit --no-fund
+pnpm install --frozen-lockfile
 (cd "$dir" && xcodegen generate && pod install)
 
 archive=$build/AstryxSwift.xcarchive

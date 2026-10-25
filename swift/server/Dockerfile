@@ -9,17 +9,20 @@ FROM node:22-bookworm-slim AS deps
 WORKDIR /app
 # @rocicorp/zero's SQLite binding builds from source where no prebuilt binary fits.
 RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ && rm -rf /var/lib/apt/lists/*
-COPY package.json package-lock.json ./
+RUN npm install --global pnpm@12.15.0
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY core/package.json core/
 COPY sync/package.json sync/
 COPY server/package.json server/
 COPY web/package.json web/
-RUN npm ci --omit=dev --workspace server
+RUN pnpm --filter @astryx-native/server... install --prod --frozen-lockfile
 
 FROM node:22-bookworm-slim
 ENV NODE_ENV=production
 WORKDIR /app
 COPY --from=deps /app/node_modules node_modules
+COPY --from=deps /app/sync/node_modules sync/node_modules
+COPY --from=deps /app/server/node_modules server/node_modules
 COPY package.json ./
 COPY core/package.json core/
 COPY core/src core/src

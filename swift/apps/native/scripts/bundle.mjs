@@ -37,7 +37,8 @@ try {
   ], { cwd: root, stdio: "inherit" });
   if (asSource) copyFileSync(source, output);
   else {
-    const hermesc = join(dirname(require.resolve("hermes-compiler/package.json")), "hermesc", "osx-bin", "hermesc");
+    const hostRequire = createRequire(require.resolve(platform === "macos" ? "react-native-macos/package.json" : "react-native/package.json"));
+    const hermesc = join(dirname(hostRequire.resolve("hermes-compiler/package.json")), "hermesc", "osx-bin", "hermesc");
     execFileSync(hermesc, ["-O", "-emit-binary", "-out", output, source], { stdio: "inherit" });
   }
 } finally {

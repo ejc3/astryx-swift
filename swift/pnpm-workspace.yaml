@@ -1,0 +1,14 @@
+packages:
+  - core
+  - web
+  - sync
+  - server
+
+linkWorkspacePackages: true
+
+allowBuilds:
+  esbuild: true
+  '@rocicorp/zero-sqlite3': true
+  "@astryxdesign/cli": false
+  "@astryxdesign/core": false
+  protobufjs: false

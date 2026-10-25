@@ -48,13 +48,13 @@ the `packageManager` field of
 
 ```bash
 # Via npm
-npm install -g pnpm@11
+npm install -g pnpm@12.15.0
 
 # Via Homebrew (macOS)
 brew install pnpm
 
 # Via standalone installer (no npm or Node.js required)
-curl -fsSL https://get.pnpm.io/install.sh | env PNPM_VERSION=11.10.0 sh -
+curl -fsSL https://get.pnpm.io/install.sh | env PNPM_VERSION=12.15.0 sh -
 
 # Via GitHub releases (single binary, no dependencies)
 # https://github.com/pnpm/pnpm/releases/latest
@@ -80,7 +80,7 @@ Verify installation:
 
 ```bash
 node --version   # v24.x.x
-pnpm --version   # 11.x.x
+pnpm --version   # 12.15.0
 ```
 
 ## Getting Started
@@ -891,7 +891,7 @@ What this repo enforces mechanically:
 Install pnpm directly:
 
 ```bash
-npm install -g pnpm@11
+npm install -g pnpm@12.15.0
 ```
 
 Or enable Corepack if you want to use the repository's pinned pnpm version:
@@ -943,7 +943,7 @@ your environment likely blocks outbound network access.
 ```bash
 brew install pnpm                        # Homebrew (macOS)
 curl -fsSL https://get.pnpm.io/install.sh | sh -  # Standalone installer
-npm install -g pnpm@11                   # Via npm
+npm install -g pnpm@12.15.0                   # Via npm
 ```
 
 You can also download the binary directly from

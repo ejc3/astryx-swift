@@ -1,12 +1,14 @@
 {
   "name": "astryx-native",
   "private": true,
-  "workspaces": ["core", "web", "sync", "server"],
-  "engines": { "node": ">=22.18.0" },
+  "engines": {
+    "node": ">=22.18.0"
+  },
   "scripts": {
-    "lint": "npm run lint --workspaces --if-present",
-    "typecheck": "npm run typecheck --workspaces --if-present",
-    "test": "npm test --workspaces --if-present",
-    "themes": "npm run themes -w core"
-  }
+    "lint": "pnpm -r --if-present lint",
+    "typecheck": "pnpm -r --if-present typecheck",
+    "test": "pnpm -r --if-present test",
+    "themes": "pnpm --filter @astryx-native/core themes"
+  },
+  "packageManager": "pnpm@12.15.0"
 }

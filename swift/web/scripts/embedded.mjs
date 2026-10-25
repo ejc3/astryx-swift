@@ -5,8 +5,8 @@
 // `window.__astryx.receive`, exactly as the Swift side does. The dist/ files are served from a
 // made-up origin and a sub-path, which also proves the build has no absolute asset paths.
 //
-//   npm run embedded -w web              build, then check
-//   npm run embedded -w web -- --no-build   check the existing dist/
+//   pnpm --filter ./web embedded              build, then check
+//   pnpm --filter ./web run embedded --no-build   check the existing dist/
 import { readFileSync, existsSync } from "node:fs";
 import { extname, join, normalize } from "node:path";
 import { fileURLToPath } from "node:url";

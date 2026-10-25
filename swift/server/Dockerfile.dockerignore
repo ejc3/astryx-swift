@@ -1,7 +1,8 @@
 # The build context is the repository root; send only what the image copies.
 *
 !package.json
-!package-lock.json
+!pnpm-lock.yaml
+!pnpm-workspace.yaml
 !core/package.json
 !core/src
 !sync/package.json

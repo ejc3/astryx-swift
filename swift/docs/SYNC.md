@@ -15,16 +15,16 @@ row is selected, which menu or dialog is open, a search being typed, a checkout 
 position) stays on the device and is never synced. Secrets are never saved: card numbers, CVCs and
 passwords live only in the screen that asked for them.
 
-| Screen | Saved and synced | Controls that start working |
-|---|---|---|
-| Kanban template | each card's column and place in it; new cards (title, column, priority); who a card is assigned to | Add task, Assign to me, drag and Move to |
-| Settings template | username, first and last name, email; data export, admin members, two-factor | each section's Save (web); edits apply as made on Apple platforms (HIG) |
-| Inbox template | read state, archived and deleted threads, sent replies and new messages | Archive, Delete, Move to folder, Send |
-| Chat template | messages the person sends | Send |
-| Checkout template | the cart (quantities, promo code, delivery choice), the shipping address, and each completed order | Place order makes an order record |
-| Order template | notes, fulfilment state, likes and replies on the timeline | Fulfill item, Like, Reply, Notes |
-| Demo screens | inbox read, starred and archived; task columns; sent chat lines; following; profile settings (name, email, bio, notifications, digest, density, reduce motion, theme); cart and address | as today, now kept |
-| Dashboard, invoice, calendar, theme showcase | nothing: they are reports and galleries over sample data | none |
+| Screen                                       | Saved and synced                                                                                                                                                                        | Controls that start working                                             |
+| -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| Kanban template                              | each card's column and place in it; new cards (title, column, priority); who a card is assigned to                                                                                      | Add task, Assign to me, drag and Move to                                |
+| Settings template                            | username, first and last name, email; data export, admin members, two-factor                                                                                                            | each section's Save (web); edits apply as made on Apple platforms (HIG) |
+| Inbox template                               | read state, archived and deleted threads, sent replies and new messages                                                                                                                 | Archive, Delete, Move to folder, Send                                   |
+| Chat template                                | messages the person sends                                                                                                                                                               | Send                                                                    |
+| Checkout template                            | the cart (quantities, promo code, delivery choice), the shipping address, and each completed order                                                                                      | Place order makes an order record                                       |
+| Order template                               | notes, fulfilment state, likes and replies on the timeline                                                                                                                              | Fulfill item, Like, Reply, Notes                                        |
+| Demo screens                                 | inbox read, starred and archived; task columns; sent chat lines; following; profile settings (name, email, bio, notifications, digest, density, reduce motion, theme); cart and address | as today, now kept                                                      |
+| Dashboard, invoice, calendar, theme showcase | nothing: they are reports and galleries over sample data                                                                                                                                | none                                                                    |
 
 A person's first view is the sample data, exactly as now. What is drawn is the sample rows with
 the person's saved rows laid over them by id: a saved row replaces the sample row with its id, a
@@ -82,6 +82,7 @@ A small TypeScript package beside the core (`sync/`), the only code that imports
   instead and does not start sync.
 
 It runs where the core runs:
+
 - **iPhone, iPad and Mac:** in the app's Hermes runtime, next to the core. Hermes has React
   Native's networking, so Zero's WebSocket works there; Zero's local store is SQLite through
   `op-sqlite` (Zero's own provider). The web panes in the app draw the same core and need nothing
@@ -133,13 +134,13 @@ device.
 
 ## What runs where
 
-| Piece | Runs | Notes |
-|---|---|---|
-| Postgres 17 | Amazon RDS (`db.t4g.micro`), `rds.logical_replication = 1` | the source of truth; zero-cache replicates it |
-| zero-cache | Fargate, image `rocicorp/zero` (pinned), with a small disk for its replica | long-running; never a Worker |
-| API | Fargate, same task: Node, Hono, `/native/login`, `/api/zero/query`, `/api/zero/mutate`, `/healthz` (`server/Dockerfile`) | `/healthz` says whether sync is on (`DATABASE_URL` and `ZERO_API_KEY` set) |
-| Cloudflare connector | Fargate, same task | nothing listens on a public address |
-| Hostname, tunnel, Access application | Cloudflare | `/native/login` behind Access; `/api/zero/*` and the zero-cache socket bypass Access and check the API token |
+| Piece                                | Runs                                                                                                                     | Notes                                                                                                        |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------ |
+| Postgres 17                          | Amazon RDS (`db.t4g.micro`), `rds.logical_replication = 1`                                                               | the source of truth; zero-cache replicates it                                                                |
+| zero-cache                           | Fargate, image `rocicorp/zero` (pinned), with a small disk for its replica                                               | long-running; never a Worker                                                                                 |
+| API                                  | Fargate, same task: Node, Hono, `/native/login`, `/api/zero/query`, `/api/zero/mutate`, `/healthz` (`server/Dockerfile`) | `/healthz` says whether sync is on (`DATABASE_URL` and `ZERO_API_KEY` set)                                   |
+| Cloudflare connector                 | Fargate, same task                                                                                                       | nothing listens on a public address                                                                          |
+| Hostname, tunnel, Access application | Cloudflare                                                                                                               | `/native/login` behind Access; `/api/zero/*` and the zero-cache socket bypass Access and check the API token |
 
 It lives in its own AWS account, made by `ejc3/aws`, with its own Terraform repository
 (`ejc3/astryx-infra`): the RDS instance, the task, secrets (in Secrets Manager, read when used),
@@ -154,13 +155,13 @@ until it is turned on.
   (`?stock=1`), so a step that presses a control stock leaves inert (the chat's Send) still
   compares like with like. The new behaviours are covered by their own scenarios, replayed on the
   web and natively.
-- **Sync and the API, unit tests** (`npm test -w sync`, `npm test -w server`): the Zero schema and
+- **Sync and the API, unit tests** (`pnpm --filter ./sync test`, `pnpm --filter ./server test`): the Zero schema and
   SQL match `SCHEMA`; a mutator exists for every mutation and writes as the signer; refused
   arguments write nothing; `seed`'s checks and its refusal on a table with rows; the status; the
   token (expiry, another key, issuer, audience); Access JWTs (team keys, audience, service tokens);
   `/native/login`'s allow-list and the web pop-up's target origin; the API key and bearer checks;
   the refusal to start with `DEV_IDENTITY` in production.
-- **Sync, end to end, locally:** `npm run e2e -w sync` (`sync/scripts/e2e-sync.ts`) makes a private
+- **Sync, end to end, locally:** `pnpm --filter ./sync e2e` (`sync/scripts/e2e-sync.ts`) makes a private
   Postgres (`initdb` into `.scratch/e2e-sync`, `wal_level=logical`, 127.0.0.1 only, a free port in
   45000-46000; Postgres from `PG_BIN` or `/usr/lib/postgresql/<n>/bin`), starts the API with
   `DEV_IDENTITY` and zero-cache from the installed `@rocicorp/zero` (fresh secrets for the run, in

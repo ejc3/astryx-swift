@@ -1,7 +1,7 @@
 // Drives the built app in a browser and checks that the controls do what the core says.
 //
-//   npm run interact -w web              build, then check
-//   npm run interact -w web -- --no-build   check the existing dist/
+//   pnpm --filter ./web interact              build, then check
+//   pnpm --filter ./web run interact --no-build   check the existing dist/
 import { fileURLToPath } from "node:url";
 import { build, preview } from "vite";
 import { chromium } from "playwright";

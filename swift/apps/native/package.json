@@ -14,7 +14,9 @@
     "react": "19.2.8",
     "react-native": "0.83.10",
     "react-native-macos": "0.83.0",
-    "react-native-url-polyfill": "4.0.0"
+    "react-native-url-polyfill": "4.0.0",
+    "@astryx-native/sync": "link:../../sync",
+    "@babel/runtime": "7.29.7"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
@@ -34,5 +36,6 @@
   },
   "engines": {
     "node": ">=20.19.4"
-  }
+  },
+  "packageManager": "pnpm@12.15.0"
 }
