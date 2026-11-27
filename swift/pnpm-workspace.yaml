@@ -7,7 +7,6 @@ packages:
 linkWorkspacePackages: true
 
 allowBuilds:
-  esbuild: true
   '@rocicorp/zero-sqlite3': true
   "@astryxdesign/cli": false
   "@astryxdesign/core": false
